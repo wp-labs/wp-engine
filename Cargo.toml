@@ -156,7 +156,7 @@ comfy-table = "~7.2"
 # --- Database ---
 rusqlite = { version = "0.32.1", features = ["backup", "functions"] }
 r2d2 = "~0.8"
-r2d2_sqlite = "0.25.0"
+r2d2_sqlite = "0.31.0"
 
 # --- Web & Network ---
 url = "2.5.4"
