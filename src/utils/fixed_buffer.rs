@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_sort_search() {
-        let mut items = vec![
+        let mut items = [
             fixed_from("no_2"),
             fixed_from("no_1"),
             fixed_from("no_3"),
