@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![Rust](https://img.shields.io/badge/rust-1.74+-orange.svg)](https://www.rust-lang.org)
+![CI](https://github.com/wp-labs/wp-engine/workflows/CI/badge.svg)
+[![codecov](https://codecov.io/gh/wp-labs/wp-engine/graph/badge.svg?token=6SVCXBHB6B)](https://codecov.io/gh/wp-labs/wp-engine)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/wp-labs/wp-engine)
 
 High-performance data parsing and processing engine built in Rust
 
@@ -271,56 +271,6 @@ Warp Parse Engine（WP-Engine）是一个高性能、模块化的数据解析和
 - **可扩展架构**：插件系统支持自定义处理器和输出端
 - **企业级就绪**：内置监控、指标和容错功能
 
-## 快速开始
-
-### 安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/wp-labs/wp-engine.git
-cd wp-engine
-
-# 构建项目
-cargo build --release
-```
-
-### 基本用法
-
-```rust
-use wp_engine::facade::WpApp;
-use wp_engine::core::parser::wpl_engine::repo::WplRepository;
-
-// 创建 WPL 规则
-let rule = r#"
-package /main {
-    rule parse_log {
-        timestamp "_" "request" "status" "response_time"
-    }
-}
-"#;
-
-// 构建解析引擎
-let repo = WplRepository::from_wpl(rule)?;
-let app = WpApp::from_config(repo)?;
-
-// 处理数据
-let input = "2024-01-01T12:00:00Z GET /api/users 200 45";
-let result = app.process(input)?;
-println!("解析结果: {:?}", result);
-```
-
-### 使用 CLI
-
-```bash
-# 使用 WPL 规则解析数据
-wproj parse --rule rules.wpl --input data.log
-
-# 从样本数据生成规则
-wproj gen-rule --sample sample.log --output rule.wpl
-
-# 验证配置
-wproj check --config config.toml
-```
 
 ## 架构
 
@@ -348,139 +298,6 @@ wp-engine (根目录)
 │   └── orchestrator/       # 编排
 └── tests/                    # 集成测试
 ```
-
-## WPL（Warp Processing Language）
-
-WPL 是一个强大的领域特定语言，用于定义解析规则：
-
-```wpl
-package /logs {
-    rule nginx_access {
-        # 解析时间戳
-        timestamp "[" time(time_local) "]"
-        # 解析远程地址
-        remote_addr chars@ip
-        # 解析请求行
-        request_line "\"" chars@request "\""
-        # 解析状态码
-        status digit@3
-        # 解析响应大小
-        body_bytes_sent digits
-    }
-
-    rule extract_user {
-        # 从请求中提取用户ID
-        request "^/api/users/" digits@user_id "/"?
-    }
-
-    # 定义管道处理
-    pipe enrich {
-        plg_pipe/geo_lookup(ip) -> country
-        plg_pipe/user_agent_lookup(user_agent) -> device_type
-    }
-}
-```
-
-## 配置
-
-引擎使用 TOML 进行配置：
-
-```toml
-[engine]
-workers = 4
-buffer_size = 8192
-
-[sources]
-  [sources.tcp]
-  type = "tcp"
-  host = "0.0.0.0"
-  port = 8080
-
-  [sources.file]
-  type = "file"
-  path = "/var/log/nginx/access.log"
-
-[sinks]
-  [sinks.elasticsearch]
-  type = "elasticsearch"
-  url = "http://localhost:9200"
-  index = "logs"
-
-[monitoring]
-  metrics_enabled = true
-  prometheus_port = 9090
-```
-
-## 性能
-
-- **吞吐量**：每核每秒高达 100 万事件
-- **延迟**：简单解析规则小于 1 毫秒
-- **内存**：典型工作负载低于 100MB
-- **CPU**：使用 SIMD 优化，高效利用
-
-详细性能指标请参见[基准测试](./crates/wp-stats/BENCHMARKS.md)。
-
-## 插件
-
-使用自定义处理器扩展引擎：
-
-```rust
-use wp_engine::plugin::{PipeProcessor, register_wpl_pipe};
-
-struct CustomProcessor;
-
-impl PipeProcessor for CustomProcessor {
-    fn process(&self, data: RawData) -> WparseResult<RawData> {
-        // 自定义处理逻辑
-        Ok(transformed_data)
-    }
-
-    fn name(&self) -> &'static str {
-        "custom_processor"
-    }
-}
-
-// 注册处理器
-register_wpl_pipe!("custom", || Hold::new(CustomProcessor));
-```
-
-## 功能标志
-
-- `default`：带有核心运行时的社区版
-- `runtime-core`：基础运行时功能
-- `enterprise-backend`：企业级后端功能
-- `perf-ci`：CI 中的性能测试
-- `dev-tools`：开发工具
-
-## 贡献
-
-我们欢迎贡献！请查看我们的[贡献指南](CONTRIBUTING.md)了解详情。
-
-### 开发设置
-
-```bash
-# 安装依赖
-cargo install cargo-watch cargo-expand
-
-# 运行测试
-cargo test
-
-# 自动重载运行
-cargo watch -x run
-
-# 检查格式
-cargo fmt --check
-
-# 运行代码检查
-cargo clippy -- -D warnings
-```
-
-## 文档
-
-- [API 文档](https://docs.wp-labs.com/wp-engine)
-- [WPL 语言指南](docs/wpl-guide.md)
-- [插件开发](docs/plugin-development.md)
-- [部署指南](docs/deployment.md)
 
 ## 许可证
 
