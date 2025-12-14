@@ -154,7 +154,7 @@ clap = { version = "~4.5", features = ["derive"] }
 comfy-table = "~7.2"
 
 # --- Database ---
-rusqlite = { version = "0.32.1", features = ["backup", "functions"] }
+rusqlite = { version = "0.37.0", features = ["backup", "functions"] }
 r2d2 = "~0.8"
 r2d2_sqlite = "0.25.0"
 
