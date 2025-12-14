@@ -61,6 +61,7 @@ CREATE INDEX IF NOT EXISTS idx_{table}_end   ON {table}(ip_end_int);
         "file:{}/.run/authority.sqlite?mode=rwc&uri=true",
         root.display()
     );
+    // Try to initialize, but don't fail if it's already initialized
     let _ = kdb::init_thread_cloned_from_knowdb(Path::new(&root), &conf_path, &auth_uri);
 
     // 3) query with UDF on read connection
@@ -129,6 +130,7 @@ CREATE INDEX IF NOT EXISTS idx_{table}_end   ON {table}(ip_end_int);
         "file:{}/.run/authority.sqlite?mode=rwc&uri=true",
         root.display()
     );
+    // Try to initialize, but don't fail if it's already initialized
     let _ = kdb::init_thread_cloned_from_knowdb(Path::new(&root), &conf_path, &auth_uri);
 
     // 3) query with integer compare on read connection

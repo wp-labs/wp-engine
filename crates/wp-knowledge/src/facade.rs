@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use std::collections::HashSet;
 use wp_data_model::cache::CacheAble;
 use wp_error::{KnowledgeReason, KnowledgeResult};
@@ -61,8 +61,8 @@ impl QueryFacade for MemProvider {
     }
 }
 
-static PROVIDER: OnceCell<Arc<dyn QueryFacade>> = OnceCell::new();
-static TABLE_WHITELIST: OnceCell<HashSet<String>> = OnceCell::new();
+static PROVIDER: OnceLock<Arc<dyn QueryFacade>> = OnceLock::new();
+static TABLE_WHITELIST: OnceLock<HashSet<String>> = OnceLock::new();
 
 /// 直接使用已有的权威库 URI 初始化线程副本 provider。
 pub fn init_thread_cloned_from_authority(authority_uri: &str) -> KnowledgeResult<()> {
@@ -92,6 +92,7 @@ fn get_provider() -> KnowledgeResult<&'static Arc<dyn QueryFacade>> {
         .get()
         .ok_or_else(|| KnowledgeReason::from_logic("knowledge provider not initialized").to_err())
 }
+
 
 /// 门面查询：无参
 pub fn query_row(sql: &str) -> KnowledgeResult<Vec<DataField>> {
