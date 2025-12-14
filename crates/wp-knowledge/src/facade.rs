@@ -177,6 +177,15 @@ pub fn init_thread_cloned_from_knowdb(
         authority_uri.to_string()
     };
     let tc = ThreadClonedMDB::from_authority(&ro_uri);
+
+    // Pre-load the database into memory to avoid file deletion issues
+    // This ensures the database is copied immediately rather than lazily
+    #[cfg(test)]
+    {
+        // In test mode, immediately trigger the lazy loading
+        tc.with_tls_conn(|_| Ok(()))?;
+    }
+
     let _ = TABLE_WHITELIST.set(tables.into_iter().collect::<HashSet<_>>());
     info_ctrl!("init authority knowdb success({}) ", knowdb_conf.display(),);
     set_provider(Arc::new(tc))
