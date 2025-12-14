@@ -1,8 +1,8 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use std::sync::OnceLock;
 use std::collections::HashSet;
+use std::sync::OnceLock;
 use wp_data_model::cache::CacheAble;
 use wp_error::{KnowledgeReason, KnowledgeResult};
 use wp_log::info_ctrl;
@@ -92,7 +92,6 @@ fn get_provider() -> KnowledgeResult<&'static Arc<dyn QueryFacade>> {
         .get()
         .ok_or_else(|| KnowledgeReason::from_logic("knowledge provider not initialized").to_err())
 }
-
 
 /// 门面查询：无参
 pub fn query_row(sql: &str) -> KnowledgeResult<Vec<DataField>> {
