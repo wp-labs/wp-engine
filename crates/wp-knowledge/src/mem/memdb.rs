@@ -99,6 +99,12 @@ impl ToSql for SqlNamedParam {
 }
 
 impl DBQuery for MemDB {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+        let conn = self.conn.get().owe_res().want("get memdb connect")?;
+        let _ = crate::sqlite_ext::register_builtin(&conn);
+        super::query_util::query_cached(&conn, sql, [])
+    }
+
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
         let conn = self.conn.get().owe_res().want("get memdb connect")?;
         // Ensure SQLite UDFs are available on this connection (ip4_int/cidr4_* etc.)

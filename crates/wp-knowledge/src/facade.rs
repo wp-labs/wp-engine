@@ -19,6 +19,7 @@ use rusqlite::{Connection, OpenFlags};
 /// 对外统一查询门面，隐藏底层 MemDB/线程副本等实现选择。
 /// 仅提供对象安全的两种查询接口：无参和命名参数。
 pub trait QueryFacade: Send + Sync {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>>;
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>>;
     fn query_named<'a>(
         &self,
@@ -29,6 +30,9 @@ pub trait QueryFacade: Send + Sync {
 }
 
 impl QueryFacade for ThreadClonedMDB {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+        DBQuery::query(self, sql)
+    }
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
         DBQuery::query_row(self, sql)
     }
@@ -46,6 +50,9 @@ impl QueryFacade for ThreadClonedMDB {
 
 struct MemProvider(MemDB);
 impl QueryFacade for MemProvider {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+        DBQuery::query(&self.0, sql)
+    }
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
         DBQuery::query_row(&self.0, sql)
     }
@@ -91,6 +98,10 @@ fn get_provider() -> KnowledgeResult<&'static Arc<dyn QueryFacade>> {
     PROVIDER
         .get()
         .ok_or_else(|| KnowledgeReason::from_logic("knowledge provider not initialized").to_err())
+}
+
+pub fn query(sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+    get_provider()?.query(sql)
 }
 
 /// 门面查询：无参

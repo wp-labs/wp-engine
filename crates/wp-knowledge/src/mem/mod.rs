@@ -19,6 +19,7 @@ pub type AnyResult<T> = anyhow::Result<T>;
 
 #[enum_dispatch]
 pub trait DBQuery {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>>;
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>>;
     fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<Vec<DataField>>;
     fn query_row_tdos<P: Params>(

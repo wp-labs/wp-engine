@@ -63,6 +63,9 @@ impl ThreadClonedMDB {
 }
 
 impl DBQuery for ThreadClonedMDB {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+        self.with_tls_conn(|conn| super::query_util::query(conn, sql, []))
+    }
     fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
         self.with_tls_conn(|conn| super::query_util::query_first_row(conn, sql, []))
     }

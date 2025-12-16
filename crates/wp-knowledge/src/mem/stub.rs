@@ -7,6 +7,10 @@ use wp_model_core::model::DataField;
 pub struct StubMDB {}
 
 impl DBQuery for StubMDB {
+    fn query(&self, _sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+        Ok(vec![])
+    }
+
     fn query_row(&self, _sql: &str) -> KnowledgeResult<Vec<DataField>> {
         Ok(Vec::new())
     }
