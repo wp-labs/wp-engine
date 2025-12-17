@@ -459,7 +459,10 @@ mod tests {
             // Send length-prefixed messages
             let messages = vec!["hello", "world", "length", "prefixed"];
             for msg in messages {
-                client.write_all(format!("{} {}", msg.len(), msg).as_bytes()).await.unwrap();
+                client
+                    .write_all(format!("{} {}", msg.len(), msg).as_bytes())
+                    .await
+                    .unwrap();
             }
         });
 
@@ -479,7 +482,8 @@ mod tests {
         if let ReadOutcome::Produced(batch) = result {
             assert_eq!(batch.len(), 4);
 
-            let payloads: Vec<String> = batch.iter()
+            let payloads: Vec<String> = batch
+                .iter()
                 .map(|ev| match &ev.payload {
                     RawData::Bytes(b) => String::from_utf8_lossy(b).to_string(),
                     _ => panic!("expected bytes payload"),
@@ -519,7 +523,9 @@ mod tests {
         let mut conn = TcpConnection::new(
             stream,
             peer,
-            FramingMode::Auto { prefer_newline: true },
+            FramingMode::Auto {
+                prefer_newline: true,
+            },
             Tags::new(),
             8192,
             "test_auto".into(),
@@ -531,7 +537,8 @@ mod tests {
         if let ReadOutcome::Produced(batch) = result {
             assert_eq!(batch.len(), 4);
 
-            let payloads: Vec<String> = batch.iter()
+            let payloads: Vec<String> = batch
+                .iter()
                 .map(|ev| match &ev.payload {
                     RawData::Bytes(b) => String::from_utf8_lossy(b).to_string(),
                     _ => panic!("expected bytes payload"),
@@ -637,7 +644,7 @@ mod tests {
         let event_arc = SourceEvent::new(
             id,
             source_key,
-            RawData::ArcBytes(Arc::new(vec![0u8; 100].into())),
+            RawData::ArcBytes(Arc::new(vec![0u8; 100])),
             tags,
         );
         assert_eq!(event_payload_len(&event_arc), 100);
