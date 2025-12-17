@@ -67,8 +67,8 @@ impl FramingExtractor {
 
 #[cfg(test)]
 mod tests {
-    use bytes::{Buf, Bytes, BytesMut};
     use super::FramingExtractor;
+    use bytes::{Buf, Bytes, BytesMut};
 
     // Line message extraction tests
     #[test]
@@ -159,12 +159,18 @@ mod tests {
     // Helper function tests
     #[test]
     fn test_has_length_prefix() {
-        assert!(FramingExtractor::has_length_prefix(&BytesMut::from("5 hello")));
+        assert!(FramingExtractor::has_length_prefix(&BytesMut::from(
+            "5 hello"
+        )));
         assert!(FramingExtractor::has_length_prefix(&BytesMut::from("0 ")));
 
         assert!(!FramingExtractor::has_length_prefix(&BytesMut::from("")));
-        assert!(!FramingExtractor::has_length_prefix(&BytesMut::from("hello")));
-        assert!(!FramingExtractor::has_length_prefix(&BytesMut::from("5hello")));
+        assert!(!FramingExtractor::has_length_prefix(&BytesMut::from(
+            "hello"
+        )));
+        assert!(!FramingExtractor::has_length_prefix(&BytesMut::from(
+            "5hello"
+        )));
     }
 
     #[test]
@@ -186,7 +192,10 @@ mod tests {
         data.extend_from_slice(&[0x00, 0x01, 0x02, 0xFF, 0xFE]);
         let mut buf = BytesMut::from(&data[..]);
         let result = FramingExtractor::extract_length_prefixed_message(&mut buf);
-        assert_eq!(result.unwrap(), Bytes::from(&[0x00, 0x01, 0x02, 0xFF, 0xFE][..]));
+        assert_eq!(
+            result.unwrap(),
+            Bytes::from(&[0x00, 0x01, 0x02, 0xFF, 0xFE][..])
+        );
 
         // Test partial buffer with newline
         let mut buf = BytesMut::from("5 hello\nworld\n");
