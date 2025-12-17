@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::time::Duration;
 
 use crate::DBQuery;
+use crate::mem::RowData;
 use orion_error::{ErrorOwe, ErrorWith};
 use rusqlite::backup::Backup;
 use rusqlite::{Connection, Params};
@@ -63,14 +64,14 @@ impl ThreadClonedMDB {
 }
 
 impl DBQuery for ThreadClonedMDB {
-    fn query(&self, sql: &str) -> KnowledgeResult<Vec<Vec<DataField>>> {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>> {
         self.with_tls_conn(|conn| super::query_util::query(conn, sql, []))
     }
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData> {
         self.with_tls_conn(|conn| super::query_util::query_first_row(conn, sql, []))
     }
 
-    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<Vec<DataField>> {
+    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<RowData> {
         self.with_tls_conn(|conn| super::query_util::query_first_row(conn, sql, params))
     }
 
@@ -78,7 +79,7 @@ impl DBQuery for ThreadClonedMDB {
         &self,
         _sql: &str,
         _params: &[DataField; 2],
-    ) -> KnowledgeResult<Vec<DataField>> {
+    ) -> KnowledgeResult<RowData> {
         // not used in current benchmarks
         Ok(vec![])
     }

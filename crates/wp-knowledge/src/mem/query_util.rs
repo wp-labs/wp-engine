@@ -8,14 +8,16 @@ use wp_model_core::model::{self, DataField};
 
 use lazy_static::lazy_static;
 
+use crate::mem::RowData;
+
 lazy_static! {
     /// Global column-name cache keyed by raw SQL text, shared by MemDB queries.
     pub static ref COLNAME_CACHE: RwLock<HashMap<String, Arc<Vec<String>>>> =
         RwLock::new(HashMap::new());
 }
 
-/// 将一行数据映射为 Vec<DataField>
-fn map_row(row: &rusqlite::Row<'_>, col_names: &[String]) -> KnowledgeResult<Vec<DataField>> {
+/// 将一行数据映射为 RowData
+fn map_row(row: &rusqlite::Row<'_>, col_names: &[String]) -> KnowledgeResult<RowData> {
     let mut result = Vec::with_capacity(col_names.len());
     for (i, col_name) in col_names.iter().enumerate() {
         let value = row.get_ref(i).owe_rule()?;
@@ -73,7 +75,7 @@ pub fn query<P: Params>(
     conn: &rusqlite::Connection,
     sql: &str,
     params: P,
-) -> KnowledgeResult<Vec<Vec<DataField>>> {
+) -> KnowledgeResult<Vec<RowData>> {
     let mut stmt = conn.prepare_cached(sql).owe_rule()?;
     let col_names = extract_col_names(&stmt);
     let mut rows = stmt.query(params).owe_rule()?;
@@ -84,12 +86,12 @@ pub fn query<P: Params>(
     Ok(all_result)
 }
 
-/// Query first row and map columns into Vec<DataField> with column names preserved.
+/// Query first row and map columns into RowData with column names preserved.
 pub fn query_first_row<P: Params>(
     conn: &rusqlite::Connection,
     sql: &str,
     params: P,
-) -> KnowledgeResult<Vec<DataField>> {
+) -> KnowledgeResult<RowData> {
     let mut stmt = conn.prepare_cached(sql).owe_rule()?;
     let col_names = extract_col_names(&stmt);
     let mut rows = stmt.query(params).owe_rule()?;
@@ -105,7 +107,7 @@ pub fn query_cached<P: Params>(
     conn: &rusqlite::Connection,
     sql: &str,
     params: P,
-) -> KnowledgeResult<Vec<Vec<DataField>>> {
+) -> KnowledgeResult<Vec<RowData>> {
     let mut stmt = conn.prepare_cached(sql).owe_rule()?;
     // Column names cache (per SQL)
     let col_names = extract_col_names_cached(&stmt, sql)?;
@@ -122,7 +124,7 @@ pub fn query_first_row_cached<P: Params>(
     conn: &rusqlite::Connection,
     sql: &str,
     params: P,
-) -> KnowledgeResult<Vec<DataField>> {
+) -> KnowledgeResult<RowData> {
     let mut stmt = conn.prepare_cached(sql).owe_rule()?;
     let col_names = extract_col_names_cached(&stmt, sql)?;
     let mut rows = stmt.query(params).owe_rule()?;
@@ -130,5 +132,114 @@ pub fn query_first_row_cached<P: Params>(
         map_row(row, &col_names)
     } else {
         Ok(Vec::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    fn setup_test_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute(
+            "CREATE TABLE test (id INTEGER, name TEXT, score REAL, data BLOB, empty)",
+            [],
+        )
+        .unwrap();
+        conn
+    }
+
+    #[test]
+    fn test_query_returns_all_rows() {
+        let conn = setup_test_db();
+        let rows = query(&conn, "SELECT * FROM test", []).unwrap();
+        assert!(rows.is_empty());
+        conn.execute("INSERT INTO test (id, name) VALUES (1, 'alice')", [])
+            .unwrap();
+        conn.execute("INSERT INTO test (id, name) VALUES (2, 'bob')", [])
+            .unwrap();
+        conn.execute("INSERT INTO test (id, name) VALUES (3, 'charlie')", [])
+            .unwrap();
+
+        let rows = query(&conn, "SELECT id, name FROM test ORDER BY id", []).unwrap();
+        assert_eq!(rows.len(), 3);
+    }
+
+    #[test]
+    fn test_query_first_row_returns_single_row() {
+        let conn = setup_test_db();
+        let row = query_first_row(&conn, "SELECT * FROM test", []).unwrap();
+        assert!(row.is_empty());
+        conn.execute("INSERT INTO test (id, name) VALUES (1, 'first')", [])
+            .unwrap();
+        conn.execute("INSERT INTO test (id, name) VALUES (2, 'second')", [])
+            .unwrap();
+
+        let row = query_first_row(&conn, "SELECT id, name FROM test ORDER BY id", []).unwrap();
+        assert_eq!(row.len(), 2);
+        assert_eq!(row[0].to_string(), "digit(1)");
+        assert_eq!(row[1].to_string(), "chars(first)");
+    }
+
+    #[test]
+    fn test_map_row_handles_all_types() {
+        let conn = setup_test_db();
+        conn.execute(
+            "INSERT INTO test (id, name, score, data, empty) VALUES (42, 'hello', 3.14, X'414243', NULL)",
+            [],
+        )
+        .unwrap();
+
+        let row =
+            query_first_row(&conn, "SELECT id, name, score, data, empty FROM test", []).unwrap();
+        assert_eq!(row.len(), 5);
+    }
+
+    #[test]
+    fn test_extract_col_names_preserves_aliases() {
+        let conn = setup_test_db();
+        conn.execute("INSERT INTO test (id, name) VALUES (1, 'x')", [])
+            .unwrap();
+
+        let row = query_first_row(
+            &conn,
+            "SELECT id AS user_id, name AS user_name FROM test",
+            [],
+        )
+        .unwrap();
+        assert_eq!(row[0].get_name(), "user_id");
+        assert_eq!(row[1].get_name(), "user_name");
+    }
+
+    #[test]
+    fn test_query_cached_uses_cache() {
+        let conn = setup_test_db();
+        conn.execute("INSERT INTO test (id) VALUES (1)", [])
+            .unwrap();
+
+        let sql = "SELECT id FROM test WHERE id = 1";
+        // 第一次查询，填充缓存
+        let _ = query_cached(&conn, sql, []).unwrap();
+        // 第二次查询，应命中缓存
+        let rows = query_cached(&conn, sql, []).unwrap();
+        assert_eq!(rows.len(), 1);
+
+        // 验证缓存已填充
+        let cache = COLNAME_CACHE.read().unwrap();
+        assert!(cache.contains_key(sql));
+    }
+
+    #[test]
+    fn test_query_with_params() {
+        let conn = setup_test_db();
+        conn.execute("INSERT INTO test (id, name) VALUES (1, 'alice')", [])
+            .unwrap();
+        conn.execute("INSERT INTO test (id, name) VALUES (2, 'bob')", [])
+            .unwrap();
+
+        let rows = query(&conn, "SELECT name FROM test WHERE id = ?1", [2]).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0][0].to_string(), "chars(bob)");
     }
 }

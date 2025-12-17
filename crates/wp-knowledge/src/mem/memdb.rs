@@ -637,6 +637,23 @@ mod tests {
         assert_eq!(row[0].to_string(), "digit(40)");
         Ok(())
     }
+
+    #[test]
+    fn test_query_returns_all_rows() -> AnyResult<()> {
+        let db = MemDB::instance();
+        db.execute("CREATE TABLE multi (id INTEGER, name TEXT)")?;
+        let rows = db.query("SELECT * FROM multi")?;
+        assert!(rows.is_empty(), "empty table should return empty vec");
+        db.execute("INSERT INTO multi (id, name) VALUES (1, 'alice')")?;
+        db.execute("INSERT INTO multi (id, name) VALUES (2, 'bob')")?;
+        db.execute("INSERT INTO multi (id, name) VALUES (3, 'charlie')")?;
+
+        let rows = db.query("SELECT id, name FROM multi ORDER BY id")?;
+        assert_eq!(rows.len(), 3, "should return all 3 rows");
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     fn load_toml_conf<T: serde::de::DeserializeOwned>(path: &str) -> AnyResult<T> {
         let mut f = File::open(path).with_context(|| format!("conf file not found: {}", path))?;
