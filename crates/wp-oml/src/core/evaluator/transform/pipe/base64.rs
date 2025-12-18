@@ -3,12 +3,11 @@ use crate::language::{EncodeType, PipeBase64Decode, PipeBase64Encode};
 use base64::Engine;
 use base64::engine::general_purpose;
 use encoding_rs::{
-    EUC_JP, GB18030, ISO_2022_JP, ISO_8859_3, ISO_8859_4, ISO_8859_5, ISO_8859_6, ISO_8859_7,
-    ISO_8859_8, ISO_8859_10, ISO_8859_13, ISO_8859_16, KOI8_R, KOI8_U, UTF_16BE, UTF_16LE,
-    BIG5, IBM866, ISO_8859_2, ISO_8859_14, ISO_8859_15,
-    MACINTOSH, SHIFT_JIS, WINDOWS_1250, WINDOWS_1251, WINDOWS_1252, WINDOWS_1253,
-    WINDOWS_1254, WINDOWS_1255, WINDOWS_1256, WINDOWS_1257, WINDOWS_1258, WINDOWS_874,
-    X_MAC_CYRILLIC,
+    BIG5, EUC_JP, GB18030, IBM866, ISO_2022_JP, ISO_8859_2, ISO_8859_3, ISO_8859_4, ISO_8859_5,
+    ISO_8859_6, ISO_8859_7, ISO_8859_8, ISO_8859_10, ISO_8859_13, ISO_8859_14, ISO_8859_15,
+    ISO_8859_16, KOI8_R, KOI8_U, MACINTOSH, SHIFT_JIS, UTF_16BE, UTF_16LE, WINDOWS_874,
+    WINDOWS_1250, WINDOWS_1251, WINDOWS_1252, WINDOWS_1253, WINDOWS_1254, WINDOWS_1255,
+    WINDOWS_1256, WINDOWS_1257, WINDOWS_1258, X_MAC_CYRILLIC,
 };
 use imap_types::utils::escape_byte_string;
 use wp_model_core::model::{DataField, Value};
@@ -31,9 +30,7 @@ impl ValueProcessor for PipeBase64Decode {
                 if let Ok(code) = general_purpose::STANDARD.decode(x) {
                     let val_str = match self.encode {
                         EncodeType::Imap => escape_byte_string(code),
-                        EncodeType::Utf8 => {
-                            String::from_utf8_lossy(&code).to_string()
-                        }
+                        EncodeType::Utf8 => String::from_utf8_lossy(&code).to_string(),
                         EncodeType::Utf16le => {
                             let (cow, _, _) = UTF_16LE.decode(&code);
                             cow.to_string()
