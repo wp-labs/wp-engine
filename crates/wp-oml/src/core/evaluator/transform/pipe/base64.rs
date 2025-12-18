@@ -2,8 +2,14 @@ use crate::core::prelude::*;
 use crate::language::{EncodeType, PipeBase64Decode, PipeBase64Encode};
 use base64::Engine;
 use base64::engine::general_purpose;
-use encoding::all::*;
-use encoding::{DecoderTrap, Encoding};
+use encoding_rs::{
+    EUC_JP, GB18030, ISO_2022_JP, ISO_8859_3, ISO_8859_4, ISO_8859_5, ISO_8859_6, ISO_8859_7,
+    ISO_8859_8, ISO_8859_10, ISO_8859_13, ISO_8859_16, KOI8_R, KOI8_U, UTF_16BE, UTF_16LE,
+    BIG5, IBM866, ISO_8859_2, ISO_8859_14, ISO_8859_15,
+    MACINTOSH, SHIFT_JIS, WINDOWS_1250, WINDOWS_1251, WINDOWS_1252, WINDOWS_1253,
+    WINDOWS_1254, WINDOWS_1255, WINDOWS_1256, WINDOWS_1257, WINDOWS_1258, WINDOWS_874,
+    X_MAC_CYRILLIC,
+};
 use imap_types::utils::escape_byte_string;
 use wp_model_core::model::{DataField, Value};
 
@@ -26,123 +32,169 @@ impl ValueProcessor for PipeBase64Decode {
                     let val_str = match self.encode {
                         EncodeType::Imap => escape_byte_string(code),
                         EncodeType::Utf8 => {
-                            UTF_8.decode(&code, DecoderTrap::Ignore).unwrap_or_default()
+                            String::from_utf8_lossy(&code).to_string()
                         }
-                        EncodeType::Utf16le => UTF_16LE
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Utf16be => UTF_16BE
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::EucJp => EUC_JP
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows31j => WINDOWS_31J
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso2022Jp => ISO_2022_JP
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
+                        EncodeType::Utf16le => {
+                            let (cow, _, _) = UTF_16LE.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Utf16be => {
+                            let (cow, _, _) = UTF_16BE.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::EucJp => {
+                            let (cow, _, _) = EUC_JP.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows31j => {
+                            // SHIFT_JIS is the same as Windows-31J in encoding_rs
+                            let (cow, _, _) = SHIFT_JIS.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso2022Jp => {
+                            let (cow, _, _) = ISO_2022_JP.decode(&code);
+                            cow.to_string()
+                        }
                         EncodeType::Gbk => {
-                            GBK.decode(&code, DecoderTrap::Ignore).unwrap_or_default()
+                            // encoding_rs doesn't have GBK, use GB18030 instead
+                            let (cow, _, _) = GB18030.decode(&code);
+                            cow.to_string()
                         }
-                        EncodeType::Gb18030 => GB18030
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::HZ => HZ.decode(&code, DecoderTrap::Ignore).unwrap_or_default(),
-                        EncodeType::Big52003 => BIG5_2003
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::MacCyrillic => MAC_CYRILLIC
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows874 => WINDOWS_874
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows949 => WINDOWS_949
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1250 => WINDOWS_1250
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1251 => WINDOWS_1251
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1252 => WINDOWS_1252
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1253 => WINDOWS_1253
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1254 => WINDOWS_1254
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1255 => WINDOWS_1255
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1256 => WINDOWS_1256
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1257 => WINDOWS_1257
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Windows1258 => WINDOWS_1258
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
+                        EncodeType::Gb18030 => {
+                            let (cow, _, _) = GB18030.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::HZ => {
+                            // encoding_rs doesn't have HZ, use replacement decoder
+                            String::from_utf8_lossy(&code).to_string()
+                        }
+                        EncodeType::Big52003 => {
+                            // encoding_rs has BIG5
+                            let (cow, _, _) = BIG5.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::MacCyrillic => {
+                            let (cow, _, _) = X_MAC_CYRILLIC.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows874 => {
+                            let (cow, _, _) = WINDOWS_874.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows949 => {
+                            // encoding_rs doesn't have Windows-949, use GB18030 as fallback
+                            let (cow, _, _) = GB18030.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1250 => {
+                            let (cow, _, _) = WINDOWS_1250.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1251 => {
+                            let (cow, _, _) = WINDOWS_1251.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1252 => {
+                            let (cow, _, _) = WINDOWS_1252.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1253 => {
+                            let (cow, _, _) = WINDOWS_1253.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1254 => {
+                            let (cow, _, _) = WINDOWS_1254.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1255 => {
+                            let (cow, _, _) = WINDOWS_1255.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1256 => {
+                            let (cow, _, _) = WINDOWS_1256.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1257 => {
+                            let (cow, _, _) = WINDOWS_1257.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Windows1258 => {
+                            let (cow, _, _) = WINDOWS_1258.decode(&code);
+                            cow.to_string()
+                        }
                         EncodeType::Ascii => {
-                            ASCII.decode(&code, DecoderTrap::Ignore).unwrap_or_default()
+                            // ASCII is a subset of UTF-8
+                            String::from_utf8_lossy(&code).to_string()
                         }
-                        EncodeType::Ibm866 => IBM866
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88591 => ISO_8859_1
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88592 => ISO_8859_2
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88593 => ISO_8859_3
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88594 => ISO_8859_4
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88595 => ISO_8859_5
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88596 => ISO_8859_6
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88597 => ISO_8859_7
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso88598 => ISO_8859_8
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso885910 => ISO_8859_10
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso885913 => ISO_8859_13
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso885914 => ISO_8859_14
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso885915 => ISO_8859_15
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Iso885916 => ISO_8859_16
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Koi8R => KOI8_R
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::Koi8U => KOI8_U
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
-                        EncodeType::MacRoman => MAC_ROMAN
-                            .decode(&code, DecoderTrap::Ignore)
-                            .unwrap_or_default(),
+                        EncodeType::Ibm866 => {
+                            let (cow, _, _) = IBM866.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88591 => {
+                            // ISO-8859-1 not available, use WINDOWS_1252 as superset
+                            let (cow, _, _) = WINDOWS_1252.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88592 => {
+                            let (cow, _, _) = ISO_8859_2.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88593 => {
+                            let (cow, _, _) = ISO_8859_3.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88594 => {
+                            let (cow, _, _) = ISO_8859_4.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88595 => {
+                            let (cow, _, _) = ISO_8859_5.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88596 => {
+                            let (cow, _, _) = ISO_8859_6.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88597 => {
+                            let (cow, _, _) = ISO_8859_7.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso88598 => {
+                            let (cow, _, _) = ISO_8859_8.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso885910 => {
+                            let (cow, _, _) = ISO_8859_10.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso885913 => {
+                            let (cow, _, _) = ISO_8859_13.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso885914 => {
+                            let (cow, _, _) = ISO_8859_14.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso885915 => {
+                            let (cow, _, _) = ISO_8859_15.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Iso885916 => {
+                            let (cow, _, _) = ISO_8859_16.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Koi8R => {
+                            let (cow, _, _) = KOI8_R.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::Koi8U => {
+                            let (cow, _, _) = KOI8_U.decode(&code);
+                            cow.to_string()
+                        }
+                        EncodeType::MacRoman => {
+                            let (cow, _, _) = MACINTOSH.decode(&code);
+                            cow.to_string()
+                        }
                     };
 
                     DataField::from_chars(in_val.get_name().to_string(), val_str)

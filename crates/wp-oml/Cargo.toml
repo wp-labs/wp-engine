@@ -48,7 +48,7 @@ async-trait = { workspace = true }
 once_cell = { workspace = true }
 parse-display = { workspace = true }
 parse-display-derive = { workspace = true }
-encoding = { workspace = true }
+encoding_rs = { workspace = true }
 imap-types = { workspace = true }
 url = { workspace = true }
 

@@ -164,7 +164,6 @@ idcard = "0.3.0"
 phone = "0.1.2"
 html-escape = "0.2"
 escape8259 = "0.5"
-encoding = "0.2.33"
 imap-types = "1.0.0"
 
 # --- Text Processing & Format ---
