@@ -17,15 +17,18 @@ use wp_model_core::model::DataField;
 
 pub type AnyResult<T> = anyhow::Result<T>;
 
+pub type RowData = Vec<DataField>;
+
 #[enum_dispatch]
 pub trait DBQuery {
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>>;
-    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<Vec<DataField>>;
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>>;
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData>;
+    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<RowData>;
     fn query_row_tdos<P: Params>(
         &self,
         sql: &str,
         params: &[DataField; 2],
-    ) -> KnowledgeResult<Vec<DataField>>;
+    ) -> KnowledgeResult<RowData>;
 
     fn query_cipher(&self, table: &str) -> KnowledgeResult<Vec<String>>;
 }

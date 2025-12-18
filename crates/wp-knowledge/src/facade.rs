@@ -9,6 +9,7 @@ use wp_log::info_ctrl;
 use wp_model_core::model::DataField;
 
 use crate::DBQuery;
+use crate::mem::RowData;
 use crate::mem::memdb::MemDB;
 use crate::mem::thread_clone::ThreadClonedMDB;
 //use anyhow::{anyhow, Result};
@@ -19,24 +20,28 @@ use rusqlite::{Connection, OpenFlags};
 /// 对外统一查询门面，隐藏底层 MemDB/线程副本等实现选择。
 /// 仅提供对象安全的两种查询接口：无参和命名参数。
 pub trait QueryFacade: Send + Sync {
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>>;
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>>;
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData>;
     fn query_named<'a>(
         &self,
         sql: &str,
         params: &'a [(&'a str, &'a dyn ToSql)],
-    ) -> KnowledgeResult<Vec<DataField>>;
+    ) -> KnowledgeResult<RowData>;
     fn query_cipher(&self, table: &str) -> KnowledgeResult<Vec<String>>;
 }
 
 impl QueryFacade for ThreadClonedMDB {
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>> {
+        DBQuery::query(self, sql)
+    }
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData> {
         DBQuery::query_row(self, sql)
     }
     fn query_named<'a>(
         &self,
         sql: &str,
         params: &'a [(&'a str, &'a dyn ToSql)],
-    ) -> KnowledgeResult<Vec<DataField>> {
+    ) -> KnowledgeResult<RowData> {
         DBQuery::query_row_params(self, sql, params)
     }
     fn query_cipher(&self, table: &str) -> KnowledgeResult<Vec<String>> {
@@ -46,14 +51,17 @@ impl QueryFacade for ThreadClonedMDB {
 
 struct MemProvider(MemDB);
 impl QueryFacade for MemProvider {
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>> {
+        DBQuery::query(&self.0, sql)
+    }
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData> {
         DBQuery::query_row(&self.0, sql)
     }
     fn query_named<'a>(
         &self,
         sql: &str,
         params: &'a [(&'a str, &'a dyn ToSql)],
-    ) -> KnowledgeResult<Vec<DataField>> {
+    ) -> KnowledgeResult<RowData> {
         DBQuery::query_row_params(&self.0, sql, params)
     }
     fn query_cipher(&self, table: &str) -> KnowledgeResult<Vec<String>> {
@@ -93,8 +101,12 @@ fn get_provider() -> KnowledgeResult<&'static Arc<dyn QueryFacade>> {
         .ok_or_else(|| KnowledgeReason::from_logic("knowledge provider not initialized").to_err())
 }
 
+pub fn query(sql: &str) -> KnowledgeResult<Vec<RowData>> {
+    get_provider()?.query(sql)
+}
+
 /// 门面查询：无参
-pub fn query_row(sql: &str) -> KnowledgeResult<Vec<DataField>> {
+pub fn query_row(sql: &str) -> KnowledgeResult<RowData> {
     get_provider()?.query_row(sql)
 }
 
@@ -102,7 +114,7 @@ pub fn query_row(sql: &str) -> KnowledgeResult<Vec<DataField>> {
 pub fn query_named<'a>(
     sql: &str,
     params: &'a [(&'a str, &'a dyn ToSql)],
-) -> KnowledgeResult<Vec<DataField>> {
+) -> KnowledgeResult<RowData> {
     get_provider()?.query_named(sql, params)
 }
 
@@ -126,8 +138,8 @@ pub fn cache_query<const N: usize>(
     sql: &str,
     c_params: &[DataField; N],
     named_params: &[(&str, &dyn ToSql)],
-    cache: &mut impl CacheAble<DataField, Vec<DataField>, N>,
-) -> Vec<DataField> {
+    cache: &mut impl CacheAble<DataField, RowData, N>,
+) -> RowData {
     crate::cache_util::cache_query_impl(c_params, cache, || {
         if named_params.is_empty() {
             get_provider().and_then(|p| p.query_row(sql))

@@ -1,4 +1,5 @@
 use crate::DBQuery;
+use crate::mem::RowData;
 use crate::mem::stub::StubMDB;
 use csv::Reader;
 use enum_dispatch::enum_dispatch;
@@ -69,8 +70,8 @@ pub fn cache_query<const N: usize, P: Params>(
     sql: &str,
     c_params: &[DataField; N],
     q_params: P,
-    cache: &mut impl CacheAble<DataField, Vec<DataField>, N>,
-) -> Vec<DataField> {
+    cache: &mut impl CacheAble<DataField, RowData, N>,
+) -> RowData {
     crate::cache_util::cache_query_impl(c_params, cache, || db.query_row_params(sql, q_params))
 }
 impl ToSql for SqlNamedParam {
@@ -99,14 +100,20 @@ impl ToSql for SqlNamedParam {
 }
 
 impl DBQuery for MemDB {
-    fn query_row(&self, sql: &str) -> KnowledgeResult<Vec<DataField>> {
+    fn query(&self, sql: &str) -> KnowledgeResult<Vec<RowData>> {
+        let conn = self.conn.get().owe_res().want("get memdb connect")?;
+        let _ = crate::sqlite_ext::register_builtin(&conn);
+        super::query_util::query_cached(&conn, sql, [])
+    }
+
+    fn query_row(&self, sql: &str) -> KnowledgeResult<RowData> {
         let conn = self.conn.get().owe_res().want("get memdb connect")?;
         // Ensure SQLite UDFs are available on this connection (ip4_int/cidr4_* etc.)
         let _ = crate::sqlite_ext::register_builtin(&conn);
         super::query_util::query_first_row_cached(&conn, sql, [])
     }
 
-    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<Vec<DataField>> {
+    fn query_row_params<P: Params>(&self, sql: &str, params: P) -> KnowledgeResult<RowData> {
         debug_kdb!("[memdb] query_row_params: {}", sql);
         let conn = self.conn.get().owe_res()?;
         // Ensure SQLite UDFs are available on this connection
@@ -134,7 +141,7 @@ impl DBQuery for MemDB {
         &self,
         _sql: &str,
         _params: &[DataField; 2],
-    ) -> KnowledgeResult<Vec<DataField>> {
+    ) -> KnowledgeResult<RowData> {
         //let data: [TDOParams; 2] = [TDOParams(&params[0]), TDOParams(&params[1])];
         //params.iter().for_each(|x| data.push(TDOParams(x)));
         //self.query_row_params(sql, data)
@@ -630,6 +637,23 @@ mod tests {
         assert_eq!(row[0].to_string(), "digit(40)");
         Ok(())
     }
+
+    #[test]
+    fn test_query_returns_all_rows() -> AnyResult<()> {
+        let db = MemDB::instance();
+        db.execute("CREATE TABLE multi (id INTEGER, name TEXT)")?;
+        let rows = db.query("SELECT * FROM multi")?;
+        assert!(rows.is_empty(), "empty table should return empty vec");
+        db.execute("INSERT INTO multi (id, name) VALUES (1, 'alice')")?;
+        db.execute("INSERT INTO multi (id, name) VALUES (2, 'bob')")?;
+        db.execute("INSERT INTO multi (id, name) VALUES (3, 'charlie')")?;
+
+        let rows = db.query("SELECT id, name FROM multi ORDER BY id")?;
+        assert_eq!(rows.len(), 3, "should return all 3 rows");
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     fn load_toml_conf<T: serde::de::DeserializeOwned>(path: &str) -> AnyResult<T> {
         let mut f = File::open(path).with_context(|| format!("conf file not found: {}", path))?;

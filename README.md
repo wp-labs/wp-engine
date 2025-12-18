@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/wp-labs/wp-engine/workflows/CI/badge.svg)
 [![codecov](https://codecov.io/gh/wp-labs/wp-engine/graph/badge.svg?token=6SVCXBHB6B)](https://codecov.io/gh/wp-labs/wp-engine)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Elastic%20License%202.0-blue.svg)](LICENSE)
 
 High-performance data parsing and processing engine built in Rust
 
@@ -68,7 +68,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Elastic License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
@@ -83,7 +83,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 <div align="center">
 
 [![Rust](https://img.shields.io/badge/rust-1.74+-orange.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Elastic%20License%202.0-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/wp-labs/wp-engine)
 
 用 Rust 构建的高性能数据解析和处理引擎
@@ -133,7 +133,7 @@ wp-engine (根目录)
 
 ## 许可证
 
-本项目采用 Apache License 2.0 许可证 - 详情请参见 [LICENSE](LICENSE) 文件。
+本项目采用 Elastic License 2.0 许可证 - 详情请参见 [LICENSE](LICENSE) 文件。
 
 ## 支持
 

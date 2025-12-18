@@ -301,7 +301,7 @@ getset = { workspace = true }
 contracts = { workspace = true }
 lazy_static = { workspace = true }
 once_cell = { workspace = true }
-ctor = "~0.2"
+ctor = { workspace = true }
 
 # --- Data Structures ---
 bytes = { workspace = true }
@@ -351,7 +351,7 @@ wp-data-fmt = { workspace = true }
 # ============================================================================
 
 [build-dependencies]
-shadow-rs = "~1.2"  # Build-time metadata (git info, version, etc.)
+shadow-rs = "~1.4"  # Build-time metadata (git info, version, etc.)
 
 # ============================================================================
 # Development Dependencies

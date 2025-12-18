@@ -1,0 +1,13 @@
+target
+.report
+.*
+temp
+tmp
+/data
+/rescue
+/res.dat
+tests/instance
+wp-docs
+.idea/
+.vscode/
+.DS_Store
