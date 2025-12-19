@@ -1,9 +1,9 @@
 use orion_error::ErrorConv;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use wp_cli_core::connectors::sinks as sinks_core;
 use wp_error::run_error::RunResult;
 
-use crate::utils::config_path::ConfigPathResolver;
+use crate::utils::config_path::{ConfigPathResolver, SpecConfPath};
 
 #[derive(Clone)]
 pub struct Sinks;
@@ -38,10 +38,7 @@ impl Sinks {
     // 初始化 sinks 骨架（写入配置指定的sink目录，如果配置不存在则使用默认路径）
     pub fn init<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
         // 使用统一的路径解析器
-        let sink_root = ConfigPathResolver::resolve_model_path(
-            work_root.as_ref().to_string_lossy().as_ref(),
-            "sinks",
-        )?;
+        let sink_root = SpecConfPath::topology(PathBuf::from(work_root.as_ref()), "sinks")?;
 
         Self::ensure_defaults_file(&sink_root)?;
         Self::ensure_business_demo(&sink_root)?;
@@ -60,7 +57,7 @@ impl Sinks {
             true
         };
         if should_write {
-            let body = include_str!("../example/sinks/defaults.toml");
+            let body = include_str!("../example/topology/sinks/defaults.toml");
             ConfigPathResolver::write_file_with_dir(&p, body)?;
         }
         Ok(())
@@ -71,7 +68,7 @@ impl Sinks {
         ConfigPathResolver::ensure_dir_exists(&biz)?;
         let demo = biz.join("demo.toml");
         if !demo.exists() {
-            let demo_content = include_str!("../example/sinks/business.d/demo.toml");
+            let demo_content = include_str!("../example/topology/sinks/business.d/demo.toml");
             ConfigPathResolver::write_file_with_dir(&demo, demo_content)?;
         }
         Ok(())
@@ -83,23 +80,23 @@ impl Sinks {
         for (name, body) in [
             (
                 "default.toml",
-                include_str!("../example/sinks/infra.d/default.toml"),
+                include_str!("../example/topology/sinks/infra.d/default.toml"),
             ),
             (
                 "miss.toml",
-                include_str!("../example/sinks/infra.d/miss.toml"),
+                include_str!("../example/topology/sinks/infra.d/miss.toml"),
             ),
             (
                 "residue.toml",
-                include_str!("../example/sinks/infra.d/residue.toml"),
+                include_str!("../example/topology/sinks/infra.d/residue.toml"),
             ),
             (
                 "error.toml",
-                include_str!("../example/sinks/infra.d/error.toml"),
+                include_str!("../example/topology/sinks/infra.d/error.toml"),
             ),
             (
                 "monitor.toml",
-                include_str!("../example/sinks/infra.d/monitor.toml"),
+                include_str!("../example/topology/sinks/infra.d/monitor.toml"),
             ),
         ] {
             let path = dir.join(name);

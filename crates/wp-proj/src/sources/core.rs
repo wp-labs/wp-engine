@@ -11,9 +11,12 @@ use std::path::{Path, PathBuf};
 use wp_cli_core::connectors::sources as sources_core;
 use wp_conf::sources::build::build_specs_with_ids_from_file;
 use wp_conf::sources::types::{SourceItem, WarpSources};
+use wp_connector_api::SourceSpec;
 use wp_engine::facade::config::{WPSRC_TOML, load_warp_engine_confs};
 use wp_engine::sources::SourceConfigParser;
 use wp_error::run_error::{RunReason, RunResult};
+
+use crate::utils::config_path::SpecConfPath;
 
 // Re-export modules and types
 pub use super::source_builder::source_builders;
@@ -113,7 +116,7 @@ impl Sources {
     /// Ok(()) if initialization succeeds, Err(RunError) otherwise
     pub fn init<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
         let work_root = work_root.as_ref();
-        let wpsrc_path = self.resolve_wpsrc_path_for_init(work_root)?;
+        let wpsrc_path = SpecConfPath::topology(PathBuf::from(work_root), "sources")?;
 
         // Ensure parent directory exists
         self.ensure_directory_exists(&wpsrc_path)?;

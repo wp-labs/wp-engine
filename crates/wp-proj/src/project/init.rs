@@ -16,6 +16,7 @@ use wp_error::run_error::RunResult;
 pub enum InitMode {
     Full,
     Model,
+    Topology,
     Conf,
     Data,
 }
@@ -29,6 +30,9 @@ impl InitMode {
     pub fn enable_conf(&self) -> bool {
         *self != InitMode::Data
     }
+    pub fn enable_topology(&self) -> bool {
+        *self == InitMode::Topology || *self == InitMode::Full
+    }
 }
 
 impl FromStr for InitMode {
@@ -39,6 +43,7 @@ impl FromStr for InitMode {
             "full" => Self::Full,
             "model" => Self::Model,
             "conf" => Self::Conf,
+            "topology" => Self::Topology,
             "data" => Self::Data,
             _ => return RunReason::from_validation("not init mode").err_result(),
         };
@@ -92,14 +97,15 @@ impl WarpProject {
         if mode.enable_connector() {
             self.connectors().init_templates(self.work_root())?;
         }
-
-        if mode.enable_model() {
+        if mode.enable_topology() {
             // 输出接收器骨架初始化
             self.sinks_c().init(self.work_root())?;
-
             // 输入源和连接器补齐
             self.sources_c().init(self.work_root())?;
             // 知识库目录骨架初始化
+        }
+
+        if mode.enable_model() {
             self.knowledge().init(self.work_root())?;
         }
 
@@ -162,10 +168,12 @@ impl WarpProject {
         if mode.enable_model() {
             ErrorHandler::safe_create_dir(&work_root.join("models/wpl"))?;
             ErrorHandler::safe_create_dir(&work_root.join("models/oml"))?;
-            ErrorHandler::safe_create_dir(&work_root.join("models/sources"))?;
-            ErrorHandler::safe_create_dir(&work_root.join("models/sinks"))?;
             ErrorHandler::safe_create_dir(&work_root.join("models/knowledge"))?;
             ErrorHandler::safe_create_dir(&work_root.join("models/knowledge/example"))?;
+        }
+        if mode.enable_topology() {
+            ErrorHandler::safe_create_dir(&work_root.join("topology/sources"))?;
+            ErrorHandler::safe_create_dir(&work_root.join("topology/sinks"))?;
         }
         ErrorHandler::safe_create_dir(&Self::resolve_with_root(&work_root, SRC_FILE_PATH))?;
         ErrorHandler::safe_create_dir(&Self::resolve_with_root(&work_root, OUT_FILE_PATH))?;
@@ -410,11 +418,11 @@ mod tests {
             "oml directory should exist"
         );
         assert!(
-            work_root.join("models/sources").exists(),
+            work_root.join("topology/sources").exists(),
             "sources directory should exist"
         );
         assert!(
-            work_root.join("models/sinks").exists(),
+            work_root.join("topology/sinks").exists(),
             "sinks directory should exist"
         );
         assert!(
@@ -590,7 +598,7 @@ mod tests {
             "knowdb.toml should exist"
         );
         assert!(
-            work_root.join("models/sources/wpsrc.toml").exists(),
+            work_root.join("topology/sources/wpsrc.toml").exists(),
             "wpsrc.toml should exist"
         );
         assert!(

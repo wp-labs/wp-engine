@@ -4,8 +4,8 @@ robust = "normal"
 [models]
 wpl = "./models/wpl"
 oml = "./models/oml"
-sources = "./models/sources"
-sinks = "./models/sinks"
+sources = "./topology/sources"
+sinks = "./topology/sinks"
 
 [performance]
 rate_limit_rps = 10000

@@ -31,6 +31,21 @@ use super::error_handler::ErrorHandler;
 /// # }
 /// # let _ = demo();
 /// ```
+pub struct SpecConfPath;
+impl SpecConfPath {
+    pub fn topology(work_root: PathBuf, sub: &str) -> RunResult<PathBuf> {
+        Ok(work_root.join("topology").join(sub))
+    }
+    pub fn models(work_root: PathBuf, sub: &str) -> RunResult<PathBuf> {
+        Ok(work_root.join("models").join(sub))
+    }
+    pub fn conf(work_root: PathBuf, sub: &str) -> RunResult<PathBuf> {
+        Ok(work_root.join("conf").join(sub))
+    }
+    pub fn data(work_root: PathBuf, sub: &str) -> RunResult<PathBuf> {
+        Ok(work_root.join("data").join(sub))
+    }
+}
 pub struct ConfigPathResolver;
 
 impl ConfigPathResolver {
