@@ -123,7 +123,7 @@ mod tests {
             .init(temp.path().to_str().unwrap())
             .expect("init sinks");
 
-        let sink_root = temp.path().join("models/sinks");
+        let sink_root = temp.path().join("topology/sinks");
         assert!(sink_root.join("defaults.toml").exists());
         assert!(sink_root.join("business.d/demo.toml").exists());
         assert!(sink_root.join("infra.d/default.toml").exists());

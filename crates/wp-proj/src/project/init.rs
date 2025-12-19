@@ -15,25 +15,12 @@ use wp_error::run_error::RunResult;
 const CONF_DIR: &str = "conf";
 const CONF_WPARSE_FILE: &str = "conf/wparse.toml";
 const CONF_WPGEN_FILE: &str = "conf/wpgen.toml";
-const CONNECTORS_DIR: &str = "connectors";
-const CONNECTORS_SOURCE_DIR: &str = "connectors/source.d";
-const CONNECTORS_SINK_DIR: &str = "connectors/sink.d";
-const LEGACY_SOURCE_DIR: &str = "source.d";
-const LEGACY_SINK_DIR: &str = "sink.d";
-const MODELS_DIR: &str = "models";
 const MODELS_WPL_DIR: &str = "models/wpl";
 const MODELS_OML_DIR: &str = "models/oml";
 const MODELS_KNOWLEDGE_DIR: &str = "models/knowledge";
 const MODELS_KNOWLEDGE_EXAMPLE_DIR: &str = "models/knowledge/example";
-const MODELS_SOURCES_DIR: &str = "models/sources";
-const MODELS_SINKS_DIR: &str = "models/sinks";
-const MODELS_WPL_PARSE_FILE: &str = "models/wpl/parse.wpl";
-const MODELS_WPL_SAMPLE_FILE: &str = "models/wpl/sample.dat";
-const MODELS_OML_EXAMPLE_FILE: &str = "models/oml/example.oml";
-const MODELS_OML_KNOWDB_FILE: &str = "models/oml/knowdb.toml";
 const TOPOLOGY_SOURCES_DIR: &str = "topology/sources";
 const TOPOLOGY_SINKS_DIR: &str = "topology/sinks";
-const TOPOLOGY_WPSRC_FILE: &str = "topology/sources/wpsrc.toml";
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum InitMode {
@@ -221,6 +208,20 @@ mod tests {
     use super::*;
     use std::path::Path;
 
+    const CONNECTORS_DIR: &str = "connectors";
+    const CONNECTORS_SOURCE_DIR: &str = "connectors/source.d";
+    const CONNECTORS_SINK_DIR: &str = "connectors/sink.d";
+    const LEGACY_SOURCE_DIR: &str = "source.d";
+    const LEGACY_SINK_DIR: &str = "sink.d";
+    const MODELS_DIR: &str = "models";
+    const MODELS_SOURCES_DIR: &str = "models/sources";
+    const MODELS_SINKS_DIR: &str = "models/sinks";
+    const MODELS_WPL_PARSE_FILE: &str = "models/wpl/parse.wpl";
+    const MODELS_WPL_SAMPLE_FILE: &str = "models/wpl/sample.dat";
+    const MODELS_OML_EXAMPLE_FILE: &str = "models/oml/example.oml";
+    const MODELS_OML_KNOWDB_FILE: &str = "models/oml/knowdb.toml";
+    const TOPOLOGY_WPSRC_FILE: &str = "topology/sources/wpsrc.toml";
+
     #[test]
     fn test_init_mode_from_str() {
         // 测试有效的模式字符串
@@ -308,7 +309,10 @@ mod tests {
         assert!(result.is_ok(), "Full mode initialization should succeed");
 
         // 验证创建的目录和文件
-        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
+        assert!(
+            work_root.join(CONF_DIR).exists(),
+            "conf directory should exist"
+        );
         assert!(
             work_root.join(CONF_WPARSE_FILE).exists(),
             "wparse.toml should exist"
@@ -339,9 +343,18 @@ mod tests {
             "legacy top-level sink.d should not be created"
         );
 
-        assert!(work_root.join(MODELS_DIR).exists(), "models directory should exist");
-        assert!(work_root.join(MODELS_WPL_DIR).exists(), "wpl directory should exist");
-        assert!(work_root.join(MODELS_OML_DIR).exists(), "oml directory should exist");
+        assert!(
+            work_root.join(MODELS_DIR).exists(),
+            "models directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_WPL_DIR).exists(),
+            "wpl directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_OML_DIR).exists(),
+            "oml directory should exist"
+        );
         assert!(
             work_root.join(TOPOLOGY_SOURCES_DIR).exists(),
             "topology sources directory should exist"
@@ -410,7 +423,10 @@ mod tests {
         assert!(result.is_ok(), "Normal mode initialization should succeed");
 
         // 验证配置目录
-        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
+        assert!(
+            work_root.join(CONF_DIR).exists(),
+            "conf directory should exist"
+        );
         assert!(
             work_root.join(CONF_WPARSE_FILE).exists(),
             "wparse.toml should exist"
@@ -421,9 +437,18 @@ mod tests {
         );
 
         // 验证模型目录和文件
-        assert!(work_root.join(MODELS_DIR).exists(), "models directory should exist");
-        assert!(work_root.join(MODELS_WPL_DIR).exists(), "wpl directory should exist");
-        assert!(work_root.join(MODELS_OML_DIR).exists(), "oml directory should exist");
+        assert!(
+            work_root.join(MODELS_DIR).exists(),
+            "models directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_WPL_DIR).exists(),
+            "wpl directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_OML_DIR).exists(),
+            "oml directory should exist"
+        );
         assert!(
             !work_root.join(TOPOLOGY_SOURCES_DIR).exists(),
             "topology sources directory should not exist in Model mode"
@@ -468,7 +493,10 @@ mod tests {
         assert!(result.is_ok(), "Conf mode initialization should succeed");
 
         // 验证配置目录
-        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
+        assert!(
+            work_root.join(CONF_DIR).exists(),
+            "conf directory should exist"
+        );
         assert!(
             work_root.join(CONF_WPARSE_FILE).exists(),
             "wparse.toml should exist"
@@ -539,7 +567,10 @@ mod tests {
         assert!(result.is_ok(), "Basic initialization should succeed");
 
         // 验证基础结构
-        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
+        assert!(
+            work_root.join(CONF_DIR).exists(),
+            "conf directory should exist"
+        );
         assert!(
             work_root.join(CONF_WPARSE_FILE).exists(),
             "wparse.toml should exist"
@@ -549,9 +580,18 @@ mod tests {
             "wpgen.toml should exist"
         );
 
-        assert!(work_root.join(MODELS_DIR).exists(), "models directory should exist");
-        assert!(work_root.join(MODELS_WPL_DIR).exists(), "wpl directory should exist");
-        assert!(work_root.join(MODELS_OML_DIR).exists(), "oml directory should exist");
+        assert!(
+            work_root.join(MODELS_DIR).exists(),
+            "models directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_WPL_DIR).exists(),
+            "wpl directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_OML_DIR).exists(),
+            "oml directory should exist"
+        );
     }
 
     #[test]
