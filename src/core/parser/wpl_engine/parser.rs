@@ -128,9 +128,8 @@ impl MultiParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::parser::WplEngine;
     use crate::core::parser::wpl_engine::pipeline::WplPipeline;
-    use crate::sinks::{InfraSinkAgent, SinkGroupAgent};
+    use crate::sinks::SinkGroupAgent;
     use wpl::WplEvaluator;
 
     fn dummy_pipeline(idx: usize, hit: usize) -> WplPipeline {

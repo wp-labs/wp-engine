@@ -51,3 +51,170 @@ impl WplEngine {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::parser::wpl_engine::parser::MultiParser;
+    use crate::core::parser::wpl_engine::pipeline::WplPipeline;
+    use crate::sinks::{InfraSinkAgent, SinkGroupAgent};
+    use std::sync::Arc;
+    use wp_connector_api::{SourceEvent, Tags};
+    use wp_parse_api::RawData;
+    use wpl::{WplEvaluator, gen_pkg_id};
+
+    fn build_event(payload: &str) -> SourceEvent {
+        SourceEvent::new(
+            gen_pkg_id(),
+            Arc::new("test-src".to_string()),
+            RawData::String(payload.to_string()),
+            Arc::new(Tags::new()),
+        )
+    }
+
+    fn build_real_engine(rules: &[(&str, &str)]) -> WplEngine {
+        let mut pipelines = Vec::new();
+        for (idx, (key, code)) in rules.iter().enumerate() {
+            let evaluator = WplEvaluator::from_code(code).expect("build evaluator");
+            let pipeline = WplPipeline::new(
+                idx,
+                key.to_string(),
+                Vec::new(),
+                evaluator,
+                vec![SinkGroupAgent::null()],
+                Vec::new(),
+            );
+            pipelines.push(pipeline);
+        }
+        WplEngine {
+            pipelines: MultiParser::new(pipelines),
+            infra_agent: InfraSinkAgent::use_null(),
+        }
+    }
+
+    #[test]
+    fn batch_parse_package_groups_sink_packages_and_residue() {
+        let mut engine =
+            build_real_engine(&[("nginx_access", NGINX_RULE), ("json_payload", JSON_RULE)]);
+        let option = ParseOption::default();
+
+        let event_a = build_event(NGINX_SAMPLE);
+        let id_a = event_a.event_id;
+        let event_b = build_event(JSON_SAMPLE);
+        let id_b = event_b.event_id;
+        let event_c = build_event(&format!("{}TAIL", NGINX_SAMPLE));
+        let id_c = event_c.event_id;
+
+        let parsed = engine
+            .batch_parse_package(vec![event_a, event_b, event_c], &option)
+            .expect("parse batch");
+
+        let ParsedDatSet {
+            sink_groups,
+            residue_data,
+            missed_packets,
+        } = parsed;
+
+        assert!(missed_packets.is_empty());
+        assert_eq!(residue_data, vec![(id_c, "TAIL".to_string())]);
+
+        let alpha_pkg = sink_groups
+            .get("nginx_access")
+            .expect("nginx group missing");
+        let alpha_ids: Vec<_> = alpha_pkg.iter().map(|unit| *unit.id()).collect();
+        assert_eq!(alpha_ids, vec![id_a, id_c]);
+
+        let beta_pkg = sink_groups.get("json_payload").expect("json group missing");
+        let beta_ids: Vec<_> = beta_pkg.iter().map(|unit| *unit.id()).collect();
+        assert_eq!(beta_ids, vec![id_b]);
+    }
+
+    #[test]
+    fn batch_parse_package_tracks_missed_packets() {
+        let mut engine =
+            build_real_engine(&[("nginx_access", NGINX_RULE), ("json_payload", JSON_RULE)]);
+        let option = ParseOption::default();
+        let miss_event = build_event("NOTHING-VALID");
+        let miss_id = miss_event.event_id;
+
+        let parsed = engine
+            .batch_parse_package(vec![miss_event], &option)
+            .expect("parse batch");
+
+        let ParsedDatSet {
+            sink_groups,
+            residue_data,
+            missed_packets,
+        } = parsed;
+
+        assert!(residue_data.is_empty());
+        assert_eq!(missed_packets.len(), 1);
+        assert_eq!(missed_packets[0].0.event_id, miss_id);
+        assert!(sink_groups.is_empty());
+    }
+
+    const NGINX_RULE: &str = r#"
+rule nginx_access {
+  (ip,_^2,time/clf<[,]>,http/request",http/status,digit,chars",http/agent",_")
+}
+"#;
+
+    const JSON_RULE: &str = r#"
+rule json_payload {
+  (json(chars@data))
+}
+"#;
+
+    // 日志与规则样例来源于 crates/wp-lang 的 bench/test 数据
+    const NGINX_SAMPLE: &str = r#"222.133.52.20 - - [06/Aug/2019:12:12:19 +0800] "GET /nginx-logo.png HTTP/1.1" 200 368 "http://119.122.1.4/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36" "-""#;
+    const JSON_SAMPLE: &str = r#"{ "data": "192.168.1.1" }"#;
+    const NGINX_TRUNCATED: &str = "192.168.1.2 - - [06/Aug/2019:12:12:19 +0800]";
+
+    #[test]
+    fn batch_parse_package_handles_real_multi_rules() {
+        let mut engine =
+            build_real_engine(&[("nginx_access", NGINX_RULE), ("json_payload", JSON_RULE)]);
+        let events = vec![build_event(NGINX_SAMPLE), build_event(JSON_SAMPLE)];
+        let parsed = engine
+            .batch_parse_package(events, &ParseOption::default())
+            .expect("parse real data");
+
+        assert!(parsed.residue_data.is_empty());
+        assert!(parsed.missed_packets.is_empty());
+
+        let nginx_pkg = parsed
+            .sink_groups
+            .get("nginx_access")
+            .expect("missing nginx group");
+        assert_eq!(nginx_pkg.len(), 1);
+
+        let json_pkg = parsed
+            .sink_groups
+            .get("json_payload")
+            .expect("missing json group");
+        assert_eq!(json_pkg.len(), 1);
+    }
+
+    #[test]
+    fn batch_parse_package_prefers_deepest_rule_on_miss() {
+        let mut engine = build_real_engine(&[
+            ("nginx_access", NGINX_RULE),
+            ("nginx_access_backup", NGINX_RULE),
+        ]);
+        let miss_event = build_event(NGINX_TRUNCATED);
+        let miss_id = miss_event.event_id;
+
+        let parsed = engine
+            .batch_parse_package(vec![miss_event], &ParseOption::default())
+            .expect("parse broken data");
+
+        assert!(parsed.sink_groups.is_empty());
+        assert!(parsed.residue_data.is_empty());
+        assert_eq!(parsed.missed_packets.len(), 1);
+
+        let (event, fail) = &parsed.missed_packets[0];
+        assert_eq!(event.event_id, miss_id);
+        assert_eq!(fail.best_wpl, "nginx_access");
+        assert!(fail.depth > 0, "expected recorded depth from parser");
+    }
+}
