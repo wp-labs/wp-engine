@@ -37,12 +37,10 @@ impl PatternParser for DigitP {
     ) -> ModalResult<()> {
         match fpu.group_enum() {
             WplGroupType::Seq(_) => {
-                if let Ok(obj) = Self::parse_value
+                let obj = Self::parse_value
                     .context(ctx_desc("<digit>"))
-                    .parse_next(data)
-                {
-                    out.push(DataField::new_opt(DataType::Digit, Some(name), obj.into()));
-                };
+                    .parse_next(data)?;
+                out.push(DataField::new_opt(DataType::Digit, Some(name), obj.into()));
             }
             _ => {
                 let obj = Self::parse_value
@@ -201,7 +199,7 @@ mod tests {
     #[test]
     fn test_digit_empty() -> AnyResult<()> {
         let data = r#"1||3"#;
-        let wpl = r#"(digit,digit,digit)\|"#;
+        let wpl = r#"(digit)\|,alt(digit:x,chars:x)\|,(digit)"#;
         let express = wpl_express.parse(wpl).assert();
         let lpp = WplEvaluator::from(&express, None).assert();
         let raw = RawData::from_string(data.to_string());
@@ -211,6 +209,39 @@ mod tests {
                 meta: DataType::Digit,
                 name: "digit".to_string(),
                 value: Value::Digit(1.into()),
+            },
+            DataField {
+                meta: DataType::Chars,
+                name: "x".to_string(),
+                value: Value::Chars("".into()),
+            },
+            DataField {
+                meta: DataType::Digit,
+                name: "digit".to_string(),
+                value: Value::Digit(3.into()),
+            },
+        ]);
+        assert_eq!(tdc, tdc_assert);
+        Ok(())
+    }
+    #[test]
+    fn test_digit_opt() -> AnyResult<()> {
+        let data = r#"1|2|3"#;
+        let wpl = r#"(digit)\|,opt(digit)\|,(digit)"#;
+        let express = wpl_express.parse(wpl).assert();
+        let lpp = WplEvaluator::from(&express, None).assert();
+        let raw = RawData::from_string(data.to_string());
+        let (tdc, _) = lpp.proc(raw, 0)?;
+        let tdc_assert = DataRecord::from(vec![
+            DataField {
+                meta: DataType::Digit,
+                name: "digit".to_string(),
+                value: Value::Digit(1.into()),
+            },
+            DataField {
+                meta: DataType::Digit,
+                name: "digit".to_string(),
+                value: Value::Digit(2.into()),
             },
             DataField {
                 meta: DataType::Digit,

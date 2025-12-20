@@ -42,6 +42,8 @@ impl PatternParser for BoolP {
                 Some(name),
                 Value::Bool(b),
             ));
+        } else {
+            fail.context(ctx_desc("str to bool")).parse_next(data)?;
         }
         Ok(())
     }

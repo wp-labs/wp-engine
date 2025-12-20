@@ -168,7 +168,6 @@ rule json_payload {
     // 日志与规则样例来源于 crates/wp-lang 的 bench/test 数据
     const NGINX_SAMPLE: &str = r#"222.133.52.20 - - [06/Aug/2019:12:12:19 +0800] "GET /nginx-logo.png HTTP/1.1" 200 368 "http://119.122.1.4/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36" "-""#;
     const JSON_SAMPLE: &str = r#"{ "data": "192.168.1.1" }"#;
-    const NGINX_TRUNCATED: &str = "192.168.1.2 - - [06/Aug/2019:12:12:19 +0800]";
 
     #[test]
     fn batch_parse_package_handles_real_multi_rules() {
@@ -195,26 +194,47 @@ rule json_payload {
         assert_eq!(json_pkg.len(), 1);
     }
 
+    const MID_FAIL_RULE: &str = r#"
+rule mid_fail {
+  (symbol(CONTROL)), alt(symbol(-ALPHA),symbol(-BETA)),(digit,digit,chars)
+}
+"#;
+
+    const SHORT_FAIL_RULE: &str = r#"
+rule short_fail {
+  (symbol(CONTROL),digit)
+}
+"#;
+
+    const DEEP_FAIL_RULE: &str = r#"
+rule deep_fail {
+    (symbol(CONTROL)), alt(symbol(-ALPHA),symbol(-BETA)),(digit,chars,bool)
+}
+"#;
+
     #[test]
     fn batch_parse_package_prefers_deepest_rule_on_miss() {
+        const CONTROLLED_MISS_SAMPLE: &str = "CONTROL-ALPHA 1024 warpparse 64";
         let mut engine = build_real_engine(&[
-            ("nginx_access", NGINX_RULE),
-            ("nginx_access_backup", NGINX_RULE),
+            ("short_fail", SHORT_FAIL_RULE),
+            ("mid_fail", MID_FAIL_RULE),
+            ("deep_fail", DEEP_FAIL_RULE),
         ]);
-        let miss_event = build_event(NGINX_TRUNCATED);
+        let miss_event = build_event(CONTROLLED_MISS_SAMPLE);
         let miss_id = miss_event.event_id;
 
         let parsed = engine
             .batch_parse_package(vec![miss_event], &ParseOption::default())
             .expect("parse broken data");
 
+        dbg!(parsed.sink_groups.keys().collect::<Vec<_>>());
         assert!(parsed.sink_groups.is_empty());
         assert!(parsed.residue_data.is_empty());
         assert_eq!(parsed.missed_packets.len(), 1);
 
         let (event, fail) = &parsed.missed_packets[0];
         assert_eq!(event.event_id, miss_id);
-        assert_eq!(fail.best_wpl, "nginx_access");
+        assert_eq!(fail.best_wpl, "deep_fail");
         assert!(fail.depth > 0, "expected recorded depth from parser");
     }
 }
