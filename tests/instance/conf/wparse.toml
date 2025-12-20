@@ -2,8 +2,9 @@ version = "1.0"
 [models]
 wpl = "./tests/instance/wpl"
 oml = "./tests/instance/oml"
-sources = "./tests/instance/source"
-sinks = "./tests/instance/sink"
+[topology]
+sources = "./tests/instance/topology/sources"
+sinks = "./tests/instance/topology/sinks"
 [rescue]
 path = "./tests/instance/rescue"
 parallel = 2
@@ -13,10 +14,6 @@ robust = "normal"
 [log_conf]
 level = "warn,ctrl=info,launch=info"
 output = "File"
-[log_conf.levels]
-global = "warn"
-ctrl   = "info"
-launch = "info"
 [log_conf.file]
 path = "./logs/"
 

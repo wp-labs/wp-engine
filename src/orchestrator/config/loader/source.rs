@@ -1,6 +1,7 @@
 use super::WarpConf;
 use crate::orchestrator::config::WPSRC_TOML;
 use crate::orchestrator::config::sources_types::{DataEncoding, FileSourceConf, SourceConfig};
+use orion_conf::ErrorWith;
 use orion_error::ErrorOwe;
 use std::path::PathBuf;
 use wp_conf::engine::EngineConfig;
@@ -13,7 +14,7 @@ impl WarpConf {
 
         let wp_conf = EngineConfig::load_or_init(&self.work_root).owe_conf()?;
         let path = PathBuf::from(wp_conf.src_conf_of(WPSRC_TOML));
-        let content = std::fs::read_to_string(&path).owe_conf()?;
+        let content = std::fs::read_to_string(&path).owe_conf().with(&path)?;
 
         // 仅支持统一 [[sources]] 配置；不再回退旧格式
         let parser = SourceConfigParser::new(self.work_root.clone());
