@@ -25,6 +25,7 @@ const TOPOLOGY_SINKS_DIR: &str = "topology/sinks";
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum InitMode {
     Full,
+    Normal,
     Model,
     Topology,
     Conf,
@@ -35,13 +36,14 @@ impl InitMode {
         *self == InitMode::Full
     }
     pub fn enable_model(&self) -> bool {
-        *self == InitMode::Model || *self == InitMode::Full
+        //*self == InitMode::Model || *self == InitMode::Full
+        matches!(self, InitMode::Model | InitMode::Full | InitMode::Normal)
     }
     pub fn enable_conf(&self) -> bool {
-        *self != InitMode::Data
+        matches!(self, InitMode::Conf | InitMode::Full | InitMode::Normal)
     }
     pub fn enable_topology(&self) -> bool {
-        matches!(self, InitMode::Topology | InitMode::Full)
+        matches!(self, InitMode::Topology | InitMode::Full | InitMode::Normal)
     }
 }
 
@@ -51,6 +53,7 @@ impl FromStr for InitMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mode = match s {
             "full" => Self::Full,
+            "normal" => Self::Normal,
             "model" => Self::Model,
             "conf" => Self::Conf,
             "topology" => Self::Topology,
@@ -261,7 +264,7 @@ mod tests {
     fn test_init_mode_enable_conf() {
         // 除了 Data，其他模式都应该启用配置
         assert!(InitMode::Full.enable_conf());
-        assert!(InitMode::Model.enable_conf());
+        assert!(InitMode::Normal.enable_conf());
         assert!(InitMode::Conf.enable_conf());
         assert!(!InitMode::Data.enable_conf());
     }
@@ -419,7 +422,7 @@ mod tests {
         let mut project = WarpProject::new(work_root);
 
         // Normal 模式应该初始化配置和模型，但不包括连接器
-        let result = project.init(InitMode::Model);
+        let result = project.init(InitMode::Normal);
         assert!(result.is_ok(), "Normal mode initialization should succeed");
 
         // 验证配置目录
@@ -450,11 +453,11 @@ mod tests {
             "oml directory should exist"
         );
         assert!(
-            !work_root.join(TOPOLOGY_SOURCES_DIR).exists(),
+            work_root.join(TOPOLOGY_SOURCES_DIR).exists(),
             "topology sources directory should not exist in Model mode"
         );
         assert!(
-            !work_root.join(TOPOLOGY_SINKS_DIR).exists(),
+            work_root.join(TOPOLOGY_SINKS_DIR).exists(),
             "topology sinks directory should not exist in Model mode"
         );
         assert!(
@@ -563,7 +566,7 @@ mod tests {
         let mut project = WarpProject::new(work_root);
 
         // 测试 init_basic 方法（等效于 Normal 模式）
-        let result = project.init_basic(InitMode::Model);
+        let result = project.init_basic(InitMode::Normal);
         assert!(result.is_ok(), "Basic initialization should succeed");
 
         // 验证基础结构
