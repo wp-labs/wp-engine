@@ -272,6 +272,13 @@ impl EngineConfig {
             Ok(conf)
         }
     }
+    pub fn load<P: AsRef<Path>>(work_root: P) -> OrionConfResult<Self> {
+        use crate::constants::ENGINE_CONF_FILE;
+        let engine_conf_path = work_root.as_ref().join("conf").join(ENGINE_CONF_FILE);
+        EngineConfig::load_toml(&engine_conf_path)
+            .want("load engine config")
+            .with(ENGINE_CONF_FILE)
+    }
 
     // Add a gen_default method for StatConf compatibility
     pub fn gen_default(&self) -> StatConf {
