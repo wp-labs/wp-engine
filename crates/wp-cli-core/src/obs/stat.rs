@@ -1,13 +1,17 @@
 use anyhow::Result;
 use std::path::Path;
-use wp_conf::sinks::{load_business_route_confs, load_infra_route_confs};
+use wp_conf::{
+    engine::EngineConfig,
+    sinks::{load_business_route_confs, load_infra_route_confs},
+};
 use wpcnt_lib::{SrcLineReport, list_file_sources_with_lines};
 
 /// Sources (file) only
-pub fn stat_src_file(work_root: &str) -> Result<Option<SrcLineReport>> {
+pub fn stat_src_file(work_root: &str, eng_conf: &EngineConfig) -> Result<Option<SrcLineReport>> {
     let ctx = wpcnt_lib::types::Ctx::new(work_root.to_string());
     Ok(wpcnt_lib::list_file_sources_with_lines(
         Path::new(work_root),
+        eng_conf,
         &ctx,
     ))
 }
@@ -62,11 +66,12 @@ pub fn stat_sink_file(
 /// Combined: src-file + sink-file; requires work_root and sink_root
 pub fn stat_file_combined(
     work_root: &str,
-    sink_root: &Path,
+    eng_conf: &EngineConfig,
     ctx: &wpcnt_lib::types::Ctx,
 ) -> Result<(Option<SrcLineReport>, Vec<wpcnt_lib::types::Row>, u64)> {
-    let src_rep = list_file_sources_with_lines(Path::new(work_root), ctx);
-    let (rows, total) = stat_sink_file(sink_root, ctx)?;
+    let src_rep = list_file_sources_with_lines(Path::new(work_root), eng_conf, ctx);
+    let sink_root = Path::new(work_root).join(eng_conf.sink_root());
+    let (rows, total) = stat_sink_file(&sink_root, ctx)?;
     Ok((src_rep, rows, total))
 }
 

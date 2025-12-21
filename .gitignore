@@ -12,3 +12,4 @@ wp-docs
 .vscode/
 .DS_Store
 crates/wp-proj/models/sources/wpsrc.toml
+crates/wp-proj/topology/sources/wpsrc.toml

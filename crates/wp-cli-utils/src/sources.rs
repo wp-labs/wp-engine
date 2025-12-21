@@ -2,6 +2,7 @@ use crate::fsutils::{count_lines_file, resolve_path};
 use crate::types::Ctx;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use wp_conf::engine::EngineConfig;
 
 // Minimal local model to parse file sources from wpsrc.toml
 #[derive(Debug, serde::Deserialize, Clone)]
@@ -17,19 +18,12 @@ pub struct UnifiedSourcesLite {
     pub sources: Vec<toml::Value>,
 }
 
-fn read_wpsrc_toml(work_root: &std::path::Path) -> Option<String> {
-    // Modern layout: topology/sources/wpsrc.toml
-    // Legacy fallback: models/source/wpsrc.toml or source/wpsrc.toml
-    let modern = work_root.join("models").join("sources").join("wpsrc.toml");
+fn read_wpsrc_toml(work_root: &std::path::Path, engine_conf: &EngineConfig) -> Option<String> {
+    let modern = work_root.join(engine_conf.src_root()).join("wpsrc.toml");
     if modern.exists() {
         return std::fs::read_to_string(&modern).ok();
     }
-    let legacy_models = work_root.join("models").join("source").join("wpsrc.toml");
-    if legacy_models.exists() {
-        return std::fs::read_to_string(&legacy_models).ok();
-    }
-    let legacy = work_root.join("source").join("wpsrc.toml");
-    std::fs::read_to_string(&legacy).ok()
+    None
 }
 
 type SrcConnectorRec = wp_conf::sources::SourceConnector;
@@ -55,11 +49,14 @@ fn merge_params(
 }
 
 /// 从 wpsrc 配置推导总输入条数（仅统计启用的文件源）
-pub fn total_input_from_wpsrc(work_root: &std::path::Path, ctx: &Ctx) -> Option<u64> {
-    let content = read_wpsrc_toml(work_root)?;
+pub fn total_input_from_wpsrc(
+    work_root: &std::path::Path,
+    engine_conf: &EngineConfig,
+    ctx: &Ctx,
+) -> Option<u64> {
+    let content = read_wpsrc_toml(work_root, engine_conf)?;
     let toml_val: toml::Value = toml::from_str(&content).ok()?;
     let mut sum = 0u64;
-    // v2 format [[sources]] with connect+params_override
     if let Some(arr) = toml_val.get("sources").and_then(|v| v.as_array()) {
         // load connectors once
         let conn_dir =
@@ -110,7 +107,6 @@ pub fn total_input_from_wpsrc(work_root: &std::path::Path, ctx: &Ctx) -> Option<
                 }
                 continue;
             }
-            // 不兼容旧写法：忽略无 connect 的条目
         }
         return Some(sum);
     }
@@ -135,9 +131,10 @@ pub struct SrcLineReport {
 /// 返回所有文件源（包含未启用）的行数信息；total 仅统计启用项
 pub fn list_file_sources_with_lines(
     work_root: &std::path::Path,
+    eng_conf: &EngineConfig,
     ctx: &Ctx,
 ) -> Option<SrcLineReport> {
-    let content = read_wpsrc_toml(work_root)?;
+    let content = read_wpsrc_toml(work_root, eng_conf)?;
     let toml_val: toml::Value = toml::from_str(&content).ok()?;
     let mut items = Vec::new();
     let mut total = 0u64;

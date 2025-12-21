@@ -10,9 +10,9 @@ pub struct SourceStatResult {
 
 /// 统计文件型源的输入行数。
 pub fn stat_file_sources(work_root: &str) -> RunResult<SourceStatResult> {
-    let (cm, _) = config::load_warp_engine_confs(work_root)?;
+    let (cm, main) = config::load_warp_engine_confs(work_root)?;
     let resolved = cm.work_root_path();
-    let report = wp_cli_core::obs::stat::stat_src_file(&resolved)
+    let report = wp_cli_core::obs::stat::stat_src_file(&resolved, &main)
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     Ok(SourceStatResult {
         work_root: resolved,

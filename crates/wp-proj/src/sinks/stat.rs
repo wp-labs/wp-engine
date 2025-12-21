@@ -53,10 +53,9 @@ pub fn stat_sink_files(filters: &SinkStatFilters<'_>) -> RunResult<SinkStatResul
 pub fn stat_file_combined(filters: &SinkStatFilters<'_>) -> RunResult<CombinedStatResult> {
     let (cm, main) = config::load_warp_engine_confs(filters.work_root)?;
     let ctx = build_ctx(&cm.work_root_path(), filters);
-    let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
-    ensure_sink_dirs(&sink_root, main.sink_root())?;
+    //ensure_sink_dirs(&sink_root, main.sink_root())?;
     let (src, rows, total) =
-        wp_cli_core::obs::stat::stat_file_combined(&cm.work_root_path(), &sink_root, &ctx)
+        wp_cli_core::obs::stat::stat_file_combined(&cm.work_root_path(), &main, &ctx)
             .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     Ok(CombinedStatResult {
         src,
