@@ -64,7 +64,7 @@ fn create_minimal_project_structure(work_root: &str) {
         "models",
         "models/wpl",
         "models/oml",
-        "models/sources",
+        "topology/sources",
         "models/sinks",
         "models/sinks/infra.d",
         "models/sinks/business.d",
@@ -102,7 +102,7 @@ level = "info"
 root = "./models/wpl"
 
 [source]
-root = "./models/sources"
+root = "./topology/sources"
 wpsrc = "wpsrc.toml"
 
 [sink]
@@ -142,7 +142,7 @@ file = "gen.dat"
 base = "data/in_dat"
 "#;
     // 确保父目录存在
-    let wpsrc_path = format!("{}/models/sources/wpsrc.toml", work_root);
+    let wpsrc_path = format!("{}/topology/sources/wpsrc.toml", work_root);
     fs::create_dir_all(std::path::Path::new(&wpsrc_path).parent().unwrap()).unwrap();
     fs::write(wpsrc_path, wpsrc_content).unwrap();
 }
@@ -247,7 +247,7 @@ mod tests {
         let project = WarpProject::new(&work);
 
         // 调试：检查是否有意外的文件
-        let sources_path = format!("{}/models/sources/wpsrc.toml", work);
+        let sources_path = format!("{}/topology/sources/wpsrc.toml", work);
         println!(
             "DEBUG minimal - wpsrc.toml exists: {}",
             std::path::Path::new(&sources_path).exists()
@@ -502,7 +502,7 @@ mod tests {
         );
 
         // 调试路径问题
-        let manual_path = format!("{}/models/sources/wpsrc.toml", work);
+        let manual_path = format!("{}/topology/sources/wpsrc.toml", work);
         println!(
             "Manual check - manual_path exists: {}",
             std::path::Path::new(&manual_path).exists()
@@ -545,7 +545,7 @@ mod tests {
         }
 
         // 检查 wpsrc.toml 是否在正确位置
-        let wpsrc_path = format!("{}/models/sources/wpsrc.toml", work);
+        let wpsrc_path = format!("{}/topology/sources/wpsrc.toml", work);
         println!(
             "wpsrc.toml exists at {}: {}",
             wpsrc_path,
@@ -613,7 +613,7 @@ mod tests {
         // 创建无效的 wpsrc.toml
         create_minimal_project_structure(&work);
         create_basic_wparse_config(&work);
-        let wpsrc_path = format!("{}/models/sources/wpsrc.toml", work);
+        let wpsrc_path = format!("{}/topology/sources/wpsrc.toml", work);
         fs::create_dir_all(std::path::Path::new(&wpsrc_path).parent().unwrap()).unwrap();
         fs::write(wpsrc_path, "invalid toml").unwrap();
 

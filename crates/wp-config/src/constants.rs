@@ -2,7 +2,7 @@
 pub const WPARSE_CONF: &str = "wparse.toml";
 pub const SINK_FRAMEWORK: &str = "framework.toml";
 //pub const SRC_FILE_PATH: &str = "./data/in_dat";
-pub const SRC_CONF_PATH: &str = "./models/sources";
+pub const SRC_CONF_PATH: &str = "./topology/sources";
 pub const WPARSE_LOG_PATH: &str = "./data/logs";
 
 pub const WPARSE_RULE_FILE: &str = "parse*.wpl";

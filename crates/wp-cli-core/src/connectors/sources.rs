@@ -28,7 +28,7 @@ pub struct RouteRow {
     pub detail: String,
 }
 
-/// Locate `wpsrc.toml` starting from a work root (supports `models/sources/` and legacy `source/`).
+/// Locate `wpsrc.toml` starting from a work root (supports `topology/sources/` and legacy `source/`).
 fn resolve_wpsrc_path(work_root: &str) -> OrionConfResult<PathBuf> {
     let wr = PathBuf::from(work_root);
     let candidate1 = wr.join("models").join("sources").join("wpsrc.toml");
@@ -40,7 +40,7 @@ fn resolve_wpsrc_path(work_root: &str) -> OrionConfResult<PathBuf> {
         return Ok(candidate2);
     }
     ConfIOReason::from_validation(format!(
-        "missing wpsrc.toml under '{}/models/sources' or '{}/source'",
+        "missing wpsrc.toml under '{}/topology/sources' or '{}/source'",
         work_root, work_root
     ))
     .err_result()
@@ -183,7 +183,7 @@ allow_override = ["path","fmt"]
 "#,
         )
         .unwrap();
-        // wpsrc under root/models/sources/wpsrc.toml
+        // wpsrc under root/topology/sources/wpsrc.toml
         let wpsrc = root.join("models").join("sources");
         fs::create_dir_all(&wpsrc).unwrap();
         fs::write(

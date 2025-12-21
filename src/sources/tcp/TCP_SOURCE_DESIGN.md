@@ -179,7 +179,7 @@ struct TcpConf {
 
 #### 使用示例配置
 ```toml
-# models/sources/wpsrc.toml
+# topology/sources/wpsrc.toml
 [[sources]]
 enable = true
 key = "tcp_1"

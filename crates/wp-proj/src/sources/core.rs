@@ -190,7 +190,7 @@ impl Sources {
             return Ok(resolved);
         }
 
-        // fallback: assume modern models/sources layout when engine config is unavailable
+        // fallback: assume modern topology/sources layout when engine config is unavailable
         Ok(work_root.join("models").join("sources").join(WPSRC_TOML))
     }
 

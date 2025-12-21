@@ -92,7 +92,7 @@ pub struct EngineConfig {
 
 // Default values and helper functions
 pub fn default_sources_root() -> String {
-    "./models/sources".to_string()
+    "./topology/sources".to_string()
 }
 
 pub fn default_version() -> String {
@@ -178,8 +178,8 @@ impl EngineConfig {
                 // Use pluralized roots for sources/sinks; legacy single forms are no longer default
             },
             topology: TopologyConf {
-                sources: format!("{}/models/sources", root.as_ref().display()),
-                sinks: format!("{}/models/sinks", root.as_ref().display()),
+                sources: format!("{}/topology/sources", root.as_ref().display()),
+                sinks: format!("{}/topology/sinks", root.as_ref().display()),
             },
             performance: PerformanceConf {
                 rate_limit_rps: 10000,

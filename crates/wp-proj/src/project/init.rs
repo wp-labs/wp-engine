@@ -217,8 +217,8 @@ mod tests {
     const LEGACY_SOURCE_DIR: &str = "source.d";
     const LEGACY_SINK_DIR: &str = "sink.d";
     const MODELS_DIR: &str = "models";
-    const MODELS_SOURCES_DIR: &str = "models/sources";
-    const MODELS_SINKS_DIR: &str = "models/sinks";
+    const TOPO_SOURCES_DIR: &str = "topology/sources";
+    const TOPO_SINKS_DIR: &str = "topology/sinks";
     const MODELS_WPL_PARSE_FILE: &str = "models/wpl/parse.wpl";
     const MODELS_WPL_SAMPLE_FILE: &str = "models/wpl/sample.dat";
     const MODELS_OML_EXAMPLE_FILE: &str = "models/oml/example.oml";
@@ -367,12 +367,12 @@ mod tests {
             "topology sinks directory should exist"
         );
         assert!(
-            !work_root.join(MODELS_SOURCES_DIR).exists(),
-            "models/sources should remain absent; use topology/sources"
+            work_root.join(TOPO_SOURCES_DIR).exists(),
+            "topology/sources should remain absent; use topology/sources"
         );
         assert!(
-            !work_root.join(MODELS_SINKS_DIR).exists(),
-            "models/sinks should remain absent; use topology/sinks"
+            work_root.join(TOPO_SINKS_DIR).exists(),
+            "topology/sinks should remain absent; use topology/sinks"
         );
         assert!(
             work_root.join(MODELS_KNOWLEDGE_DIR).exists(),

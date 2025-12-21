@@ -22,7 +22,7 @@ path = "./data/logs"
 root = "./models/wpl"
 
 [source]
-root = "./models/sources"
+root = "./topology/sources"
 wpsrc = "wpsrc.toml"
 
 [sink]

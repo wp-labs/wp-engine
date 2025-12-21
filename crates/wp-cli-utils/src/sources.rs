@@ -18,7 +18,7 @@ pub struct UnifiedSourcesLite {
 }
 
 fn read_wpsrc_toml(work_root: &std::path::Path) -> Option<String> {
-    // Modern layout: models/sources/wpsrc.toml
+    // Modern layout: topology/sources/wpsrc.toml
     // Legacy fallback: models/source/wpsrc.toml or source/wpsrc.toml
     let modern = work_root.join("models").join("sources").join("wpsrc.toml");
     if modern.exists() {
