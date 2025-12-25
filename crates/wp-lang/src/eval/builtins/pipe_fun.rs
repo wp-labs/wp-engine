@@ -1,16 +1,15 @@
 use crate::ast::WplFun;
 use crate::ast::processor::{
-    PFCharsExists, PFCharsIn, PFCharsNotExists, PFDigitExists, PFDigitIn, PFFdExists, PFIpAddrIn,
-    StubFun,
+    FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas, StubFun,
 };
-use crate::eval::runtime::field_pipe::{DFPipeProcessor, FieldIndex};
+use crate::eval::runtime::field_pipe::{FieldIndex, FiledSetProcessor};
 use winnow::combinator::fail;
 use wp_model_core::model::{DataField, Value};
 use wp_parser::Parser;
 use wp_parser::WResult;
 use wp_parser::symbol::ctx_desc;
 
-impl DFPipeProcessor for PFCharsExists {
+impl FiledSetProcessor for FCharsHas {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -40,7 +39,7 @@ impl DFPipeProcessor for PFCharsExists {
     }
 }
 
-impl DFPipeProcessor for PFFdExists {
+impl FiledSetProcessor for FdHas {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.found.as_str();
@@ -59,7 +58,7 @@ impl DFPipeProcessor for PFFdExists {
             .parse_next(&mut "")
     }
 }
-impl DFPipeProcessor for PFCharsNotExists {
+impl FiledSetProcessor for FCharsNotHas {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -95,7 +94,7 @@ impl DFPipeProcessor for PFCharsNotExists {
     }
 }
 
-impl DFPipeProcessor for PFDigitExists {
+impl FiledSetProcessor for FDigitHas {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -125,7 +124,7 @@ impl DFPipeProcessor for PFDigitExists {
     }
 }
 
-impl DFPipeProcessor for PFDigitIn {
+impl FiledSetProcessor for FDigitIn {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -155,7 +154,7 @@ impl DFPipeProcessor for PFDigitIn {
     }
 }
 
-impl DFPipeProcessor for PFCharsIn {
+impl FiledSetProcessor for FCharsIn {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -185,7 +184,7 @@ impl DFPipeProcessor for PFCharsIn {
     }
 }
 
-impl DFPipeProcessor for PFIpAddrIn {
+impl FiledSetProcessor for FIpAddrIn {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         let target = self.target.as_str();
@@ -214,35 +213,35 @@ impl DFPipeProcessor for PFIpAddrIn {
             .parse_next(&mut "")
     }
 }
-impl DFPipeProcessor for StubFun {
+impl FiledSetProcessor for StubFun {
     #[inline]
     fn process(&self, _value: &mut Vec<DataField>, _index: Option<&FieldIndex>) -> WResult<()> {
         Ok(())
     }
 }
-impl DFPipeProcessor for WplFun {
+impl FiledSetProcessor for WplFun {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
         match self {
-            WplFun::CharsExists(f) => f.process(value, index),
-            WplFun::CharsNotExists(f) => f.process(value, index),
-            WplFun::CharsIn(f) => f.process(value, index),
-            WplFun::DigitExists(f) => f.process(value, index),
-            WplFun::DigitIn(f) => f.process(value, index),
-            WplFun::IpAddrIn(f) => f.process(value, index),
-            WplFun::Exists(f) => f.process(value, index),
-            WplFun::StrMode(f) => f.process(value, index),
+            WplFun::FCharsExists(f) => f.process(value, index),
+            WplFun::FCharsNotExists(f) => f.process(value, index),
+            WplFun::FCharsIn(f) => f.process(value, index),
+            WplFun::FDigitExists(f) => f.process(value, index),
+            WplFun::FDigitIn(f) => f.process(value, index),
+            WplFun::FIpAddrIn(f) => f.process(value, index),
+            WplFun::FExists(f) => f.process(value, index),
+            WplFun::CDecode(f) => f.process(value, index),
         }
     }
 }
 
 // ---------------- String Mode ----------------
-use crate::ast::processor::PFStrMode;
+use crate::ast::processor::CharsDecode;
 
-impl PFStrMode {
+impl CharsDecode {
     #[inline]
-    fn is_decoded(&self) -> bool {
-        matches!(self.mode.as_str(), "decoded" | "decode" | "dec")
+    fn is_json_unescape(&self) -> bool {
+        matches!(self.mode.as_str(), "json" | "decoded" | "decode" | "dec")
     }
 }
 
@@ -279,10 +278,10 @@ fn transform_value_to_decoded(v: &mut Value) {
     }
 }
 
-impl DFPipeProcessor for PFStrMode {
+impl FiledSetProcessor for CharsDecode {
     #[inline]
     fn process(&self, value: &mut Vec<DataField>, _index: Option<&FieldIndex>) -> WResult<()> {
-        if !self.is_decoded() {
+        if !self.is_json_unescape() {
             return Ok(());
         }
         for f in value.iter_mut() {

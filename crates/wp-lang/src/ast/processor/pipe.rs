@@ -1,21 +1,20 @@
 use derive_getters::Getters;
 
 use super::function::{
-    PFCharsExists, PFCharsIn, PFCharsNotExists, PFDigitExists, PFDigitIn, PFFdExists, PFIpAddrIn,
-    PFStrMode,
+    CharsDecode, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas,
 };
 use crate::ast::group::WplGroup;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WplFun {
-    CharsExists(PFCharsExists),
-    CharsNotExists(PFCharsNotExists),
-    CharsIn(PFCharsIn),
-    DigitExists(PFDigitExists),
-    DigitIn(PFDigitIn),
-    IpAddrIn(PFIpAddrIn),
-    Exists(PFFdExists),
-    StrMode(PFStrMode),
+    FCharsExists(FCharsHas),
+    FCharsNotExists(FCharsNotHas),
+    FCharsIn(FCharsIn),
+    FDigitExists(FDigitHas),
+    FDigitIn(FDigitIn),
+    FIpAddrIn(FIpAddrIn),
+    FExists(FdHas),
+    CDecode(CharsDecode),
 }
 
 #[derive(Debug, Clone, PartialEq, Getters)]

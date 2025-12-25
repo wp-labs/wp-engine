@@ -136,7 +136,7 @@ fn build_escaped_text(lines: usize) -> String {
 
 fn criterion_json_decoded_pipe(c: &mut Criterion) {
     // 对比 decoded 管道开销
-    let wpl = r#"(json(chars@text) | str_mode(decoded))"#;
+    let wpl = r#"(json(chars@text) | chars_unescape(json))"#;
     let data = build_escaped_text(64);
     let express = wpl_express.parse(wpl).assert();
     let lpp = WplEvaluator::from(&express, None).assert();

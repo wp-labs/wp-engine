@@ -11,7 +11,6 @@ use std::path::{Path, PathBuf};
 use wp_cli_core::connectors::sources as sources_core;
 use wp_conf::sources::build::build_specs_with_ids_from_file;
 use wp_conf::sources::types::{SourceItem, WarpSources};
-use wp_connector_api::SourceSpec;
 use wp_engine::facade::config::{WPSRC_TOML, load_warp_engine_confs};
 use wp_engine::sources::SourceConfigParser;
 use wp_error::run_error::{RunReason, RunResult};

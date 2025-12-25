@@ -409,7 +409,7 @@ mod tests {
     fn test_json_str_mode_decoded_pipe() -> AnyResult<()> {
         let mut data = r#"{"path":"c:\\users\\fc\\file","txt":"line1\nline2"}"#;
         let conf = wpl_rule
-            .parse("rule test {(json(chars@path,chars@txt) | str_mode(decoded))}")
+            .parse("rule test {(json(chars@path,chars@txt) | chars_unescape(json))}")
             .assert();
         let f_conf = conf.statement.first_field().no_less("first field")?;
         let fpu = FieldEvalUnit::from_auto(f_conf.clone());
@@ -446,7 +446,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_1() -> AnyResult<()> {
-        let rule = r#"rule test { (json | exists( age ) ) }"#;
+        let rule = r#"rule test { (json | f_has( age ) ) }"#;
         let data = r#"{ "age": 18}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         let (tdc, _) = pipe.proc(data, 0)?;
@@ -456,7 +456,7 @@ mod tests {
             panic!("json parse error");
         }
 
-        let rule = r#"rule test { (json | exists( age1 ) ) }"#;
+        let rule = r#"rule test { (json | f_has( age1 ) ) }"#;
         let data = r#"{ "age": 18}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_err());
@@ -464,7 +464,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_2_0() -> AnyResult<()> {
-        let rule = r#"rule test { (json | exists_digit( age,18 ) ) }"#;
+        let rule = r#"rule test { (json | f_digit_has( age,18 ) ) }"#;
         let data = r#"{  "name": "china","age": 18}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         let (tdc, _) = pipe.proc(data, 0)?;
@@ -474,7 +474,7 @@ mod tests {
             panic!("json parse error");
         }
 
-        let rule = r#"rule test { (json | exists_digit( age,19) ) }"#;
+        let rule = r#"rule test { (json | f_digit_has( age,19) ) }"#;
         let data = r#"{ "name": "china", "age": 18}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_err());
@@ -482,7 +482,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_2_1() -> AnyResult<()> {
-        let rule = r#"rule test { (json | exists_digit_in( age, [18,19] ) ) }"#;
+        let rule = r#"rule test { (json | f_digit_in( age, [18,19] ) ) }"#;
         let data = r#"{  "name": "china","age": 18}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         let (tdc, _) = pipe.proc(data, 0)?;
@@ -492,7 +492,7 @@ mod tests {
             panic!("json parse error");
         }
 
-        let rule = r#"rule test { (json | exists_digit_in( age, [18,19] ) ) }"#;
+        let rule = r#"rule test { (json | f_digit_in( age, [18,19] ) ) }"#;
         let data = r#"{ "name": "china", "age": 17}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_err());
@@ -500,7 +500,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_3() -> AnyResult<()> {
-        let rule = r#"rule test { (json | exists_chars( name,china ) ) }"#;
+        let rule = r#"rule test { (json | f_chars_has( name,china ) ) }"#;
         let data = r#"{ "name": "china"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         let (tdc, _) = pipe.proc(data, 0)?;
@@ -510,12 +510,12 @@ mod tests {
             panic!("json parse error");
         }
 
-        let rule = r#"rule test { (json | exists_chars( name,chinx) ) }"#;
+        let rule = r#"rule test { (json | f_chars_has( name,chinx) ) }"#;
         let data = r#"{ "name": "china"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_err());
 
-        let rule = r#"rule test { (json(chars@name) | exists_chars(name, -99) | exists_chars(code, aaa) ) }"#;
+        let rule = r#"rule test { (json(chars@name) | f_chars_has(name, -99) | f_chars_has(code, aaa) ) }"#;
         let data = r#"{ "name": -99, "code": "aaa"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
@@ -523,7 +523,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_3_1() -> AnyResult<()> {
-        let rule = r#"rule test { (json | exists_chars_in( name, [china,japan]) ) }"#;
+        let rule = r#"rule test { (json | f_chars_in( name, [china,japan]) ) }"#;
         let data = r#"{ "name": "china"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
@@ -531,12 +531,12 @@ mod tests {
     }
     #[test]
     fn test_json_8_4() -> AnyResult<()> {
-        let rule = r#"rule test { (json | chars_not_exists(name, chinx) ) }"#;
+        let rule = r#"rule test { (json | f_chars_not_has(name, chinx) ) }"#;
         let data = r#"{ "name": "china"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
 
-        let rule = r#"rule test { (json(chars@name, chars@code) | chars_not_exists(name, 1) | exists_chars(code, aaa) ) }"#;
+        let rule = r#"rule test { (json(chars@name, chars@code) | f_chars_not_has(name, 1) | f_chars_has(code, aaa) ) }"#;
         let data = r#"{ "name": -99, "code": "aaa"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
@@ -544,7 +544,7 @@ mod tests {
     }
     #[test]
     fn test_json_8_5() -> AnyResult<()> {
-        let rule = r#"rule test { (json(ip@addr) | exists_ip_in(addr, [1.1.1.1,2.2.2.2]) ) }"#;
+        let rule = r#"rule test { (json(ip@addr) | f_ip_in(addr, [1.1.1.1,2.2.2.2]) ) }"#;
         let data = r#"{ "addr": "1.1.1.1"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());

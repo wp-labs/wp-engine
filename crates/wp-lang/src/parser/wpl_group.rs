@@ -127,8 +127,8 @@ mod tests {
     }
     #[test]
     fn test_parse_group_pipe1_3() {
-        let pipe_expect = wpl_pipe.parse(r#"| exists(src)"#).assert();
-        let group = wpl_group.parse(r#"(json | exists(src))"#).assert();
+        let pipe_expect = wpl_pipe.parse(r#"| f_has(src)"#).assert();
+        let group = wpl_group.parse(r#"(json | f_has(src))"#).assert();
         assert_eq!(group.fields.len(), 1);
         assert_eq!(group.fields[0].pipe[0], pipe_expect);
     }

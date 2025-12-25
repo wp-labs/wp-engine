@@ -1,8 +1,8 @@
 mod function;
 mod pipe;
 pub use function::{
-    ExistsChars, PFCharsExists, PFCharsIn, PFCharsNotExists, PFDigitExists, PFDigitIn, PFFdExists,
-    PFIpAddrIn, PFStrMode, StubFun,
+    CharsDecode, ExistsChars, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn,
+    FdHas, StubFun,
 };
 pub use pipe::WplFun;
 pub use pipe::WplPipe;
