@@ -1,20 +1,19 @@
-use super::engine::ParsingEngine;
 use crate::core::prelude::*;
 use crate::core::{SinkTerminal, SyncCtrl};
 use crate::sinks::SinkGroupAgent;
 use crate::stat::MonSend;
 use crate::stat::metric_collect::MetricCollectors;
 use std::cmp::Ordering;
-use wp_parse_api::DataResult;
+use wp_parse_api::{DataResult, RawData};
 use wp_stat::StatRecorder;
 use wp_stat::StatReq;
-use wpl::OPTIMIZE_TIMES;
 use wpl::WparseResult;
 use wpl::{AnnotationFunc, AnnotationType};
+use wpl::{OPTIMIZE_TIMES, WplEvaluator};
 
 #[derive(Getters, Clone)]
 pub struct WplPipeline {
-    parser: ParsingEngine,
+    parser: WplEvaluator,
     fun_vec: Vec<AnnotationType>,
     pub hit_cnt: usize,
     pub access_cnt: usize,
@@ -30,7 +29,7 @@ impl WplPipeline {
         index: usize,
         wpl_key: String,
         fun_vec: Vec<AnnotationType>,
-        parser: ParsingEngine,
+        parser: WplEvaluator,
         output: Vec<SinkGroupAgent>,
         stat_reqs: Vec<StatReq>,
     ) -> Self {
@@ -60,7 +59,7 @@ impl WplPipeline {
     }
     pub fn proc(&mut self, data: &SourceEvent, oth_suc_len: usize) -> DataResult {
         self.access_cnt += 1;
-        match self.parser.proc(data, oth_suc_len) {
+        match self.parser.proc(data.payload.clone(), oth_suc_len) {
             Ok((mut record, left)) => {
                 self.stat_ext.record_begin(self.wpl_key.as_str(), None);
                 for func in self.fun_vec.iter() {
@@ -68,7 +67,7 @@ impl WplPipeline {
                 }
                 self.stat_ext
                     .record_end(self.wpl_key.as_str(), Some(&record));
-                Ok((record, left))
+                Ok((record, RawData::from_string(left)))
             }
             Err(e) => Err(e),
         }

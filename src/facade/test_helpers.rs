@@ -42,7 +42,6 @@ pub use crate::runtime::parser::workflow::{ActorWork, ParseWorkerSender};
 // Core parser and types commonly used in tests/benches（从私有模块路径直接 re-export 类型本身）
 pub use crate::core::generator::rules::GenRuleUnit;
 pub use crate::core::parser::setting::ParseOption;
-pub use crate::core::parser::workshop::WplWorkshop;
 pub use crate::core::parser::wpl_engine::repo::WplRepository;
 pub use crate::core::sinks::sync_sink::SinkTerminal;
 pub use crate::sinks::BlackHoleSink;

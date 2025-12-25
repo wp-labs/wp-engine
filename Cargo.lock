@@ -703,18 +703,18 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10b768e943bed7bf2cab53df09f4bc34bfd217cdb57d971e769874c9a6710618"
+checksum = "d751e9e49156b02b44f9c1815bcb94b984cdcc4396ecc32521c739452808b134"
 dependencies = [
  "derive_more-impl",
 ]
 
 [[package]]
 name = "derive_more-impl"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d286bfdaf75e988b4a78e013ecd79c581e06399ab53fbacd2d916c2f904f30b"
+checksum = "799a97264921d8623a957f6c3b9011f3b5492f557bbb7a5a19b7fa6d06ba8dcb"
 dependencies = [
  "convert_case",
  "proc-macro2",
@@ -1942,7 +1942,7 @@ dependencies = [
 
 [[package]]
 name = "orion_exp"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "chrono",
  "criterion",
@@ -1953,7 +1953,7 @@ dependencies = [
 
 [[package]]
 name = "orion_overload"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "derive-getters",
@@ -2939,9 +2939,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.9+spec-1.0.0"
+version = "0.9.10+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb5238e643fc34a1d5d7e753e1532a91912d74b63b92b3ea51fde8d1b7bc79dd"
+checksum = "0825052159284a1a8b4d6c0c86cbc801f2da5afd2b225fa548c72f2e74002f48"
 dependencies = [
  "indexmap",
  "serde_core",
@@ -2954,27 +2954,27 @@ dependencies = [
 
 [[package]]
 name = "toml_datetime"
-version = "0.7.4+spec-1.0.0"
+version = "0.7.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe3cea6b2aa3b910092f6abd4053ea464fab5f9c170ba5e9a6aead16ec4af2b6"
+checksum = "92e1cfed4a3038bc5a127e35a2d360f145e1f4b971b551a2ba5fd7aedf7e1347"
 dependencies = [
  "serde_core",
 ]
 
 [[package]]
 name = "toml_parser"
-version = "1.0.5+spec-1.0.0"
+version = "1.0.6+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c03bee5ce3696f31250db0bbaff18bc43301ce0e8db2ed1f07cbb2acf89984c"
+checksum = "a3198b4b0a8e11f09dd03e133c0280504d0801269e9afa46362ffde1cbeebf44"
 dependencies = [
  "winnow",
 ]
 
 [[package]]
 name = "toml_writer"
-version = "1.0.5+spec-1.0.0"
+version = "1.0.6+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9cd6190959dce0994aa8970cd32ab116d1851ead27e866039acaf2524ce44fa"
+checksum = "ab16f14aed21ee8bfd8ec22513f7287cd4a91aa92e44edfe2c17ddd004e92607"
 
 [[package]]
 name = "tracing"
@@ -3572,7 +3572,7 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 
 [[package]]
 name = "wp-cli-core"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "orion-error",
@@ -3586,7 +3586,7 @@ dependencies = [
 
 [[package]]
 name = "wp-cli-utils"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3616,7 +3616,7 @@ dependencies = [
 
 [[package]]
 name = "wp-config"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3691,7 +3691,7 @@ dependencies = [
 
 [[package]]
 name = "wp-data-utils"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -3710,7 +3710,7 @@ dependencies = [
 
 [[package]]
 name = "wp-engine"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "async-broadcast",
@@ -3815,7 +3815,7 @@ dependencies = [
 
 [[package]]
 name = "wp-knowledge"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3852,7 +3852,7 @@ dependencies = [
 
 [[package]]
 name = "wp-lang"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3934,7 +3934,7 @@ dependencies = [
 
 [[package]]
 name = "wp-oml"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3999,7 +3999,7 @@ dependencies = [
 
 [[package]]
 name = "wp-parser"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "criterion",
  "orion_exp",
@@ -4008,7 +4008,7 @@ dependencies = [
 
 [[package]]
 name = "wp-proj"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "comfy-table",
@@ -4046,7 +4046,7 @@ dependencies = [
 
 [[package]]
 name = "wp-stats"
-version = "1.4.3"
+version = "1.5.0"
 dependencies = [
  "anyhow",
  "chrono",

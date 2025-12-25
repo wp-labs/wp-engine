@@ -12,7 +12,7 @@ use wp_conf::engine::EngineConfig;
 
 /// Load main configuration and return configuration manager and engine config
 pub fn load_warp_engine_confs(work_root: &str) -> RunResult<(WarpConf, EngineConfig)> {
-    let main_conf = EngineConfig::load_or_init(work_root).err_conv()?;
+    let main_conf = EngineConfig::load(work_root).err_conv()?;
     let conf_manager = WarpConf::new(work_root);
     Ok((conf_manager, main_conf))
 }

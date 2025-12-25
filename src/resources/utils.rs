@@ -1,4 +1,3 @@
-use crate::core::ParsingEngine;
 use crate::core::WplPipeline;
 use crate::core::generator::rules::fetch_oml_data;
 use crate::core::parser::indexing::ResourceIndexer;
@@ -74,28 +73,21 @@ pub fn annotate_funcs(rule: &WplRule) -> Vec<AnnotationType> {
     AnnotationType::convert(rule.statement.tags())
 }
 
-pub fn build_multi_src_parser_set(rule: &WplRule) -> RunResult<ParsingEngine> {
+pub fn build_multi_src_parser_set(rule: &WplRule) -> RunResult<WplEvaluator> {
     let parser = rule_to_parser_ex(rule, None)?;
     Ok(parser)
 }
 
-pub fn rule_to_parser_ex(
-    rule: &WplRule,
-    preorder: Option<&WplExpress>,
-) -> RunResult<ParsingEngine> {
+pub fn rule_to_parser_ex(rule: &WplRule, preorder: Option<&WplExpress>) -> RunResult<WplEvaluator> {
     let parser = match &rule.statement {
-        WplStatementType::Express(code) => {
-            ParsingEngine::RuleEngine(WplEvaluator::from(code, preorder).owe_rule()?)
-        }
+        WplStatementType::Express(code) => WplEvaluator::from(code, preorder).owe_rule()?,
     };
     Ok(parser)
 }
 
-pub fn rule_to_parser(rule: &WplRule) -> RunResult<ParsingEngine> {
+pub fn rule_to_parser(rule: &WplRule) -> RunResult<WplEvaluator> {
     let parser = match &rule.statement {
-        WplStatementType::Express(code) => {
-            ParsingEngine::RuleEngine(WplEvaluator::from(code, None).owe_rule()?)
-        }
+        WplStatementType::Express(code) => WplEvaluator::from(code, None).owe_rule()?,
     };
     Ok(parser)
 }

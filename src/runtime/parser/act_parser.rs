@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::core::parser::WplEngine;
 use crate::runtime::prelude::*;
 
 use crate::orchestrator::engine::definition::WplCodePKG;
@@ -18,7 +19,7 @@ use wpl::WparseResult;
 //clone will error;
 //#[derive(Clone)]
 pub struct ActParser {
-    pub engine: WplWorkshop,
+    pub engine: WplEngine,
     pub sinks: SinkRouteAgent,
 }
 
@@ -32,7 +33,7 @@ impl ActParser {
         infra: InfraSinkAgent,
     ) -> RunResult<Self> {
         trace_ctrl!("setting depend");
-        let pipe_lines = WplWorkshop::from(pipelines, infra).owe_conf()?;
+        let pipe_lines = WplEngine::from(pipelines, infra).owe_conf()?;
         //let pipe_lines = ParseEngine::from(pipelines, infra).to_uvs::<ConfErrReader>()?;
         Ok(ActParser {
             engine: pipe_lines,
@@ -48,7 +49,7 @@ impl ActParser {
     ) -> RunResult<Self> {
         trace_ctrl!("setting depend");
         let wpl_pkgs = WplRepository::from_wpl_tolerant(wpl_code, infra.error.end()).owe_rule()?;
-        let pipe_lines = WplWorkshop::from_code(&wpl_pkgs, infra).owe_conf()?;
+        let pipe_lines = WplEngine::from_code(&wpl_pkgs, infra).owe_conf()?;
         Ok(ActParser {
             engine: pipe_lines,
             sinks,
@@ -68,7 +69,7 @@ impl ActParser {
         let mut run_ctrl = TaskController::new("lang", cmd_recv.clone(), None);
         warn_ctrl!(
             "parse engine pipelin cnt: {}",
-            self.engine.pipelines().len()
+            self.engine.pipelines.pipelines().len()
         );
         let mut stat_tick = interval(Duration::from_millis(STAT_INTERVAL_MS as u64));
         stat_tick.set_missed_tick_behavior(MissedTickBehavior::Skip);

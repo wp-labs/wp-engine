@@ -9,18 +9,13 @@ use wp_model_core::model::DataRecord;
 use derive_getters::Getters;
 use orion_error::ErrStrategy;
 use std::collections::HashSet;
-use wpl::{WplPackage, WplPkgMeta};
+use wpl::WplPackage;
 
 #[derive(Clone, Default)]
 pub struct WplRepository {
     pub packages: Vec<WplPackage>,
 }
 
-#[derive(Serialize, Deserialize)]
-#[allow(dead_code)]
-pub struct WplMeta {
-    pub packages: Vec<WplPkgMeta>,
-}
 #[derive(Default, Debug, Clone, Getters)]
 pub struct SpaceIndex {
     rule_key: HashSet<String>,
@@ -41,16 +36,6 @@ impl From<&WplRepository> for SpaceIndex {
             pkg_key: pkg_path_vec,
             rule_key: rule_path_vec,
         }
-    }
-}
-
-impl From<&WplRepository> for WplMeta {
-    fn from(value: &WplRepository) -> Self {
-        let mut items = Vec::new();
-        for pkg in &value.packages {
-            items.push(WplPkgMeta::from(pkg))
-        }
-        Self { packages: items }
     }
 }
 

@@ -16,13 +16,9 @@ pub(crate) use crate::core::error::strategies::current_error_policy;
 #[allow(unused_imports)]
 pub(crate) use crate::core::generator::rules::GenRuleUnit;
 #[allow(unused_imports)]
-pub(crate) use parser::ParsingEngine;
-#[allow(unused_imports)]
 pub(crate) use parser::WplPipeline;
 #[allow(unused_imports)]
 pub(crate) use parser::WplRepository;
-#[allow(unused_imports)]
-pub(crate) use parser::workshop::WplWorkshop;
 #[allow(unused_imports)]
 pub(crate) use sinks::async_sink::AsyncCtrl;
 #[allow(unused_imports)]

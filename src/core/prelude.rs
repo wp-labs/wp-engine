@@ -1,6 +1,5 @@
 pub(crate) use crate::core::RecSyncSink;
 pub(crate) use crate::core::error::strategies::{ErrReport, current_error_policy};
-pub use crate::types::AnyResult;
 #[allow(unused_imports)]
 pub use async_trait::async_trait;
 pub use derive_getters::Getters;

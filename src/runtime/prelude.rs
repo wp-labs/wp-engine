@@ -8,7 +8,6 @@ pub use wp_stat::StatReq;
 pub(crate) use crate::core::parser::ParseOption;
 pub(crate) use crate::core::parser::WplPipeline;
 pub(crate) use crate::core::parser::WplRepository;
-pub(crate) use crate::core::parser::WplWorkshop;
 pub use crate::stat::MonSend;
 pub use orion_error::ConvStructError;
 pub use wpl::WparseResult;

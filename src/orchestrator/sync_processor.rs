@@ -1,5 +1,5 @@
-use crate::core::WplWorkshop;
 use crate::core::parser::ParseOption;
+use crate::core::parser::WplEngine;
 use crate::core::parser::WplRepository;
 use crate::orchestrator::engine::definition::WplCodePKG;
 use crate::sinks::InfraSinkAgent;
@@ -34,7 +34,7 @@ pub fn engine_check(
     args.need_complete = true;
 
     let wpl_pkgs = WplRepository::from_wpl_strict(wpl_code)?;
-    let engine = WplWorkshop::from_code(&wpl_pkgs, InfraSinkAgent::use_null())?;
+    let engine = WplEngine::from_code(&wpl_pkgs, InfraSinkAgent::use_null())?;
 
     let in_io = File::open(in_path)?;
     let source_key = Arc::new(DEFAULT_KEY.to_string());
@@ -80,7 +80,7 @@ pub fn engine_proc_file<T: AsRef<Path>>(
     max_event: usize,
 ) -> AnyResult<()> {
     let wpl_pkgs = WplRepository::from_wpl_strict(wpl_code)?;
-    let engine = WplWorkshop::from_code(&wpl_pkgs, infra)?;
+    let engine = WplEngine::from_code(&wpl_pkgs, infra)?;
     let in_io = File::open(in_path)?;
 
     let source_key = Arc::new(DEFAULT_KEY.to_string());
@@ -127,7 +127,7 @@ pub fn wpl_workshop_parse(
     infra: InfraSinkAgent,
 ) -> AnyResult<()> {
     let wpl_pkgs = WplRepository::from_wpl_strict(wpl_code)?;
-    let engine = WplWorkshop::from_code(&wpl_pkgs, infra)?;
+    let engine = WplEngine::from_code(&wpl_pkgs, infra)?;
     let in_io = File::open(in_path)?;
     let source_key = Arc::new(DEFAULT_KEY.to_string());
     let source_tags = Arc::new(Tags::new());

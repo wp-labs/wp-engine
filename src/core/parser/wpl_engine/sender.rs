@@ -1,6 +1,7 @@
 //! 数据发送逻辑
 
 use super::types::{ParseFailInfo, ParsedDatSet};
+use crate::core::parser::WplEngine;
 use crate::core::sinks::sync_sink::traits::RecSyncSink;
 use crate::core::{SinkTerminal, TrySendStatus};
 use crate::runtime::actor::constants::ACTOR_IDLE_TICK_MS;
@@ -17,16 +18,7 @@ use wp_error::error_handling::{ErrorHandlingStrategy, sys_robust_mode};
 use wp_parse_api::RawData;
 use wpl::{PkgID, WparseError, WparseReason, WparseResult};
 
-/// 数据发送器
-pub struct DataSender<'a> {
-    conveyor: &'a super::WplWorkshop,
-}
-
-impl<'a> DataSender<'a> {
-    pub fn new(conveyor: &'a super::WplWorkshop) -> Self {
-        Self { conveyor }
-    }
-
+impl WplEngine {
     /// 发送批量处理后的数据
     pub async fn send_batched_data(&self, data: ParsedDatSet) -> WparseResult<()> {
         // 发送失败的数据到 miss sink（infra）
@@ -65,7 +57,7 @@ impl<'a> DataSender<'a> {
     /// 发送 residue 数据
     async fn send_residue_data(&self, residue_data: Vec<(PkgID, String)>) -> WparseResult<()> {
         for (pkg_id, raw_data) in residue_data {
-            self.forward_raw_to_infra(|| self.conveyor.residue(), pkg_id, raw_data)
+            self.forward_raw_to_infra(|| self.residue(), pkg_id, raw_data)
                 .await?;
         }
 
@@ -83,7 +75,7 @@ impl<'a> DataSender<'a> {
             }
 
             // 查找对应的 pipeline
-            for wpl_line in &self.conveyor.pipelines {
+            for wpl_line in self.pipelines.pipelines() {
                 if wpl_line.wpl_key() == &wpl_key {
                     let endp = wpl_line.get_rolled_end().clone();
 
@@ -184,7 +176,7 @@ impl<'a> DataSender<'a> {
             "src_key: {}  | data:\n{}\n{}\n\n",
             event.src_key, display_str, err_msg
         );
-        self.forward_raw_to_infra(|| self.conveyor.miss(), event.event_id, raw_data)
+        self.forward_raw_to_infra(|| self.miss(), event.event_id, raw_data)
             .await
     }
 

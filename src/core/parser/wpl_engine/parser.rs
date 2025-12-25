@@ -1,21 +1,23 @@
 //! 单个数据包解析逻辑
 
 use super::types::ProcessResult;
-use crate::core::parser::ParseOption;
 use crate::core::parser::wpl_engine::pipeline::WplPipeline;
+use crate::{core::parser::ParseOption, stat::MonSend};
 use orion_error::UvsReason;
 use std::sync::Arc;
 use wp_connector_api::SourceEvent;
 use wp_model_core::model::data::Field;
-use wpl::{WparseError, WparseReason};
+use wpl::{WparseError, WparseReason, WparseResult};
 
 /// 数据包解析器
-pub struct PacketParser<'a> {
-    pipelines: &'a mut Vec<WplPipeline>,
+#[derive(Clone, getset::Getters)]
+#[get = "pub"]
+pub struct MultiParser {
+    pipelines: Vec<WplPipeline>,
 }
 
-impl<'a> PacketParser<'a> {
-    pub fn new(pipelines: &'a mut Vec<WplPipeline>) -> Self {
+impl MultiParser {
+    pub fn new(pipelines: Vec<WplPipeline>) -> Self {
         Self { pipelines }
     }
 
@@ -88,4 +90,82 @@ impl<'a> PacketParser<'a> {
             best_wpl, best_error, max_depth,
         ))
     }
+    pub fn stop(&mut self) {
+        self.pipelines.iter_mut().for_each(|i| i.stop());
+    }
+
+    pub fn optimized(&mut self, _count: usize) {
+        if self.pipelines.is_empty() {
+            return;
+        }
+
+        self.pipelines.sort_by(|a, b| {
+            b.hit_cnt
+                .cmp(&a.hit_cnt)
+                .then_with(|| a.index().cmp(b.index()))
+        });
+
+        // 下一窗口重新记录命中情况
+        for pipeline in &mut self.pipelines {
+            pipeline.hit_cnt = 0;
+        }
+    }
+
+    /// 更新规则命中计数并排序
+    pub fn hit_count_sort(&mut self) {
+        for x in &mut self.pipelines {
+            x.access_cnt = 0;
+        }
+    }
+    pub async fn send_stat(&mut self, mon_send: &MonSend) -> WparseResult<()> {
+        for i in self.pipelines.iter_mut() {
+            i.send_stat(mon_send).await?;
+        }
+        Ok(())
+    }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::parser::wpl_engine::pipeline::WplPipeline;
+    use crate::sinks::SinkGroupAgent;
+    use wpl::WplEvaluator;
+
+    fn dummy_pipeline(idx: usize, hit: usize) -> WplPipeline {
+        let evaluator = WplEvaluator::from_code("rule dummy { ( _ ) }").expect("build wpl");
+        let parser = evaluator;
+        let mut pipeline = WplPipeline::new(
+            idx,
+            format!("rule-{}", idx),
+            Vec::new(),
+            parser,
+            vec![SinkGroupAgent::null()],
+            Vec::new(),
+        );
+        pipeline.hit_cnt = hit;
+        pipeline
+    }
+
+    #[test]
+    fn optimized_reorders_by_hit_count() {
+        let pipelines = vec![
+            dummy_pipeline(0, 1),
+            dummy_pipeline(1, 5),
+            dummy_pipeline(2, 3),
+        ];
+
+        let mut parser = MultiParser::new(pipelines);
+        parser.optimized(0);
+
+        let order: Vec<_> = parser
+            .pipelines
+            .iter()
+            .map(|p| p.wpl_key().to_string())
+            .collect();
+        assert_eq!(order, vec!["rule-1", "rule-2", "rule-0"]);
+        assert!(parser.pipelines.iter().all(|p| p.hit_cnt == 0));
+    }
+}
+
+// 重新导出主要类型

@@ -1,6 +1,6 @@
-use orion_conf::{TomlIO, error::OrionConfResult};
+use orion_conf::{ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
 use serde_derive::{Deserialize, Serialize};
-use std::path::Path;
+use std::{fs::create_dir_all, path::Path};
 use wp_error::error_handling::RobustnessMode;
 use wp_log::conf::LogConf;
 
@@ -37,6 +37,10 @@ pub struct ModelsConf {
     pub wpl: String,
     #[serde(default = "default_oml_root")]
     pub oml: String,
+}
+
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+pub struct TopologyConf {
     #[serde(default = "default_sources_root")]
     pub sources: String,
     #[serde(default = "default_sinks_root")]
@@ -67,6 +71,8 @@ pub struct EngineConfig {
     robust: RobustnessMode,
     #[serde(default = "default_models_conf")]
     models: ModelsConf,
+    #[serde(default = "default_topology_conf")]
+    topology: TopologyConf,
     #[serde(default)]
     performance: PerformanceConf,
     #[serde(default)]
@@ -127,12 +133,17 @@ pub fn default_speed_limit() -> usize {
     10000
 }
 
+pub fn default_topology_conf() -> TopologyConf {
+    TopologyConf {
+        sources: default_sources_root(),
+        sinks: default_sinks_root(),
+    }
+}
+
 pub fn default_models_conf() -> ModelsConf {
     ModelsConf {
         wpl: default_wpl_root(),
         oml: default_oml_root(),
-        sources: default_sources_root(),
-        sinks: default_sinks_root(),
     }
 }
 
@@ -142,6 +153,7 @@ impl Default for EngineConfig {
             version: default_version(),
             rescue: RescueConf::default(),
             models: default_models_conf(),
+            topology: default_topology_conf(),
             performance: PerformanceConf::default(),
             log_conf: LogConf::default(),
             stat_conf: StatConf::default(),
@@ -164,6 +176,8 @@ impl EngineConfig {
                 wpl: format!("{}/models/wpl", root.as_ref().display()),
                 oml: format!("{}/models/oml", root.as_ref().display()),
                 // Use pluralized roots for sources/sinks; legacy single forms are no longer default
+            },
+            topology: TopologyConf {
                 sources: format!("{}/models/sources", root.as_ref().display()),
                 sinks: format!("{}/models/sinks", root.as_ref().display()),
             },
@@ -185,7 +199,7 @@ impl EngineConfig {
     }
 
     pub fn src_root(&self) -> &str {
-        self.models.sources.as_str()
+        self.topology.sources.as_str()
     }
 
     pub fn wpl_root(&self) -> &str {
@@ -197,7 +211,7 @@ impl EngineConfig {
     }
 
     pub fn sinks_root(&self) -> &str {
-        self.models.sinks.as_str()
+        self.topology.sinks.as_str()
     }
 
     pub fn robust(&self) -> &RobustnessMode {
@@ -247,10 +261,23 @@ impl EngineConfig {
         if engine_conf_path.exists() {
             EngineConfig::load_toml(&engine_conf_path)
         } else {
+            if let Some(parent) = engine_conf_path.parent() {
+                create_dir_all(parent)
+                    .owe_res()
+                    .want("create path")
+                    .with(parent)?;
+            }
             let conf = EngineConfig::init(&work_root);
             conf.save_toml(&engine_conf_path)?;
             Ok(conf)
         }
+    }
+    pub fn load<P: AsRef<Path>>(work_root: P) -> OrionConfResult<Self> {
+        use crate::constants::ENGINE_CONF_FILE;
+        let engine_conf_path = work_root.as_ref().join("conf").join(ENGINE_CONF_FILE);
+        EngineConfig::load_toml(&engine_conf_path)
+            .want("load engine config")
+            .with(ENGINE_CONF_FILE)
     }
 
     // Add a gen_default method for StatConf compatibility
