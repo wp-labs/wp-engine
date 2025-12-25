@@ -109,8 +109,8 @@ update_time  :time    = take() { _ :  time(2020-10-01 12:30:30) };
         let mut code = r#"
 name : test
 ---
-version      : chars   = Time::now() ;
-version      : chars   = Time::now() ;
+version      : chars   = Now::time() ;
+version      : chars   = Now::time() ;
         "#;
         assert_oml_parse(&mut code, oml_parse);
         Ok(())
@@ -121,8 +121,8 @@ version      : chars   = Time::now() ;
         let mut code = r#"
 name : test
 ---
-version      : chars   = pipe take() | base64_en  ;
-version      : chars   = pipe take(ip) | to_string |  base64_en ;
+version      : chars   = pipe take() | base64_encode  ;
+version      : chars   = pipe take(ip) | to_str |  base64_encode ;
         "#;
         assert_oml_parse(&mut code, oml_parse);
         Ok(())

@@ -1,13 +1,12 @@
 use crate::core::prelude::*;
 use crate::language::{
-    PipeHtmlEscapeDecode, PipeHtmlEscapeEncode, PipeJsonEscapeDE, PipeJsonEscapeEN,
-    PipeStrEscapeEN, PipeToJson, PipeToString,
+    HtmlEscape, HtmlUnescape, JsonEscape, JsonUnescape, StrEscape, ToJson, ToStr,
 };
 
 use wp_data_fmt::{DataFormat, Json};
 use wp_model_core::model::{DataField, DataType, Value};
 
-impl ValueProcessor for PipeStrEscapeEN {
+impl ValueProcessor for StrEscape {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -18,7 +17,7 @@ impl ValueProcessor for PipeStrEscapeEN {
         }
     }
 }
-impl ValueProcessor for PipeHtmlEscapeEncode {
+impl ValueProcessor for HtmlEscape {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -31,7 +30,7 @@ impl ValueProcessor for PipeHtmlEscapeEncode {
         }
     }
 }
-impl ValueProcessor for PipeJsonEscapeEN {
+impl ValueProcessor for JsonEscape {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -42,7 +41,7 @@ impl ValueProcessor for PipeJsonEscapeEN {
         }
     }
 }
-impl ValueProcessor for PipeJsonEscapeDE {
+impl ValueProcessor for JsonUnescape {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -58,7 +57,7 @@ impl ValueProcessor for PipeJsonEscapeDE {
     }
 }
 
-impl ValueProcessor for PipeHtmlEscapeDecode {
+impl ValueProcessor for HtmlUnescape {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -70,7 +69,7 @@ impl ValueProcessor for PipeHtmlEscapeDecode {
         }
     }
 }
-impl ValueProcessor for PipeToString {
+impl ValueProcessor for ToStr {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(_) => in_val,
@@ -81,7 +80,7 @@ impl ValueProcessor for PipeToString {
         }
     }
 }
-impl ValueProcessor for PipeToJson {
+impl ValueProcessor for ToJson {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         let meta = DataType::Json;
         let json_fmt = Json;
@@ -107,7 +106,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | html_escape_en | html_escape_de;
+        X : chars =  pipe take(A1) | html_escape | html_unescape;
          "#;
         let model = oml_parse(&mut conf).assert();
 
@@ -126,7 +125,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | str_escape_en  ;
+        X : chars =  pipe take(A1) | str_escape  ;
          "#;
         let model = oml_parse(&mut conf).assert();
 
@@ -145,7 +144,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | json_escape_en  | json_escape_de ;
+        X : chars =  pipe take(A1) | json_escape  | json_unescape ;
          "#;
         let model = oml_parse(&mut conf).assert();
 

@@ -254,7 +254,7 @@ mod tests {
         let mut code = r#" select a, b from table_1 where x = take (src);"#;
         assert_oml_parse(&mut code, oml_sql);
 
-        let mut code = r#" select a, b from table_1 where x = Time::now() ;"#;
+        let mut code = r#" select a, b from table_1 where x = Now::time() ;"#;
         assert_oml_parse(&mut code, oml_sql);
 
         let mut code = r#" select a, b from table_1 where x = 1 ;"#;
@@ -271,7 +271,7 @@ mod tests {
     #[test]
     fn test_oml_sql2() -> ModalResult<()> {
         super::set_sql_strict_for_test(Some(true));
-        let mut code = r#" select a, b from table_1 where x = Time::now() and y = read(src) ;"#;
+        let mut code = r#" select a, b from table_1 where x = Now::time() and y = read(src) ;"#;
         assert_oml_parse(&mut code, oml_sql);
 
         Ok(())

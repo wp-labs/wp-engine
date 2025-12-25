@@ -1,8 +1,8 @@
 use crate::core::prelude::*;
-use crate::language::PipeIp4Int;
+use crate::language::Ip4ToInt;
 use wp_model_core::model::{DataField, Value};
 
-impl ValueProcessor for PipeIp4Int {
+impl ValueProcessor for Ip4ToInt {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::IpAddr(ip) => {
@@ -38,7 +38,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X  =  pipe  read(src_ip) | to_ip4_int ;
+        X  =  pipe  read(src_ip) | ip4_to_int ;
          "#;
         let model = oml_parse(&mut conf).assert();
         let target = model.transform(src, cache);

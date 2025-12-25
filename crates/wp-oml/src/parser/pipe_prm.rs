@@ -1,18 +1,15 @@
 use std::str::FromStr;
 
 use crate::language::{
-    EncodeType, PIPE_ARR_GET, PIPE_BASE64_DE, PIPE_HTML_ESCAPE_DE, PIPE_HTML_ESCAPE_EN,
-    PIPE_JSON_ESCAPE_DE, PIPE_JSON_ESCAPE_EN, PIPE_OBJ_GET, PIPE_PATH_GET, PIPE_SKIP_IF_EMPTY,
-    PIPE_STR_ESCAPE_EN, PIPE_SXF_GET, PIPE_TIMESTAMP, PIPE_TIMESTAMP_MS, PIPE_TIMESTAMP_US,
-    PIPE_TIMESTAMP_ZONE, PIPE_TO_JSON, PIPE_URL_GET, PathType, PipeArrGet, PipeHtmlEscapeDecode,
-    PipeHtmlEscapeEncode, PipeJsonEscapeDE, PipeJsonEscapeEN, PipeObjGet, PipePathGet,
-    PipeSkipIfEmpty, PipeStrEscapeEN, PipeSxfGet, PipeTimeStamp, PipeTimeStampMS, PipeTimeStampUS,
-    PipeTimeStampZone, PipeToJson, PipeUrlGet, PreciseEvaluator, TimeStampUnit, UrlType,
+    Base64Decode, EncodeType, Get, HtmlEscape, HtmlUnescape, JsonEscape, JsonUnescape, Nth,
+    PIPE_BASE64_DECODE, PIPE_GET, PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_JSON_ESCAPE,
+    PIPE_JSON_UNESCAPE, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET,
+    PIPE_TIME_TO_TS, PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON,
+    PIPE_URL, PathGet, PathType, SkipEmpty, StrEscape, SxfGet, TimeToTs, TimeToTsMs, TimeToTsUs,
+    TimeToTsZone, TimeStampUnit, ToJson, UrlGet, UrlType, PreciseEvaluator,
 };
-use crate::language::{PIPE_BASE64_EN, PIPE_TO_STRING, PipeBase64Decode};
-use crate::language::{
-    PIPE_IP4_INT, PiPeOperation, PipeBase64Encode, PipeFun, PipeIp4Int, PipeToString,
-};
+use crate::language::{Base64Encode, PIPE_BASE64_ENCODE, PIPE_TO_STR, ToStr};
+use crate::language::{Ip4ToInt, PiPeOperation, PIPE_IP4_TO_INT, PipeFun};
 use crate::parser::keyword::kw_gw_pipe;
 use crate::parser::oml_aggregate::oml_var_get;
 use crate::winnow::error::ParserError;
@@ -27,7 +24,7 @@ use wp_parser::fun::parser;
 use wp_parser::symbol::symbol_pipe;
 use wpl::parser::utils::take_key;
 
-impl Fun1Builder for PipeArrGet {
+impl Fun1Builder for Nth {
     type ARG1 = usize;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -37,18 +34,18 @@ impl Fun1Builder for PipeArrGet {
     }
 
     fn fun_name() -> &'static str {
-        PIPE_ARR_GET
+        PIPE_NTH
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipeArrGet { index: args }
+        Nth { index: args }
     }
 }
-impl Fun2Builder for PipeTimeStampZone {
+impl Fun2Builder for TimeToTsZone {
     type ARG1 = i32;
     type ARG2 = TimeStampUnit;
     fn fun_name() -> &'static str {
-        PIPE_TIMESTAMP_ZONE
+        PIPE_TIME_TO_TS_ZONE
     }
     fn args1(data: &mut &str) -> WResult<i32> {
         let sign = opt("-").parse_next(data)?;
@@ -67,14 +64,14 @@ impl Fun2Builder for PipeTimeStampZone {
         .parse_next(data)?;
         Ok(unit)
     }
-    fn build(args: (i32, TimeStampUnit)) -> PipeTimeStampZone {
-        PipeTimeStampZone {
+    fn build(args: (i32, TimeStampUnit)) -> TimeToTsZone {
+        TimeToTsZone {
             zone: args.0,
             unit: args.1,
         }
     }
 }
-impl Fun1Builder for PipeObjGet {
+impl Fun1Builder for Get {
     type ARG1 = String;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -83,14 +80,14 @@ impl Fun1Builder for PipeObjGet {
     }
 
     fn fun_name() -> &'static str {
-        PIPE_OBJ_GET
+        PIPE_GET
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipeObjGet { name: args }
+        Get { name: args }
     }
 }
-impl Fun1Builder for PipeBase64Decode {
+impl Fun1Builder for Base64Decode {
     type ARG1 = EncodeType;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -109,14 +106,14 @@ impl Fun1Builder for PipeBase64Decode {
     }
 
     fn fun_name() -> &'static str {
-        PIPE_BASE64_DE
+        PIPE_BASE64_DECODE
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipeBase64Decode { encode: args }
+        Base64Decode { encode: args }
     }
 }
-impl Fun1Builder for PipeSxfGet {
+impl Fun1Builder for SxfGet {
     type ARG1 = String;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -131,10 +128,10 @@ impl Fun1Builder for PipeSxfGet {
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipeSxfGet { key: args }
+        SxfGet { key: args }
     }
 }
-impl Fun1Builder for PipePathGet {
+impl Fun1Builder for PathGet {
     type ARG1 = PathType;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -146,21 +143,21 @@ impl Fun1Builder for PipePathGet {
             Ok(PathType::Default)
         } else {
             Ok(PathType::from_str(val).map_err(|e| {
-                warn_data!("invalid path_get arg '{}': {}", val, e);
+                warn_data!("invalid path arg '{}': {}", val, e);
                 ErrMode::<ContextError>::from_input(data)
             })?)
         }
     }
 
     fn fun_name() -> &'static str {
-        PIPE_PATH_GET
+        PIPE_PATH
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipePathGet { key: args }
+        PathGet { key: args }
     }
 }
-impl Fun1Builder for PipeUrlGet {
+impl Fun1Builder for UrlGet {
     type ARG1 = UrlType;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -172,18 +169,18 @@ impl Fun1Builder for PipeUrlGet {
             Ok(UrlType::Default)
         } else {
             Ok(UrlType::from_str(val).map_err(|e| {
-                warn_data!("invalid url_get arg '{}': {}", val, e);
+                warn_data!("invalid url arg '{}': {}", val, e);
                 ErrMode::<ContextError>::from_input(data)
             })?)
         }
     }
 
     fn fun_name() -> &'static str {
-        PIPE_URL_GET
+        PIPE_URL
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PipeUrlGet { key: args }
+        UrlGet { key: args }
     }
 }
 pub fn oml_aga_pipe(data: &mut &str) -> WResult<PreciseEvaluator> {
@@ -210,26 +207,26 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
     symbol_pipe.parse_next(data)?;
     multispace0.parse_next(data)?;
     let fun = alt((
-        parser::call_fun_args2::<PipeTimeStampZone>.map(PipeFun::TimeStampZone),
-        parser::call_fun_args1::<PipeArrGet>.map(PipeFun::ArrGet),
-        parser::call_fun_args1::<PipeObjGet>.map(PipeFun::ObjGet),
-        parser::call_fun_args1::<PipeBase64Decode>.map(PipeFun::DeBase64),
-        parser::call_fun_args1::<PipeSxfGet>.map(PipeFun::SxfGet),
-        parser::call_fun_args1::<PipePathGet>.map(PipeFun::PathGet),
-        parser::call_fun_args1::<PipeUrlGet>.map(PipeFun::UrlGet),
-        PIPE_HTML_ESCAPE_EN.map(|_| PipeFun::EnHtmlEscape(PipeHtmlEscapeEncode::default())),
-        PIPE_HTML_ESCAPE_DE.map(|_| PipeFun::DeHtmlEscape(PipeHtmlEscapeDecode::default())),
-        PIPE_STR_ESCAPE_EN.map(|_| PipeFun::EnStrEscape(PipeStrEscapeEN::default())),
-        PIPE_JSON_ESCAPE_EN.map(|_| PipeFun::EnJsonEscape(PipeJsonEscapeEN::default())),
-        PIPE_JSON_ESCAPE_DE.map(|_| PipeFun::DeJsonEscape(PipeJsonEscapeDE::default())),
-        PIPE_BASE64_EN.map(|_| PipeFun::EnBase64(PipeBase64Encode::default())),
-        PIPE_TIMESTAMP_MS.map(|_| PipeFun::TimeStampMs(PipeTimeStampMS::default())),
-        PIPE_TIMESTAMP_US.map(|_| PipeFun::TimeStampUs(PipeTimeStampUS::default())),
-        PIPE_TIMESTAMP.map(|_| PipeFun::TimeStamp(PipeTimeStamp::default())),
-        PIPE_TO_JSON.map(|_| PipeFun::ToJson(PipeToJson::default())),
-        PIPE_TO_STRING.map(|_| PipeFun::ToStr(PipeToString::default())),
-        PIPE_SKIP_IF_EMPTY.map(|_| PipeFun::SkipIfEmpty(PipeSkipIfEmpty::default())),
-        PIPE_IP4_INT.map(|_| PipeFun::Ip4Int(PipeIp4Int::default())),
+        parser::call_fun_args2::<TimeToTsZone>.map(PipeFun::TimeToTsZone),
+        parser::call_fun_args1::<Nth>.map(PipeFun::Nth),
+        parser::call_fun_args1::<Get>.map(PipeFun::Get),
+        parser::call_fun_args1::<Base64Decode>.map(PipeFun::Base64Decode),
+        parser::call_fun_args1::<SxfGet>.map(PipeFun::SxfGet),
+        parser::call_fun_args1::<PathGet>.map(PipeFun::PathGet),
+        parser::call_fun_args1::<UrlGet>.map(PipeFun::UrlGet),
+        PIPE_HTML_ESCAPE.map(|_| PipeFun::HtmlEscape(HtmlEscape::default())),
+        PIPE_HTML_UNESCAPE.map(|_| PipeFun::HtmlUnescape(HtmlUnescape::default())),
+        PIPE_STR_ESCAPE.map(|_| PipeFun::StrEscape(StrEscape::default())),
+        PIPE_JSON_ESCAPE.map(|_| PipeFun::JsonEscape(JsonEscape::default())),
+        PIPE_JSON_UNESCAPE.map(|_| PipeFun::JsonUnescape(JsonUnescape::default())),
+        PIPE_BASE64_ENCODE.map(|_| PipeFun::Base64Encode(Base64Encode::default())),
+        PIPE_TIME_TO_TS_MS.map(|_| PipeFun::TimeToTsMs(TimeToTsMs::default())),
+        PIPE_TIME_TO_TS_US.map(|_| PipeFun::TimeToTsUs(TimeToTsUs::default())),
+        PIPE_TIME_TO_TS.map(|_| PipeFun::TimeToTs(TimeToTs::default())),
+        PIPE_TO_JSON.map(|_| PipeFun::ToJson(ToJson::default())),
+        PIPE_TO_STR.map(|_| PipeFun::ToStr(ToStr::default())),
+        PIPE_SKIP_EMPTY.map(|_| PipeFun::SkipEmpty(SkipEmpty::default())),
+        PIPE_IP4_TO_INT.map(|_| PipeFun::Ip4ToInt(Ip4ToInt::default())),
     ))
     .parse_next(data)?;
     Ok(fun)
@@ -243,32 +240,32 @@ mod tests {
 
     #[test]
     fn test_oml_crate_lib() -> WResult<()> {
-        let mut code = r#" pipe take(ip) | to_string | to_json | base64_en | base64_de(Utf8)"#;
+        let mut code = r#" pipe take(ip) | to_str | to_json | base64_encode | base64_decode(Utf8)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
         let mut code =
-            r#" pipe take(ip) | to_string | html_escape_en | html_escape_de | str_escape_en"#;
+            r#" pipe take(ip) | to_str | html_escape | html_unescape | str_escape"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | to_string | json_escape_en | json_escape_de"#;
+        let mut code = r#" pipe take(ip) | to_str | json_escape | json_unescape"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | to_timestamp | to_timestamp_ms | to_timestamp_us"#;
+        let mut code = r#" pipe take(ip) | Time::to_ts | Time::to_ts_ms | Time::to_ts_us"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | to_timestamp_zone(8,ms) | to_timestamp_zone(-8,ss)"#;
+        let mut code = r#" pipe take(ip) | Time::to_ts_zone(8,ms) | Time::to_ts_zone(-8,ss)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | skip_if_empty"#;
+        let mut code = r#" pipe take(ip) | skip_empty"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
         let mut code = r#" pipe take(ip) | sxf_get(xx)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | path_get(name)"#;
+        let mut code = r#" pipe take(ip) | path(name)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | url_get(host)"#;
+        let mut code = r#" pipe take(ip) | url(host)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
         Ok(())
     }

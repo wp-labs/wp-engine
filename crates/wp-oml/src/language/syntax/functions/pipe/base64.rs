@@ -1,13 +1,13 @@
 use strum_macros::EnumString;
 
 use crate::language::prelude::*;
-pub const PIPE_BASE64_EN: &str = "base64_en";
+pub const PIPE_BASE64_ENCODE: &str = "base64_encode";
 #[derive(Default, Builder, Debug, Clone, Getters, Serialize, Deserialize)]
-pub struct PipeBase64Encode {}
+pub struct Base64Encode {}
 
-pub const PIPE_BASE64_DE: &str = "base64_de";
+pub const PIPE_BASE64_DECODE: &str = "base64_decode";
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct PipeBase64Decode {
+pub struct Base64Decode {
     pub encode: EncodeType,
 }
 #[derive(Default, Debug, Clone, Serialize, Deserialize, EnumString, strum_macros::Display)]
@@ -56,8 +56,8 @@ pub enum EncodeType {
     Imap,
 }
 
-impl Display for PipeBase64Decode {
+impl Display for Base64Decode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", PIPE_BASE64_DE, self.encode)
+        write!(f, "{}({})", PIPE_BASE64_DECODE, self.encode)
     }
 }

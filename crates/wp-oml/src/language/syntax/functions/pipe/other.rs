@@ -4,32 +4,32 @@ use strum_macros::EnumString;
 
 use wp_parser::fun::fun_trait::Fun1Builder;
 
-pub const PIPE_TO_STRING: &str = "to_string";
+pub const PIPE_TO_STR: &str = "to_str";
 #[derive(Default, Builder, Debug, Clone, Getters, Serialize, Deserialize)]
-pub struct PipeToString {}
+pub struct ToStr {}
 
-pub const PIPE_ARR_GET: &str = "arr_get";
+pub const PIPE_NTH: &str = "nth";
 #[derive(Clone, Debug, Default, Builder)]
-pub struct PipeArrGet {
+pub struct Nth {
     pub(crate) index: usize,
 }
-impl Display for PipeArrGet {
+impl Display for Nth {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({})", Self::fun_name(), self.index)
     }
 }
 
-pub const PIPE_SKIP_IF_EMPTY: &str = "skip_if_empty";
+pub const PIPE_SKIP_EMPTY: &str = "skip_empty";
 #[derive(Clone, Debug, Default)]
-pub struct PipeSkipIfEmpty {}
+pub struct SkipEmpty {}
 
-pub const PIPE_OBJ_GET: &str = "obj_get";
+pub const PIPE_GET: &str = "get";
 #[derive(Clone, Debug, Default)]
-pub struct PipeObjGet {
+pub struct Get {
     pub(crate) name: String,
 }
 
-impl Display for PipeObjGet {
+impl Display for Get {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({})", Self::fun_name(), self.name)
     }
@@ -37,11 +37,11 @@ impl Display for PipeObjGet {
 
 pub const PIPE_SXF_GET: &str = "sxf_get";
 #[derive(Default, Debug, Clone)]
-pub struct PipeSxfGet {
+pub struct SxfGet {
     pub key: String,
 }
 
-impl Display for PipeSxfGet {
+impl Display for SxfGet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({})", PIPE_SXF_GET, self.key)
     }
@@ -56,15 +56,15 @@ pub enum PathType {
     #[strum(serialize = "path")]
     Path,
 }
-pub const PIPE_PATH_GET: &str = "path_get";
+pub const PIPE_PATH: &str = "path";
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct PipePathGet {
+pub struct PathGet {
     pub key: PathType,
 }
 
-impl Display for PipePathGet {
+impl Display for PathGet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", PIPE_PATH_GET, self.key)
+        write!(f, "{}({})", PIPE_PATH, self.key)
     }
 }
 
@@ -89,26 +89,26 @@ pub enum UrlType {
     HttpReqParams,
 }
 
-pub const PIPE_URL_GET: &str = "url_get";
+pub const PIPE_URL: &str = "url";
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct PipeUrlGet {
+pub struct UrlGet {
     pub key: UrlType,
 }
 
-impl Display for PipeUrlGet {
+impl Display for UrlGet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", PIPE_URL_GET, self.key)
+        write!(f, "{}({})", PIPE_URL, self.key)
     }
 }
 
 #[derive(Default, Builder, Debug, Clone, Getters, Serialize, Deserialize)]
-pub struct PipeDumb {}
-impl Display for PipeDumb {
+pub struct Dumb {}
+impl Display for Dumb {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", PIPE_TO_STRING)
+        write!(f, "{}", PIPE_TO_STR)
     }
 }
-impl ValueProcessor for PipeDumb {
+impl ValueProcessor for Dumb {
     fn value_cacu(&self, _in_val: DataField) -> DataField {
         todo!()
     }

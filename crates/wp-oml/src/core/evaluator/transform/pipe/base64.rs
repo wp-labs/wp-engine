@@ -1,5 +1,5 @@
 use crate::core::prelude::*;
-use crate::language::{EncodeType, PipeBase64Decode, PipeBase64Encode};
+use crate::language::{Base64Decode, Base64Encode, EncodeType};
 use base64::Engine;
 use base64::engine::general_purpose;
 use encoding_rs::{
@@ -12,7 +12,7 @@ use encoding_rs::{
 use imap_types::utils::escape_byte_string;
 use wp_model_core::model::{DataField, Value};
 
-impl ValueProcessor for PipeBase64Encode {
+impl ValueProcessor for Base64Encode {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -23,7 +23,7 @@ impl ValueProcessor for PipeBase64Encode {
         }
     }
 }
-impl ValueProcessor for PipeBase64Decode {
+impl ValueProcessor for Base64Decode {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -230,9 +230,9 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | base64_en | base64_de() ;
-        Y : chars =  pipe take(B2) | base64_de(Imap) ;
-        Z : chars =  pipe take(C3) | base64_de(Imap) ;
+        X : chars =  pipe take(A1) | base64_encode | base64_decode() ;
+        Y : chars =  pipe take(B2) | base64_decode(Imap) ;
+        Z : chars =  pipe take(C3) | base64_decode(Imap) ;
          "#;
         let model = oml_parse(&mut conf).unwrap();
 
