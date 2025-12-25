@@ -5,11 +5,11 @@ use crate::language::{
     PIPE_BASE64_DECODE, PIPE_GET, PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_JSON_ESCAPE,
     PIPE_JSON_UNESCAPE, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET,
     PIPE_TIME_TO_TS, PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON,
-    PIPE_URL, PathGet, PathType, SkipEmpty, StrEscape, SxfGet, TimeToTs, TimeToTsMs, TimeToTsUs,
-    TimeToTsZone, TimeStampUnit, ToJson, UrlGet, UrlType, PreciseEvaluator,
+    PIPE_URL, PathGet, PathType, PreciseEvaluator, SkipEmpty, StrEscape, SxfGet, TimeStampUnit,
+    TimeToTs, TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, UrlGet, UrlType,
 };
 use crate::language::{Base64Encode, PIPE_BASE64_ENCODE, PIPE_TO_STR, ToStr};
-use crate::language::{Ip4ToInt, PiPeOperation, PIPE_IP4_TO_INT, PipeFun};
+use crate::language::{Ip4ToInt, PIPE_IP4_TO_INT, PiPeOperation, PipeFun};
 use crate::parser::keyword::kw_gw_pipe;
 use crate::parser::oml_aggregate::oml_var_get;
 use crate::winnow::error::ParserError;
@@ -243,8 +243,7 @@ mod tests {
         let mut code = r#" pipe take(ip) | to_str | to_json | base64_encode | base64_decode(Utf8)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code =
-            r#" pipe take(ip) | to_str | html_escape | html_unescape | str_escape"#;
+        let mut code = r#" pipe take(ip) | to_str | html_escape | html_unescape | str_escape"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
         let mut code = r#" pipe take(ip) | to_str | json_escape | json_unescape"#;

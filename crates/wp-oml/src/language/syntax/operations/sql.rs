@@ -54,7 +54,9 @@ mod tests {
         let result = format!("{}", sql_prm);
         assert_eq!(result, "select a,b from table_1 where a = read(  )   ;");
 
-        let acq = CondAccessor::Fun(FunOperation::new(BuiltinFunction::NowTime(NowTime::default())));
+        let acq = CondAccessor::Fun(FunOperation::new(BuiltinFunction::NowTime(
+            NowTime::default(),
+        )));
         let mut vars = HashMap::new();
         vars.insert("A".to_string(), acq);
         let sql_prm = SqlQuery::new("select a,b from table_1 where a = :A".into(), vars);
