@@ -5,14 +5,12 @@ use std::fmt::{Display, Formatter};
 use derive_getters::Getters;
 #[derive(strum_macros::Display, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BuiltinFunction {
-    #[strum(to_string = "Time::now")]
-    Now(FunNow),
-    #[strum(to_string = "Time::now_date")]
-    NowDate(FunNowDate),
-    #[strum(to_string = "Time::now_time")]
-    NowTime(FunNowTime),
-    #[strum(to_string = "Time::now_hour")]
-    NowHour(FunNowHour),
+    #[strum(to_string = "Now::time")]
+    NowTime(NowTime),
+    #[strum(to_string = "Now::date")]
+    NowDate(NowDate),
+    #[strum(to_string = "Now::hour")]
+    NowHour(NowHour),
 }
 
 #[derive(Debug, Clone, Getters, Serialize, Deserialize, PartialEq)]
@@ -31,13 +29,12 @@ impl Display for FunOperation {
 }
 
 pub use pipe::{
-    EncodeType, PIPE_ARR_GET, PIPE_BASE64_DE, PIPE_BASE64_EN, PIPE_HTML_ESCAPE_DE,
-    PIPE_HTML_ESCAPE_EN, PIPE_JSON_ESCAPE_DE, PIPE_JSON_ESCAPE_EN, PIPE_OBJ_GET, PIPE_PATH_GET,
-    PIPE_SKIP_IF_EMPTY, PIPE_STR_ESCAPE_EN, PIPE_SXF_GET, PIPE_TIMESTAMP, PIPE_TIMESTAMP_MS,
-    PIPE_TIMESTAMP_US, PIPE_TIMESTAMP_ZONE, PIPE_TO_JSON, PIPE_TO_STRING, PIPE_URL_GET, PathType,
-    PipeArrGet, PipeBase64Decode, PipeBase64Encode, PipeFun, PipeHtmlEscapeDecode,
-    PipeHtmlEscapeEncode, PipeJsonEscapeDE, PipeJsonEscapeEN, PipeObjGet, PipePathGet,
-    PipeSkipIfEmpty, PipeStrEscapeEN, PipeSxfGet, PipeTimeStamp, PipeTimeStampMS, PipeTimeStampUS,
-    PipeTimeStampZone, PipeToJson, PipeToString, PipeUrlGet, TimeStampUnit, UrlType,
+    Base64Decode, Base64Encode, Dumb, EncodeType, Get, HtmlEscape, HtmlUnescape, Ip4ToInt,
+    JsonEscape, JsonUnescape, Nth, PIPE_BASE64_DECODE, PIPE_BASE64_ENCODE, PIPE_GET,
+    PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_IP4_TO_INT, PIPE_JSON_ESCAPE, PIPE_JSON_UNESCAPE,
+    PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET, PIPE_TIME_TO_TS,
+    PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON, PIPE_TO_STR,
+    PIPE_URL, PathGet, PathType, PipeFun, SkipEmpty, StrEscape, SxfGet, TimeStampUnit, TimeToTs,
+    TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, ToStr, UrlGet, UrlType,
 };
 pub use time::*;

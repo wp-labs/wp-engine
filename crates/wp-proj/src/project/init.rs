@@ -210,7 +210,6 @@ impl WarpProject {
 mod tests {
     use super::*;
     use std::path::Path;
-
     const CONNECTORS_DIR: &str = "connectors";
     const CONNECTORS_SOURCE_DIR: &str = "connectors/source.d";
     const CONNECTORS_SINK_DIR: &str = "connectors/sink.d";
@@ -337,14 +336,6 @@ mod tests {
             work_root.join(CONNECTORS_SINK_DIR).exists(),
             "sink.d directory should exist"
         );
-        assert!(
-            !work_root.join(LEGACY_SOURCE_DIR).exists(),
-            "legacy top-level source.d should not be created"
-        );
-        assert!(
-            !work_root.join(LEGACY_SINK_DIR).exists(),
-            "legacy top-level sink.d should not be created"
-        );
 
         assert!(
             work_root.join(MODELS_DIR).exists(),
@@ -440,6 +431,18 @@ mod tests {
         );
 
         // 验证模型目录和文件
+        assert!(
+            work_root.join(MODELS_DIR).exists(),
+            "models directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_WPL_DIR).exists(),
+            "wpl directory should exist"
+        );
+        assert!(
+            work_root.join(MODELS_OML_DIR).exists(),
+            "oml directory should exist"
+        );
         assert!(
             work_root.join(MODELS_DIR).exists(),
             "models directory should exist"
@@ -639,14 +642,6 @@ mod tests {
         assert!(
             !work_root.join(CONNECTORS_DIR).exists(),
             "connectors directory should not exist in model init"
-        );
-        assert!(
-            !work_root.join(LEGACY_SOURCE_DIR).exists(),
-            "legacy top-level source.d should not exist in model init"
-        );
-        assert!(
-            !work_root.join(LEGACY_SINK_DIR).exists(),
-            "legacy top-level sink.d should not exist in model init"
         );
     }
 

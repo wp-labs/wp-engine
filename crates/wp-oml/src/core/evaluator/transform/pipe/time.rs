@@ -1,9 +1,9 @@
 use crate::core::prelude::*;
-use crate::language::{PipeTimeStamp, PipeTimeStampMS, PipeTimeStampUS, PipeTimeStampZone};
+use crate::language::{TimeToTs, TimeToTsMs, TimeToTsUs, TimeToTsZone};
 use chrono::FixedOffset;
 use wp_model_core::model::{DataField, Value};
 
-impl ValueProcessor for PipeTimeStamp {
+impl ValueProcessor for TimeToTs {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Time(x) => {
@@ -20,7 +20,7 @@ impl ValueProcessor for PipeTimeStamp {
         }
     }
 }
-impl ValueProcessor for PipeTimeStampMS {
+impl ValueProcessor for TimeToTsMs {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Time(x) => {
@@ -39,7 +39,7 @@ impl ValueProcessor for PipeTimeStampMS {
         }
     }
 }
-impl ValueProcessor for PipeTimeStampUS {
+impl ValueProcessor for TimeToTsUs {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Time(x) => {
@@ -58,7 +58,7 @@ impl ValueProcessor for PipeTimeStampUS {
         }
     }
 }
-impl ValueProcessor for PipeTimeStampZone {
+impl ValueProcessor for TimeToTsZone {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Time(x) => {
@@ -112,9 +112,9 @@ mod tests {
         name : test
         ---
         Y  =  time(2000-10-10 0:0:0);
-        X  =  pipe  read(Y) | to_timestamp ;
-        Z  =  pipe  read(Y) | to_timestamp_ms ;
-        U  =  pipe  read(Y) | to_timestamp_us ;
+        X  =  pipe  read(Y) | Time::to_ts ;
+        Z  =  pipe  read(Y) | Time::to_ts_ms ;
+        U  =  pipe  read(Y) | Time::to_ts_us ;
          "#;
         let model = oml_parse(&mut conf).assert();
         let target = model.transform(src, cache);

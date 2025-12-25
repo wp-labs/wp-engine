@@ -1,7 +1,7 @@
 use crate::language::{
-    BuiltinFunction, FUN_TIME_NOW, FUN_TIME_NOW_DATE, FUN_TIME_NOW_TIME, FunNowTime, FunOperation,
+    BuiltinFunction, FUN_NOW_DATE, FUN_NOW_HOUR, FUN_NOW_TIME, FunOperation, NowDate, NowHour,
+    NowTime, PreciseEvaluator,
 };
-use crate::language::{FUN_TIME_NOW_HOUR, FunNow, FunNowDate, FunNowHour, PreciseEvaluator};
 use winnow::ascii::multispace0;
 use winnow::combinator::alt;
 use wp_parser::Parser;
@@ -16,10 +16,9 @@ pub fn oml_gw_fun(data: &mut &str) -> WResult<PreciseEvaluator> {
 pub fn oml_fun_item(data: &mut &str) -> WResult<BuiltinFunction> {
     multispace0.parse_next(data)?;
     let fun = alt((
-        FUN_TIME_NOW_DATE.map(|_| BuiltinFunction::NowDate(FunNowDate::default())),
-        FUN_TIME_NOW_HOUR.map(|_| BuiltinFunction::NowHour(FunNowHour::default())),
-        FUN_TIME_NOW_TIME.map(|_| BuiltinFunction::NowTime(FunNowTime::default())),
-        FUN_TIME_NOW.map(|_| BuiltinFunction::Now(FunNow::default())),
+        FUN_NOW_DATE.map(|_| BuiltinFunction::NowDate(NowDate::default())),
+        FUN_NOW_HOUR.map(|_| BuiltinFunction::NowHour(NowHour::default())),
+        FUN_NOW_TIME.map(|_| BuiltinFunction::NowTime(NowTime::default())),
     ))
     .parse_next(data)?;
     let _ = get_scope(data, '(', ')');
@@ -34,19 +33,15 @@ mod tests {
 
     #[test]
     fn test_oml_crate_lib() -> ModalResult<()> {
-        let mut code = r#" Time::now()
+        let mut code = r#" Now::time()
      "#;
         assert_oml_parse(&mut code, oml_gw_fun);
 
-        let mut code = r#" Time::now_hour()
+        let mut code = r#" Now::hour()
      "#;
         assert_oml_parse(&mut code, oml_gw_fun);
 
-        let mut code = r#" Time::now_date()
-     "#;
-        assert_oml_parse(&mut code, oml_gw_fun);
-
-        let mut code = r#" Time::now_time()
+        let mut code = r#" Now::date()
      "#;
         assert_oml_parse(&mut code, oml_gw_fun);
 

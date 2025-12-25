@@ -17,8 +17,7 @@ use wp_parser::{
 use crate::ast::{
     WplFun,
     processor::{
-        ExistsChars, PFCharsExists, PFCharsIn, PFCharsNotExists, PFDigitExists, PFDigitIn,
-        PFFdExists, PFIpAddrIn,
+        ExistsChars, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas,
     },
 };
 
@@ -27,20 +26,20 @@ use super::utils::take_key;
 pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
     multispace0.parse_next(input)?;
     let fun = alt((
-        call_fun_args2::<PFCharsExists>.map(WplFun::CharsExists),
-        call_fun_args2::<PFCharsNotExists>.map(WplFun::CharsNotExists),
-        call_fun_args2::<PFCharsIn>.map(WplFun::CharsIn),
-        call_fun_args2::<PFDigitExists>.map(WplFun::DigitExists),
-        call_fun_args2::<PFDigitIn>.map(WplFun::DigitIn),
-        call_fun_args2::<PFIpAddrIn>.map(WplFun::IpAddrIn),
-        call_fun_args1::<PFFdExists>.map(WplFun::Exists),
-        call_fun_args1::<PFStrMode>.map(WplFun::StrMode),
+        call_fun_args2::<FCharsHas>.map(WplFun::FCharsExists),
+        call_fun_args2::<FCharsNotHas>.map(WplFun::FCharsNotExists),
+        call_fun_args2::<FCharsIn>.map(WplFun::FCharsIn),
+        call_fun_args2::<FDigitHas>.map(WplFun::FDigitExists),
+        call_fun_args2::<FDigitIn>.map(WplFun::FDigitIn),
+        call_fun_args2::<FIpAddrIn>.map(WplFun::FIpAddrIn),
+        call_fun_args1::<FdHas>.map(WplFun::FExists),
+        call_fun_args1::<CharsDecode>.map(WplFun::CDecode),
     ))
     .parse_next(input)?;
     Ok(fun)
 }
 
-impl Fun2Builder for PFDigitExists {
+impl Fun2Builder for FDigitHas {
     type ARG1 = String;
     type ARG2 = i64;
 
@@ -56,7 +55,7 @@ impl Fun2Builder for PFDigitExists {
     }
 
     fn fun_name() -> &'static str {
-        "exists_digit"
+        "f_digit_has"
     }
 
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
@@ -66,7 +65,7 @@ impl Fun2Builder for PFDigitExists {
         }
     }
 }
-impl Fun2Builder for PFCharsExists {
+impl Fun2Builder for FCharsHas {
     type ARG1 = String;
     type ARG2 = String;
 
@@ -82,7 +81,7 @@ impl Fun2Builder for PFCharsExists {
     }
 
     fn fun_name() -> &'static str {
-        "exists_chars"
+        "f_chars_has"
     }
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
         Self {
@@ -91,7 +90,7 @@ impl Fun2Builder for PFCharsExists {
         }
     }
 }
-impl Fun2Builder for PFCharsNotExists {
+impl Fun2Builder for FCharsNotHas {
     type ARG1 = String;
     type ARG2 = String;
 
@@ -107,7 +106,7 @@ impl Fun2Builder for PFCharsNotExists {
     }
 
     fn fun_name() -> &'static str {
-        "chars_not_exists"
+        "f_chars_not_has"
     }
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
         Self {
@@ -122,7 +121,7 @@ impl ParseNext<ExistsChars> for ExistsChars {
         Ok(ExistsChars(val.to_string()))
     }
 }
-impl Fun2Builder for PFCharsIn {
+impl Fun2Builder for FCharsIn {
     type ARG1 = String;
     type ARG2 = Vec<ExistsChars>;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -136,7 +135,7 @@ impl Fun2Builder for PFCharsIn {
     }
 
     fn fun_name() -> &'static str {
-        "exists_chars_in"
+        "f_chars_in"
     }
 
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
@@ -148,7 +147,7 @@ impl Fun2Builder for PFCharsIn {
     }
 }
 
-impl Fun2Builder for PFDigitIn {
+impl Fun2Builder for FDigitIn {
     type ARG1 = String;
     type ARG2 = Vec<i64>;
 
@@ -162,7 +161,7 @@ impl Fun2Builder for PFDigitIn {
     }
 
     fn fun_name() -> &'static str {
-        "exists_digit_in"
+        "f_digit_in"
     }
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
         Self {
@@ -171,7 +170,7 @@ impl Fun2Builder for PFDigitIn {
         }
     }
 }
-impl Fun1Builder for PFFdExists {
+impl Fun1Builder for FdHas {
     type ARG1 = String;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -181,7 +180,7 @@ impl Fun1Builder for PFFdExists {
     }
 
     fn fun_name() -> &'static str {
-        "exists"
+        "f_has"
     }
 
     fn build(args: Self::ARG1) -> Self {
@@ -189,7 +188,7 @@ impl Fun1Builder for PFFdExists {
     }
 }
 
-impl Fun2Builder for PFIpAddrIn {
+impl Fun2Builder for FIpAddrIn {
     type ARG1 = String;
     type ARG2 = Vec<IpAddr>;
 
@@ -203,7 +202,7 @@ impl Fun2Builder for PFIpAddrIn {
     }
 
     fn fun_name() -> &'static str {
-        "exists_ip_in"
+        "f_ip_in"
     }
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
         Self {
@@ -214,9 +213,9 @@ impl Fun2Builder for PFIpAddrIn {
 }
 
 // ---------------- String Mode ----------------
-use crate::ast::processor::PFStrMode;
+use crate::ast::processor::CharsDecode;
 
-impl Fun1Builder for PFStrMode {
+impl Fun1Builder for CharsDecode {
     type ARG1 = String;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -227,11 +226,11 @@ impl Fun1Builder for PFStrMode {
     }
 
     fn fun_name() -> &'static str {
-        "str_mode"
+        "chars_unescape"
     }
 
     fn build(args: Self::ARG1) -> Self {
-        PFStrMode { mode: args }
+        CharsDecode { mode: args }
     }
 }
 
@@ -241,35 +240,35 @@ mod tests {
 
     use orion_error::TestAssert;
 
-    use crate::ast::processor::PFFdExists;
+    use crate::ast::processor::FdHas;
 
     use super::*;
 
     #[test]
     fn test_parse_fun() {
-        let fun = wpl_fun.parse(r#"exists(src)"#).assert();
+        let fun = wpl_fun.parse(r#"f_has(src)"#).assert();
         assert_eq!(
             fun,
-            WplFun::Exists(PFFdExists {
+            WplFun::FExists(FdHas {
                 found: "src".to_string()
             })
         );
 
-        let fun = wpl_fun.parse(r#"exists_digit_in(src, [1,2,3])"#).assert();
+        let fun = wpl_fun.parse(r#"f_digit_in(src, [1,2,3])"#).assert();
         assert_eq!(
             fun,
-            WplFun::DigitIn(PFDigitIn {
+            WplFun::FDigitIn(FDigitIn {
                 target: "src".to_string(),
                 value: vec![1, 2, 3]
             })
         );
 
         let fun = wpl_fun
-            .parse(r#"exists_ip_in(src, [127.0.0.1, 127.0.0.2])"#)
+            .parse(r#"f_ip_in(src, [127.0.0.1, 127.0.0.2])"#)
             .assert();
         assert_eq!(
             fun,
-            WplFun::IpAddrIn(PFIpAddrIn {
+            WplFun::FIpAddrIn(FIpAddrIn {
                 target: "src".to_string(),
                 value: vec![
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
@@ -280,11 +279,11 @@ mod tests {
 
         // IPv6 裸字面量与混合示例
         let fun = wpl_fun
-            .parse(r#"exists_ip_in(src, [::1, 2001:db8::1])"#)
+            .parse(r#"f_ip_in(src, [::1, 2001:db8::1])"#)
             .assert();
         assert_eq!(
             fun,
-            WplFun::IpAddrIn(PFIpAddrIn {
+            WplFun::FIpAddrIn(FIpAddrIn {
                 target: "src".to_string(),
                 value: vec![
                     IpAddr::V6(Ipv6Addr::LOCALHOST),

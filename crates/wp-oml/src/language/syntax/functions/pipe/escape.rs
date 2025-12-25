@@ -1,14 +1,14 @@
-pub const PIPE_HTML_ESCAPE_EN: &str = "html_escape_en";
+pub const PIPE_HTML_ESCAPE: &str = "html_escape";
 #[derive(Clone, Debug, Default)]
-pub struct PipeHtmlEscapeEncode {}
+pub struct HtmlEscape {}
 
-pub const PIPE_HTML_ESCAPE_DE: &str = "html_escape_de";
+pub const PIPE_HTML_UNESCAPE: &str = "html_unescape";
 #[derive(Clone, Debug, Default)]
-pub struct PipeHtmlEscapeDecode {}
+pub struct HtmlUnescape {}
 
-pub const PIPE_STR_ESCAPE_EN: &str = "str_escape_en";
+pub const PIPE_STR_ESCAPE: &str = "str_escape";
 #[derive(Clone, Debug, Default)]
-pub struct PipeStrEscapeEN {}
+pub struct StrEscape {}
 
 #[allow(dead_code)]
-pub const PIPE_STR_ESCAPE_DE: &str = "str_escape_de";
+pub const PIPE_STR_UNESCAPE: &str = "str_unescape";

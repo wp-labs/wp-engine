@@ -1,13 +1,10 @@
-pub const FUN_TIME_NOW: &str = "Time::now";
-pub const FUN_TIME_NOW_DATE: &str = "Time::now_date";
-pub const FUN_TIME_NOW_TIME: &str = "Time::now_time";
-pub const FUN_TIME_NOW_HOUR: &str = "Time::now_hour";
+pub const FUN_NOW_TIME: &str = "Now::time";
+pub const FUN_NOW_DATE: &str = "Now::date";
+pub const FUN_NOW_HOUR: &str = "Now::hour";
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct FunNow {}
+pub struct NowTime {}
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct FunNowDate {}
+pub struct NowDate {}
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct FunNowTime {}
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct FunNowHour {}
+pub struct NowHour {}

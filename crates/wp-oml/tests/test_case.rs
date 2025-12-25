@@ -77,10 +77,10 @@ fn test_take_fun() {
     let mut conf = r#"
         name : test
         ---
-        A10  = read() { _ : Time::now_date() };
-        A20  = read() { _ : Time::now_date() };
-        A30  = read() { _ : Time::now_hour() };
-        A40  = read() { _ : Time::now_hour() };
+        A10  = read() { _ : Now::date() };
+        A20  = read() { _ : Now::date() };
+        A30  = read() { _ : Now::hour() };
+        A40  = read() { _ : Now::hour() };
         "#;
     let model = oml_parse(&mut conf).assert();
 
@@ -428,12 +428,12 @@ fn test_match4_get() -> ModalResult<()> {
     let mut conf = r#"
 name: csv_example
 ---
-occur_time : time =  Time::now()  ;
-occur_ss =  pipe read(occur_time)  | to_timestamp_zone(0,ss);
-occur_ms =  pipe read(occur_time)  | to_timestamp_zone(0,ms);
-occur_us =  pipe read(occur_time)  | to_timestamp_zone(0,us);
+occur_time : time =  Now::time()  ;
+occur_ss =  pipe read(occur_time)  | Time::to_ts_zone(0,ss);
+occur_ms =  pipe read(occur_time)  | Time::to_ts_zone(0,ms);
+occur_us =  pipe read(occur_time)  | Time::to_ts_zone(0,us);
 
-occur_ss1  =  pipe read(occur_time)  | to_timestamp_zone(8,s);
+occur_ss1  =  pipe read(occur_time)  | Time::to_ts_zone(8,s);
 X: chars = match  read(month) {
     in ( digit(1) , digit(3) ) => chars(Q1);
     in ( digit(4) , digit(6) ) => chars(Q2);
@@ -571,8 +571,8 @@ fn test_value_arr1() {
         name : test
         ---
         X1 : array = collect take(keys :[details[*]/process_name]);
-        X2  = pipe read(X1) | arr_get(0) ;
-        X3  = pipe read(X1) | arr_get(2) ;
+        X2  = pipe read(X1) | nth(0) ;
+        X3  = pipe read(X1) | nth(2) ;
         "#;
     let model = oml_parse(&mut conf).assert();
 

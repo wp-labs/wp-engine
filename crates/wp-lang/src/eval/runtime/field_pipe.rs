@@ -27,7 +27,7 @@ impl FieldIndex {
     }
 }
 
-pub trait DFPipeProcessor {
+pub trait FiledSetProcessor {
     fn process(&self, fields: &mut Vec<DataField>, index: Option<&FieldIndex>) -> ModalResult<()>;
 }
 #[derive(Clone)]
@@ -36,7 +36,7 @@ pub enum PipeEnum {
     Group(WplEvalGroup),
 }
 
-impl DFPipeProcessor for PipeEnum {
+impl FiledSetProcessor for PipeEnum {
     #[inline]
     fn process(&self, fields: &mut Vec<DataField>, index: Option<&FieldIndex>) -> ModalResult<()> {
         match self {

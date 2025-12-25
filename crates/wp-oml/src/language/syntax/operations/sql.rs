@@ -39,7 +39,7 @@ impl Display for SqlQuery {
 mod tests {
     use crate::language::FieldRead;
     use crate::language::SqlQuery;
-    use crate::language::{BuiltinFunction, FunNow, FunOperation, RecordOperation};
+    use crate::language::{BuiltinFunction, FunOperation, NowTime, RecordOperation};
     use crate::language::{CondAccessor, DirectAccessor};
     use std::collections::HashMap;
 
@@ -54,11 +54,13 @@ mod tests {
         let result = format!("{}", sql_prm);
         assert_eq!(result, "select a,b from table_1 where a = read(  )   ;");
 
-        let acq = CondAccessor::Fun(FunOperation::new(BuiltinFunction::Now(FunNow {})));
+        let acq = CondAccessor::Fun(FunOperation::new(BuiltinFunction::NowTime(
+            NowTime::default(),
+        )));
         let mut vars = HashMap::new();
         vars.insert("A".to_string(), acq);
         let sql_prm = SqlQuery::new("select a,b from table_1 where a = :A".into(), vars);
         let result = format!("{}", sql_prm);
-        assert_eq!(result, "select a,b from table_1 where a = Time::now() ;")
+        assert_eq!(result, "select a,b from table_1 where a = Now::time() ;")
     }
 }

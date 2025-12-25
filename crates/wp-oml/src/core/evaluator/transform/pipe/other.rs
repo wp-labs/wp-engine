@@ -1,7 +1,6 @@
 use crate::core::prelude::*;
 use crate::language::{
-    PathType, PiPeOperation, PipeArrGet, PipeObjGet, PipePathGet, PipeSkipIfEmpty, PipeSxfGet,
-    PipeUrlGet, UrlType,
+    Get, Nth, PathGet, PathType, PiPeOperation, SkipEmpty, SxfGet, UrlGet, UrlType,
 };
 
 use std::collections::{HashMap, VecDeque};
@@ -24,7 +23,7 @@ impl FieldExtractor for PiPeOperation {
         None
     }
 }
-impl ValueProcessor for PipeArrGet {
+impl ValueProcessor for Nth {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Array(arr) => {
@@ -37,7 +36,7 @@ impl ValueProcessor for PipeArrGet {
         }
     }
 }
-impl ValueProcessor for PipeSkipIfEmpty {
+impl ValueProcessor for SkipEmpty {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Array(x) => {
@@ -70,7 +69,7 @@ impl ValueProcessor for PipeSkipIfEmpty {
         in_val
     }
 }
-impl ValueProcessor for PipeObjGet {
+impl ValueProcessor for Get {
     fn value_cacu(&self, mut in_val: DataField) -> DataField {
         if let Value::Obj(obj) = in_val.get_value_mut() {
             let mut keys: VecDeque<&str> = self.name.split('/').collect();
@@ -89,7 +88,7 @@ impl ValueProcessor for PipeObjGet {
         in_val
     }
 }
-impl ValueProcessor for PipeSxfGet {
+impl ValueProcessor for SxfGet {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -104,7 +103,7 @@ impl ValueProcessor for PipeSxfGet {
     }
 }
 
-impl ValueProcessor for PipePathGet {
+impl ValueProcessor for PathGet {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -128,7 +127,7 @@ impl ValueProcessor for PipePathGet {
     }
 }
 
-impl ValueProcessor for PipeUrlGet {
+impl ValueProcessor for UrlGet {
     fn value_cacu(&self, in_val: DataField) -> DataField {
         match in_val.get_value() {
             Value::Chars(x) => {
@@ -357,7 +356,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | path_get(name);
+        X : chars =  pipe take(A1) | path(name);
          "#;
         let model = oml_parse(&mut conf).unwrap();
 
@@ -382,11 +381,11 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        A : chars =  pipe read(A1) | url_get(domain);
-        B : chars =  pipe read(A1) | url_get(host);
-        C : chars =  pipe read(A1) | url_get(uri);
-        D : chars =  pipe read(A1) | url_get(path);
-        E : chars =  pipe read(A1) | url_get(params);
+        A : chars =  pipe read(A1) | url(domain);
+        B : chars =  pipe read(A1) | url(host);
+        C : chars =  pipe read(A1) | url(uri);
+        D : chars =  pipe read(A1) | url(path);
+        E : chars =  pipe read(A1) | url(params);
          "#;
         let model = oml_parse(&mut conf).unwrap();
 
@@ -429,9 +428,9 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | base64_en | base64_de() ;
-        Y : chars =  pipe take(B2) | base64_de(Imap) ;
-        Z : chars =  pipe take(C3) | base64_de(Imap) ;
+        X : chars =  pipe take(A1) | base64_encode | base64_decode() ;
+        Y : chars =  pipe take(B2) | base64_decode(Imap) ;
+        Z : chars =  pipe take(C3) | base64_decode(Imap) ;
          "#;
         let model = oml_parse(&mut conf).unwrap();
 
@@ -456,7 +455,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | html_escape_en | html_escape_de;
+        X : chars =  pipe take(A1) | html_escape | html_unescape;
          "#;
         let model = oml_parse(&mut conf).assert();
 
@@ -475,7 +474,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | str_escape_en  ;
+        X : chars =  pipe take(A1) | str_escape  ;
          "#;
         let model = oml_parse(&mut conf).assert();
 
@@ -494,7 +493,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  pipe take(A1) | json_escape_en  | json_escape_de ;
+        X : chars =  pipe take(A1) | json_escape  | json_unescape ;
          "#;
         let model = oml_parse(&mut conf).assert();
 
@@ -514,9 +513,9 @@ mod tests {
         name : test
         ---
         Y  =  time(2000-10-10 0:0:0);
-        X  =  pipe  read(Y) | to_timestamp ;
-        Z  =  pipe  read(Y) | to_timestamp_ms ;
-        U  =  pipe  read(Y) | to_timestamp_us ;
+        X  =  pipe  read(Y) | Time::to_ts ;
+        Z  =  pipe  read(Y) | Time::to_ts_ms ;
+        U  =  pipe  read(Y) | Time::to_ts_us ;
          "#;
         let model = oml_parse(&mut conf).assert();
         let target = model.transform(src, cache);
@@ -545,8 +544,8 @@ mod tests {
         name : test
         ---
         X  =  collect take(keys: [A1, A2]) ;
-        Y  =  pipe  read(A1) | skip_if_empty ;
-        Z  =  pipe  read(A2) | skip_if_empty ;
+        Y  =  pipe  read(A1) | skip_empty ;
+        Z  =  pipe  read(A2) | skip_empty ;
          "#;
         let model = oml_parse(&mut conf).assert();
         let target = model.transform(src, cache);
@@ -571,7 +570,7 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        Y  =  pipe read(current_process) | arr_get(0) | obj_get(current_process/path) ;
+        Y  =  pipe read(current_process) | nth(0) | get(current_process/path) ;
          "#;
         let model = oml_parse(&mut conf).assert();
         let target = model.transform(src, cache);

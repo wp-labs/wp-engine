@@ -1,8 +1,8 @@
 use crate::core::FieldExtractor;
 use crate::core::prelude::*;
-use crate::language::{BuiltinFunction, FunNow, FunNowDate, FunNowHour, FunNowTime, FunOperation};
+use crate::language::{BuiltinFunction, FunOperation, NowDate, NowHour, NowTime};
 use chrono::{Datelike, Local, Timelike};
-impl FieldExtractor for FunNow {
+impl FieldExtractor for NowTime {
     fn extract_one(
         &self,
         target: &EvaluationTarget,
@@ -34,14 +34,13 @@ impl FieldExtractor for BuiltinFunction {
         dst: &DataRecord,
     ) -> Option<DataField> {
         match self {
-            BuiltinFunction::Now(x) => x.extract_one(target, src, dst),
-            BuiltinFunction::NowDate(x) => x.extract_one(target, src, dst),
             BuiltinFunction::NowTime(x) => x.extract_one(target, src, dst),
+            BuiltinFunction::NowDate(x) => x.extract_one(target, src, dst),
             BuiltinFunction::NowHour(x) => x.extract_one(target, src, dst),
         }
     }
 }
-impl FieldExtractor for FunNowDate {
+impl FieldExtractor for NowDate {
     fn extract_one(
         &self,
         target: &EvaluationTarget,
@@ -58,7 +57,7 @@ impl FieldExtractor for FunNowDate {
     }
 }
 
-impl FieldExtractor for FunNowHour {
+impl FieldExtractor for NowHour {
     fn extract_one(
         &self,
         target: &EvaluationTarget,
@@ -75,18 +74,6 @@ impl FieldExtractor for FunNowHour {
                 + now.day() as i64 * 100
                 + now.hour() as i64,
         ))
-    }
-}
-impl FieldExtractor for FunNowTime {
-    fn extract_one(
-        &self,
-        target: &EvaluationTarget,
-        _src: &mut DataRecordRef<'_>,
-        _dst: &DataRecord,
-    ) -> Option<DataField> {
-        let now = Local::now();
-        let name = target.safe_name();
-        Some(DataField::from_time(name, now.naive_local()))
     }
 }
 
@@ -111,10 +98,10 @@ mod tests {
         let mut conf = r#"
         name : test
         ---
-        X : chars =  Time::now() ;
-        X1 =  Time::now_date() ;
-        X2 =  Time::now_time() ;
-        X3 =  Time::now_hour() ;
+        X : chars =  Now::time() ;
+        X1 =  Now::date() ;
+        X2 =  Now::time() ;
+        X3 =  Now::hour() ;
          "#;
         let model = oml_parse(&mut conf).assert("oml_conf");
 

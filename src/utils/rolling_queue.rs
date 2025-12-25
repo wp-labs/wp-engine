@@ -52,10 +52,10 @@ impl<T> RollingQueue<T> {
         self.item_queue.push_back(old.expect("cur_s is empty"));
         debug_assert!(self.current_item.is_some());
     }
-    #[allow(clippy::manual_is_multiple_of)]
+    //#[allow(clippy::manual_is_multiple_of)]
     pub fn auto_roll(&mut self, roll_times: usize) {
         self.count += 1;
-        if self.count % roll_times == 0 {
+        if self.count.is_multiple_of(roll_times) {
             self.roll();
             if self.count > 100000000 {
                 self.count = 0;

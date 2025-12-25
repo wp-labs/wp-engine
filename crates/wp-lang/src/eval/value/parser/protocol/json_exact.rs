@@ -85,7 +85,7 @@ mod tests {
         // 使用管道切换为 decoded：反斜杠与换行转义生效
         let mut data = r#"{"path":"c:\\users\\fc\\file","txt":"line1\nline2"}"#;
         let conf =
-            WplField::try_parse("exact_json(chars@path,chars@txt) | str_mode(decoded)").assert();
+            WplField::try_parse("exact_json(chars@path,chars@txt) | chars_unescape(json)").assert();
         let out_dec = ParserTUnit::from_auto(conf)
             .verify_parse_suc(&mut data)
             .assert();

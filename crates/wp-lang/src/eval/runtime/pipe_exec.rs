@@ -2,7 +2,7 @@ use crate::eval::runtime::field_pipe::PipeEnum;
 use wp_model_core::model::DataField;
 use wp_parser::WResult as ModalResult;
 
-use super::field_pipe::{DFPipeProcessor, FieldIndex};
+use super::field_pipe::{FieldIndex, FiledSetProcessor};
 use once_cell::sync::OnceCell;
 
 /// Heuristic thresholds to enable FieldIndex for Fun pipes.

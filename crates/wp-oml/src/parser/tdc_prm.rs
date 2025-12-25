@@ -41,10 +41,10 @@ mod tests {
 
     #[test]
     fn test_oml_take() -> OMLCodeResult<()> {
-        let mut code = r#"read(src){ _ : Time::now_date() }"#;
+        let mut code = r#"read(src){ _ : Now::date() }"#;
         assert_oml_parse(&mut code, oml_aga_tdc);
 
-        let mut code = r#"read(src){ _ : Time::now() }"#;
+        let mut code = r#"read(src){ _ : Now::time() }"#;
         assert_oml_parse(&mut code, oml_aga_tdc);
         let mut code = r#"read(src){ _ : chars(hello)}"#;
         assert_oml_parse(&mut code, oml_aga_tdc);

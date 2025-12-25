@@ -1,12 +1,12 @@
 use crate::language::prelude::*;
 use wp_parser::fun::fun_trait::Fun2Builder;
-pub const PIPE_TIMESTAMP: &str = "to_timestamp";
+pub const PIPE_TIME_TO_TS: &str = "Time::to_ts";
 #[derive(Clone, Debug, Default)]
-pub struct PipeTimeStamp {}
+pub struct TimeToTs {}
 
-pub const PIPE_TIMESTAMP_MS: &str = "to_timestamp_ms";
+pub const PIPE_TIME_TO_TS_MS: &str = "Time::to_ts_ms";
 #[derive(Clone, Debug, Default)]
-pub struct PipeTimeStampMS {}
+pub struct TimeToTsMs {}
 
 #[derive(Clone, Debug, Default, Display)]
 #[display(style = "snake_case")]
@@ -16,16 +16,16 @@ pub enum TimeStampUnit {
     #[default]
     SS,
 }
-pub const PIPE_TIMESTAMP_US: &str = "to_timestamp_us";
+pub const PIPE_TIME_TO_TS_US: &str = "Time::to_ts_us";
 #[derive(Clone, Debug, Default)]
-pub struct PipeTimeStampUS {}
-pub const PIPE_TIMESTAMP_ZONE: &str = "to_timestamp_zone";
+pub struct TimeToTsUs {}
+pub const PIPE_TIME_TO_TS_ZONE: &str = "Time::to_ts_zone";
 #[derive(Clone, Debug, Default, Builder)]
-pub struct PipeTimeStampZone {
+pub struct TimeToTsZone {
     pub(crate) unit: TimeStampUnit,
     pub(crate) zone: i32,
 }
-impl Display for PipeTimeStampZone {
+impl Display for TimeToTsZone {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}({},{})", Self::fun_name(), self.zone, self.unit)
     }
