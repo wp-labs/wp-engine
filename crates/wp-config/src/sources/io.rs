@@ -1,5 +1,5 @@
 use crate::common::io_locate::find_connectors_base_dir as resolve_base;
-use crate::connectors::{ConnectorScope, load_connector_defs_from_dir};
+use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::error::OrionConfResult;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

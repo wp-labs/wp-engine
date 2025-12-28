@@ -21,7 +21,7 @@ version.workspace = true
 edition.workspace = true
 authors = ["Warp Parse Dev Team"]
 description = "High-performance data parsing and processing engine"
-license = "Apache-2.0"
+license = "ELv2"
 
 [lib]
 name = "wp_engine"
@@ -59,7 +59,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.4.2"
+version = "1.5.2"
 edition = "2024"
 license = "Apache-2.0"
 
@@ -70,6 +70,162 @@ license = "Apache-2.0"
 #   - Use "~x.y" for minor version flexibility
 #   - Use exact versions for critical dependencies
 #   - Group by functionality for maintainability
+
+
+# ============================================================================
+# Package Dependencies
+# ============================================================================
+
+[dependencies]
+# --- System & Platform ---
+sysinfo =  {workspace = true}
+libc =  {workspace = true}
+hostname = {workspace = true}
+socket2 =  {workspace = true}
+async-signal = {workspace = true}
+signal-hook-registry = {workspace = true}
+
+# --- Async Runtime & Concurrency ---
+tokio = { workspace = true }
+tokio-util = {workspace = true}
+tokio-async-drop = {workspace = true}
+futures-util = { workspace = true }
+futures-lite = {workspace = true}
+async-trait = { workspace = true }
+async-broadcast = {workspace = true}
+
+# --- Serialization ---
+serde = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+
+# --- Error Handling & Logging ---
+log = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+orion-error = { workspace = true }
+wp-error = { workspace = true }
+wp-log = { workspace = true }
+orion_conf = { workspace = true }
+
+# --- Time & Date ---
+chrono = { workspace = true }
+time = { workspace = true }
+
+# --- CLI ---
+comfy-table = { workspace = true }
+clap = {workspace = true }
+
+# --- Parsing & Text ---
+winnow = { workspace = true }
+regex = { workspace = true }
+wildmatch = { workspace = true }
+memchr = { workspace = true }
+strfmt = { workspace = true }
+
+# --- Code Generation & Utilities ---
+derive_more = { workspace = true }
+derive_builder = { workspace = true }
+derive-getters = { workspace = true }
+enum_dispatch = { workspace = true }
+educe = { workspace = true, features = ["Debug", "Default"] }
+getset = { workspace = true }
+contracts = { workspace = true }
+lazy_static = { workspace = true }
+once_cell = { workspace = true }
+ctor = { workspace = true }
+
+# --- Data Structures ---
+bytes = { workspace = true }
+uuid = { workspace = true }
+ipnet = { workspace = true }
+lru = { workspace = true }
+rand = { workspace = true }
+
+# --- File System ---
+walkdir = { workspace = true }
+
+glob = { workspace = true }
+
+# --- Testing (also used in integration tests) ---
+mockall = { workspace = true }
+
+# --- Internal: Core Libraries ---
+orion_overload= { path = "crates/orion_overload" }
+orion_exp = { path = "crates/orion_exp" }
+
+# --- Internal: Configuration & Knowledge ---
+wp_conf = { package = "wp-config", path = "crates/wp-config" }
+wp_knowledge = { package = "wp-knowledge", path = "crates/wp-knowledge" }
+
+# --- Internal: Language & Parsing ---
+wp_parser = { package = "wp-parser", path = "crates/wp-parser" }
+wpl = { package = "wp-lang", path = "crates/wp-lang" }
+oml = { package = "wp-oml", path = "crates/wp-oml", features = ["oml-diag"] }
+
+# --- Internal: Data & Stats ---
+#wp_model_core = { package = "wp-data-utils", path = "crates/wp-data-utils" }
+wp_stat = { package = "wp-stats", path = "crates/wp-stats" }
+
+# --- External: API Layer ---
+wp_connector_api = { workspace = true }
+wp_parse_api = { workspace = true }
+wp_model_core = { workspace = true }
+wp_data_model = { workspace = true }
+wp_ctrl_api = { workspace = true }
+wp_enrich_api = { workspace = true }
+wp-specs = { workspace = true }
+wp-data-fmt = { workspace = true }
+
+# Note: Do NOT depend on wp-cli here to avoid circular dependencies
+
+# ============================================================================
+# Build Dependencies
+# ============================================================================
+
+[build-dependencies]
+
+# ============================================================================
+# Development Dependencies
+# ============================================================================
+
+[dev-dependencies]
+serial_test = "3"
+httpmock = "~0.8"
+collection_literals = "~1.0"
+criterion = { workspace = true }
+tempfile = "~3.23"
+
+# ============================================================================
+# Feature Flags
+# ============================================================================
+
+[features]
+# Default: Community edition with core runtime
+default = ["runtime-core"]
+
+# Core runtime functionality (always enabled in default)
+runtime-core = []
+
+# Enterprise-only backend features (requires license)
+enterprise-backend = []
+
+# Performance benchmarking for CI pipelines
+perf-ci = []
+
+# Development tools and diagnostics
+dev-tools = []
+
+# ============================================================================
+# Metadata
+# ============================================================================
+
+[package.metadata.cargo-udeps.ignore]
+# ctor is used via attribute macros and may not be detected by cargo-udeps
+normal = ["ctor"]
 
 [workspace.dependencies]
 # --- Async Runtime ---
@@ -114,7 +270,7 @@ unicode-segmentation = "~1.12"
 ahash = "~0.8"
 
 # --- Code Generation & Macros ---
-derive_more = "2.0"
+derive_more = "2.1"
 derive_builder = "~0.20"
 getset = "0.1.6"
 educe = { version = "~0.6", default-features = false }
@@ -136,7 +292,6 @@ hostname = "~0.4"
 socket2 = "~0.6"
 async-signal = "~0.2"
 signal-hook-registry = "~1.4"
-num_cpus = "1.16"
 getrandom = { version = "~0.3"  }
 sysinfo = "~0.37"
 
@@ -165,12 +320,12 @@ idcard = "0.3.0"
 phone = "0.1.2"
 html-escape = "0.2"
 escape8259 = "0.5"
-encoding = "0.2.33"
 imap-types = "1.0.0"
 
 # --- Text Processing & Format ---
 csv = "~1.4"
 md5 = "0.8"
+encoding_rs = "0.8"
 similar = "~2.7"
 
 # --- Cryptography ---
@@ -190,8 +345,6 @@ collection_literals = "~1.0"
 arbitrary = { version = "1.4", features = ["derive"] }
 libfuzzer-sys = "0.4"
 
-# --- Build Dependencies ---
-shadow-rs = "~1.4"
 
 # --- Internal: Core Crates ---
 orion_overload = { path = "./crates/orion_overload" }
@@ -207,6 +360,7 @@ wp_parser = { package = "wp-parser", path = "./crates/wp-parser" }
 wp_proj = { package = "wp-proj", path = "./crates/wp-proj" }
 wp_stats = { package = "wp-stats", path = "./crates/wp-stats" }
 
+
 # --- External: Open API (Public Interfaces) ---
 wp_connector_api = { package = "wp-connector-api", git = "{{GIT_REPO_SVR}}/wp-open-api", tag = "{{OPEN_API_VER}}" }
 wp_parse_api     = { package = "wp-parse-api",     git = "{{GIT_REPO_SVR}}/wp-open-api", tag = "{{OPEN_API_VER}}" }
@@ -217,175 +371,8 @@ wp_ctrl_api   = { package = "wp-ctrl-api",   git = "{{GIT_REPO_SVR}}/wp-advanced
 wp_enrich_api = { package = "wp-enrich-api", git = "{{GIT_REPO_SVR}}/wp-advanced-api", tag = "{{ADV_API_VER}}" }
 
 # --- External: Infrastructure Libraries ---
-wp-log       = { package = "wp-log",       git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{IFS_VER}}" }
-wp-error     = { package = "wp-error",     git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{IFS_VER}}" }
-wp-specs     = { package = "wp-specs",     git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{IFS_VER}}" }
-wp_conf_base = { package = "wp-conf-base", git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{IFS_VER}}" }
-wp-data-fmt  = { package = "wp-data-fmt",  git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{IFS_VER}}" }
-
-# ============================================================================
-# Release Profile Optimization
-# ============================================================================
-
-[profile.release]
-opt-level = 3       # Maximum optimization
-lto = "thin"        # ThinLTO for cross-crate optimization with reasonable compile time
-codegen-units = 1   # Single codegen unit for better optimization
-# debug = false     # Uncomment to strip debug symbols (reduces binary size)
-# panic = "abort"   # Uncomment in release binaries to reduce overhead
-
-# ============================================================================
-# Package Dependencies
-# ============================================================================
-
-[dependencies]
-# --- System & Platform ---
-sysinfo = "~0.33"
-libc = "~0.2"
-hostname = "~0.4"
-socket2 = "~0.5"
-async-signal = "~0.2"
-signal-hook-registry = "~1.4"
-num_cpus = "1.16"
-
-# --- Async Runtime & Concurrency ---
-tokio = { workspace = true }
-tokio-util = { version = "~0.7", features = ["full"] }
-tokio-async-drop = "~0.1"
-futures-util = { workspace = true }
-futures-lite = "~2.3"
-async-trait = { workspace = true }
-async-broadcast = "~0.6"
-
-# --- Serialization ---
-serde = { workspace = true }
-serde_derive = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
-base64 = { workspace = true }
-hex = { workspace = true }
-
-# --- Error Handling & Logging ---
-log = { workspace = true }
-anyhow = { workspace = true }
-thiserror = { workspace = true }
-orion-error = { workspace = true }
-wp-error = { workspace = true }
-wp-log = { workspace = true }
-orion_conf = { workspace = true }
-
-# --- Time & Date ---
-chrono = { workspace = true }
-time = "~0.3"
-
-# --- CLI ---
-clap = { version = "~4.5", features = ["derive"] }
-comfy-table = "~7.1"
-
-# --- Parsing & Text ---
-winnow = { workspace = true }
-regex = { workspace = true }
-wildmatch = { workspace = true }
-strfmt = { workspace = true }
-memchr = "~2.7"
-
-# --- Code Generation & Utilities ---
-derive_more = { workspace = true }
-derive_builder = { workspace = true }
-derive-getters = "~0.5"
-enum_dispatch = { workspace = true }
-educe = { workspace = true, features = ["Debug", "Default"] }
-getset = { workspace = true }
-contracts = { workspace = true }
-lazy_static = { workspace = true }
-once_cell = { workspace = true }
-ctor = "~0.2"
-
-# --- Data Structures ---
-bytes = { workspace = true }
-uuid = { workspace = true }
-ipnet = { workspace = true }
-lru = "~0.12"
-rand = { workspace = true }
-
-# --- File System ---
-walkdir = "~2.5"
-glob = { workspace = true }
-
-# --- Testing (also used in integration tests) ---
-mockall = { workspace = true }
-
-# --- Internal: Core Libraries ---
-orion_overload= { path = "crates/orion_overload" }
-orion_exp = { path = "crates/orion_exp" }
-
-# --- Internal: Configuration & Knowledge ---
-wp_conf = { package = "wp-config", path = "crates/wp-config" }
-wp_knowledge = { package = "wp-knowledge", path = "crates/wp-knowledge" }
-
-# --- Internal: Language & Parsing ---
-wp_parser = { package = "wp-parser", path = "crates/wp-parser" }
-wpl = { package = "wp-lang", path = "crates/wp-lang" }
-oml = { package = "wp-oml", path = "crates/wp-oml", features = ["oml-diag"] }
-
-# --- Internal: Data & Stats ---
-#wp_model_core = { package = "wp-data-utils", path = "crates/wp-data-utils" }
-wp_stat = { package = "wp-stats", path = "crates/wp-stats" }
-
-# --- External: API Layer ---
-wp_connector_api = { workspace = true }
-wp_parse_api = { workspace = true }
-wp_model_core = { workspace = true }
-wp_data_model = { workspace = true }
-wp_ctrl_api = { workspace = true }
-wp_enrich_api = { workspace = true }
-wp-specs = { workspace = true }
-wp-data-fmt = { workspace = true }
-
-# Note: Do NOT depend on wp-cli here to avoid circular dependencies
-
-# ============================================================================
-# Build Dependencies
-# ============================================================================
-
-[build-dependencies]
-shadow-rs = "~1.2"  # Build-time metadata (git info, version, etc.)
-
-# ============================================================================
-# Development Dependencies
-# ============================================================================
-
-[dev-dependencies]
-serial_test = "3"
-httpmock = "~0.7"
-collection_literals = "~1.0"
-criterion = { workspace = true }
-tempfile = "~3.10"
-
-# ============================================================================
-# Feature Flags
-# ============================================================================
-
-[features]
-# Default: Community edition with core runtime
-default = ["runtime-core"]
-
-# Core runtime functionality (always enabled in default)
-runtime-core = []
-
-# Enterprise-only backend features (requires license)
-enterprise-backend = []
-
-# Performance benchmarking for CI pipelines
-perf-ci = []
-
-# Development tools and diagnostics
-dev-tools = []
-
-# ============================================================================
-# Metadata
-# ============================================================================
-
-[package.metadata.cargo-udeps.ignore]
-# ctor is used via attribute macros and may not be detected by cargo-udeps
-normal = ["ctor"]
+wp-log       = { package = "wp-log",       git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{WP_IFS_VER}}" }
+wp-error     = { package = "wp-error",     git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{WP_IFS_VER}}" }
+wp-specs     = { package = "wp-specs",     git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{WP_IFS_VER}}" }
+wp_conf_base = { package = "wp-conf-base", git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{WP_IFS_VER}}" }
+wp-data-fmt  = { package = "wp-data-fmt",  git = "{{GIT_REPO_SVR}}/wp-infras", tag = "{{WP_IFS_VER}}" }

@@ -1,9 +1,10 @@
-use crate::connectors::{ConnectorDef, ConnectorTomlFile};
+use crate::connectors::ConnectorTomlFile;
 use crate::structure::GroupExpectSpec;
 use crate::structure::SinkExpectOverride;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use toml::value::Table;
+use wp_connector_api::ConnectorDef;
 use wp_connector_api::ParamMap;
 
 pub type ConnectorFile = ConnectorTomlFile;

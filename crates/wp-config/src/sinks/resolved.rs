@@ -40,7 +40,7 @@ pub fn core_to_resolved_with(
         name: core.name.clone(),
         kind: core.kind.clone(),
         connector_id: cid,
-        params: wp_connector_api::parammap_from_toml_table(core.params.clone()),
+        params: core.params.clone(),
         filter: core.filter.clone(),
     }
 }

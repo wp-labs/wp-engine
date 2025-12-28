@@ -1,7 +1,7 @@
-use crate::connectors::ConnectorDef;
 use crate::connectors::ConnectorTomlFile;
 use getset::WithSetters;
 use serde::{Deserialize, Serialize};
+use wp_connector_api::ConnectorDef;
 
 pub type SrcConnectorFileRec = ConnectorTomlFile;
 pub type SourceConnector = ConnectorDef;

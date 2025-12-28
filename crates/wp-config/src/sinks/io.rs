@@ -1,11 +1,12 @@
 use super::types::*;
-use crate::connectors::{ConnectorScope, load_connector_defs_from_dir};
+use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use wp_connector_api::ConnectorScope;
 
 // Local constants to avoid depending on application crate
 const PATH_SINK_SUBDIR: &str = "sink.d";

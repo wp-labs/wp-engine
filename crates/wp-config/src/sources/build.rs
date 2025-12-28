@@ -21,7 +21,7 @@ pub fn parse_and_validate_only(config_str: &str) -> OrionConfResult<Vec<wp_specs
         out.push(wp_specs::CoreSourceSpec {
             name: s.key,
             kind: String::new(),
-            params: toml::value::Table::new(),
+            params: ParamMap::new(),
             tags: s.tags,
         });
     }
@@ -167,12 +167,11 @@ pub fn validate_specs_with_factory_and_registry(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::connectors::ConnectorScope;
     use crate::sources::{io, types};
     use orion_conf::UvsConfFrom;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
-    use wp_connector_api::{SourceReason, SourceResult, SourceSvcIns};
+    use wp_connector_api::{ConnectorScope, SourceReason, SourceResult, SourceSvcIns};
 
     fn tmp_dir(prefix: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
@@ -203,7 +202,7 @@ connect = "conn1"
         let allow = vec!["path".to_string(), "fmt".to_string()];
 
         // ok: allowed key
-        let mut over = toml::value::Table::new();
+        let mut over = ParamMap::new();
         over.insert("path".into(), toml::Value::String("/a".into()));
         let ok = merge_params(&base, &over, &allow).expect("ok");
         assert_eq!(ok.get("path").and_then(|v| v.as_str()), Some("/a"));

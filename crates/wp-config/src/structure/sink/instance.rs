@@ -8,6 +8,7 @@ use orion_error::{ContextRecord, OperationContext, UvsValidationFrom};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use wp_connector_api::ParamMap;
 use wp_data_model::tags::validate_tags;
 use wp_log::{debug_data, info_data};
 use wp_model_core::model::fmt_def::TextFmt;
@@ -89,7 +90,7 @@ impl SinkInstanceConf {
         name: String,
         fmt: TextFmt,
         kind: String,
-        params: toml::value::Table,
+        params: ParamMap,
         filter: Option<String>,
     ) -> Self {
         Self {
@@ -129,7 +130,7 @@ impl SinkInstanceConf {
         path: P,
         filter: Option<String>,
     ) -> Self {
-        let mut params = toml::value::Table::new();
+        let mut params = ParamMap::new();
         params.insert(
             "path".to_string(),
             toml::Value::String(path.as_ref().display().to_string()),
@@ -138,13 +139,7 @@ impl SinkInstanceConf {
     }
 
     pub fn null_new(name: String, fmt: TextFmt, filter: Option<String>) -> Self {
-        Self::new_type(
-            name,
-            fmt,
-            "null".to_string(),
-            toml::value::Table::new(),
-            filter,
-        )
+        Self::new_type(name, fmt, "null".to_string(), ParamMap::default(), filter)
     }
     pub fn clean_sink_file(&self) -> AnyResult<()> {
         if let Some(path) = self.resolve_file_path() {
