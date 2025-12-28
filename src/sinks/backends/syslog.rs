@@ -16,6 +16,72 @@ use crate::sinks::net::transport::{
     BackoffMode, NetSendPolicy, NetWriter, Transport, net_backoff_adaptive,
 };
 
+#[derive(Clone, Debug)]
+struct SyslogSinkSpec {
+    conf: OutSyslog,
+    app_name: Option<String>,
+}
+
+impl SyslogSinkSpec {
+    fn from_resolved(spec: &ResolvedSinkSpec) -> AnyResult<Self> {
+        let addr = spec
+            .params
+            .get("addr")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("syslog.addr must be a string"))?;
+        if let Some(i) = spec.params.get("port").and_then(|v| v.as_i64())
+            && !(1..=65535).contains(&i)
+        {
+            anyhow::bail!("syslog.port must be in 1..=65535");
+        }
+        if let Some(p) = spec.params.get("protocol").and_then(|v| v.as_str()) {
+            let v = p.to_ascii_lowercase();
+            if v != "udp" && v != "tcp" {
+                anyhow::bail!("syslog.protocol must be 'udp' or 'tcp'");
+            }
+        }
+        let port = spec
+            .params
+            .get("port")
+            .and_then(|v| v.as_i64())
+            .unwrap_or(514);
+        let protocol = spec
+            .params
+            .get("protocol")
+            .and_then(|v| v.as_str())
+            .unwrap_or("udp");
+        let proto =
+            ConfProtocol::from_str(&protocol.to_ascii_lowercase()).unwrap_or(ConfProtocol::UDP);
+        let mut tbl = toml::map::Map::new();
+        tbl.insert("addr".to_string(), toml::Value::String(addr.to_string()));
+        tbl.insert("port".to_string(), toml::Value::Integer(port));
+        tbl.insert(
+            "protocol".to_string(),
+            toml::Value::String(proto.to_string()),
+        );
+        let toml_str = toml::to_string(&toml::Value::Table(tbl))?;
+        let conf: OutSyslog = toml::from_str(&toml_str)?;
+        let app_name = spec
+            .params
+            .get("app_name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+        Ok(Self { conf, app_name })
+    }
+
+    fn target_addr(&self) -> String {
+        self.conf.addr_str()
+    }
+
+    fn protocol(&self) -> ConfProtocol {
+        self.conf.protocol.clone()
+    }
+
+    fn resolved_app_name(&self, default: &str) -> String {
+        self.app_name.clone().unwrap_or_else(|| default.to_string())
+    }
+}
+
 pub struct SyslogSink {
     // Underlying transport writer (UDP/TCP)
     writer: NetWriter,
@@ -223,77 +289,25 @@ impl SinkFactory for SyslogFactory {
         "syslog"
     }
     fn validate_spec(&self, spec: &ResolvedSinkSpec) -> anyhow::Result<()> {
-        // protocol: udp|tcp
-        if let Some(p) = spec.params.get("protocol").and_then(|v| v.as_str()) {
-            let p = p.to_ascii_lowercase();
-            if p != "udp" && p != "tcp" {
-                anyhow::bail!("syslog.protocol must be 'udp' or 'tcp'");
-            }
-        }
-        // addr required
-        if spec.params.get("addr").and_then(|v| v.as_str()).is_none() {
-            anyhow::bail!("syslog.addr must be a string");
-        }
-        // port: 1..=65535 if present
-        if let Some(i) = spec.params.get("port").and_then(|v| v.as_i64())
-            && !(1..=65535).contains(&i)
-        {
-            anyhow::bail!("syslog.port must be in 1..=65535");
-        }
-        Ok(())
+        SyslogSinkSpec::from_resolved(spec).map(|_| ())
     }
     async fn build(
         &self,
         spec: &ResolvedSinkSpec,
         _ctx: &SinkBuildCtx,
     ) -> anyhow::Result<SinkHandle> {
-        // Reuse same param keys as route builder
-        let addr = spec
-            .params
-            .get("addr")
-            .and_then(|v| v.as_str())
-            .unwrap_or("127.0.0.1")
-            .to_string();
-        let port = spec
-            .params
-            .get("port")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(514) as usize;
-        let protocol = spec
-            .params
-            .get("protocol")
-            .and_then(|v| v.as_str())
-            .unwrap_or("udp");
-        let proto =
-            ConfProtocol::from_str(&protocol.to_ascii_lowercase()).unwrap_or(ConfProtocol::UDP);
-        let mut tbl = toml::map::Map::new();
-        tbl.insert("addr".to_string(), toml::Value::String(addr));
-        tbl.insert("port".to_string(), toml::Value::Integer(port as i64));
-        tbl.insert(
-            "protocol".to_string(),
-            toml::Value::String(proto.to_string()),
-        );
-        let toml_str = toml::to_string(&toml::Value::Table(tbl))?;
-        let sys: OutSyslog = toml::from_str(&toml_str)?;
+        let resolved = SyslogSinkSpec::from_resolved(spec)?;
+        let proto = resolved.protocol();
+        let target = resolved.target_addr();
         // Log resolved target to aid diagnosing mismatched params
-        log::info!(
-            "syslog sink build: target={} protocol={}",
-            sys.addr_str(),
-            proto
-        );
-        let app_name = spec
-            .params
-            .get("app_name")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| spec.name.clone());
+        log::info!("syslog sink build: target={} protocol={}", target, proto);
+        let app_name = resolved.resolved_app_name(&spec.name);
 
         // Build runtime sink directly; pass rate_limit_rps to TCP writer
         let runtime = match proto {
-            ConfProtocol::UDP => SyslogSink::udp(&sys.addr_str(), Some(app_name)).await?,
+            ConfProtocol::UDP => SyslogSink::udp(target.as_str(), Some(app_name)).await?,
             ConfProtocol::TCP => {
-                let addr = sys.addr_str();
-                SyslogSink::tcp(&addr, Some(app_name), _ctx.rate_limit_rps).await?
+                SyslogSink::tcp(target.as_str(), Some(app_name), _ctx.rate_limit_rps).await?
             }
         };
         Ok(SinkHandle::new(Box::new(runtime)))

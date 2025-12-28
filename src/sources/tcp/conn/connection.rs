@@ -353,19 +353,8 @@ fn extract_message(framing: FramingMode, buffer: &mut BytesMut) -> Option<Bytes>
     match framing {
         FramingMode::Line => FramingExtractor::extract_line_message(buffer),
         FramingMode::Len => FramingExtractor::extract_length_prefixed_message(buffer),
-        FramingMode::Auto { prefer_newline } => {
-            if prefer_newline {
-                if let Some(data) = FramingExtractor::extract_line_message(buffer) {
-                    return Some(data);
-                }
-                FramingExtractor::extract_length_prefixed_message(buffer)
-            } else {
-                if let Some(data) = FramingExtractor::extract_length_prefixed_message(buffer) {
-                    return Some(data);
-                }
-                FramingExtractor::extract_line_message(buffer)
-            }
-        }
+        FramingMode::Auto => FramingExtractor::extract_length_prefixed_message(buffer)
+            .or_else(|| FramingExtractor::extract_line_message(buffer)),
     }
 }
 
@@ -497,7 +486,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_auto_framing_prefer_newline() {
+    async fn test_auto_framing_handles_mixed_modes() {
         if std::env::var("WP_NET_TESTS").unwrap_or_default() != "1" {
             return;
         }
@@ -523,9 +512,7 @@ mod tests {
         let mut conn = TcpConnection::new(
             stream,
             peer,
-            FramingMode::Auto {
-                prefer_newline: true,
-            },
+            FramingMode::Auto,
             Tags::new(),
             8192,
             "test_auto".into(),
@@ -545,7 +532,7 @@ mod tests {
                 })
                 .collect();
 
-            assert_eq!(payloads, vec!["line1", "5 hello", "", "7 message"]);
+            assert_eq!(payloads, vec!["line1", "hello", "", "message"]);
         } else {
             panic!("expected produced outcome");
         }

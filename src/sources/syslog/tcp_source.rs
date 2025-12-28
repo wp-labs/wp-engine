@@ -325,8 +325,7 @@ impl TcpSyslogSource {
         }
 
         let client_ip = Arc::<str>::from(client_ip);
-        while let Some(pending) = framing::drain_auto_all(buffer, &client_ip, sender, false).await?
-        {
+        while let Some(pending) = framing::drain_auto_all(buffer, &client_ip, sender).await? {
             sender.send(pending).await.map_err(|e| {
                 SourceError::from(SourceReason::Disconnect(format!(
                     "syslog framing channel closed: {}",

@@ -1,10 +1,11 @@
 //! Configuration structures for syslog sources
 
 use super::constants::DEFAULT_TCP_RECV_BYTES;
+use anyhow::ensure;
 
 /// Configuration for syslog sources
 #[derive(Debug, Clone)]
-pub struct SyslogConfig {
+pub struct SyslogSourceSpec {
     pub addr: String,
     pub port: u16,
     pub protocol: Protocol,
@@ -12,8 +13,6 @@ pub struct SyslogConfig {
     pub strip_header: bool,
     pub attach_meta_tags: bool,
     pub fast_strip: bool,
-    /// Prefer newline framing first (then octet-counting). Default: false
-    pub prefer_newline: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,9 +21,28 @@ pub enum Protocol {
     Tcp,
 }
 
-impl SyslogConfig {
+impl SyslogSourceSpec {
     /// Parse configuration directly from params table (Factory path)
-    pub fn from_params(params: &wp_connector_api::ParamMap) -> Self {
+    pub fn from_params(params: &wp_connector_api::ParamMap) -> anyhow::Result<Self> {
+        if let Some(v) = params.get("protocol").and_then(|v| v.as_str()) {
+            let p = v.to_ascii_lowercase();
+            ensure!(
+                p == "udp" || p == "tcp",
+                "invalid protocol: {} (must be 'udp' or 'tcp')",
+                v
+            );
+        }
+        if let Some(v) = params.get("tcp_recv_bytes").and_then(|v| v.as_i64()) {
+            ensure!(v > 0, "tcp_recv_bytes must be > 0 (got {})", v);
+        }
+        if let Some(v) = params.get("port").and_then(|v| v.as_i64()) {
+            ensure!(
+                (0..=65535).contains(&v),
+                "port out of range: {} (allow 0 or 1..=65535)",
+                v
+            );
+        }
+
         let addr = params
             .get("addr")
             .and_then(|v| v.as_str())
@@ -42,7 +60,7 @@ impl SyslogConfig {
         let tcp_recv_bytes = params
             .get("tcp_recv_bytes")
             .and_then(|v| v.as_i64())
-            .filter(|&v| v > 0) // Only accept positive values
+            .filter(|&v| v > 0)
             .unwrap_or(DEFAULT_TCP_RECV_BYTES as i64) as usize;
         // Tri-state external flag: `header_mode` controls strip/attach
         // - keep  => strip=false, attach=false
@@ -70,11 +88,7 @@ impl SyslogConfig {
             .get("fast_strip")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
-        let prefer_newline = params
-            .get("prefer_newline")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        Self {
+        Ok(Self {
             addr,
             port,
             protocol,
@@ -82,8 +96,7 @@ impl SyslogConfig {
             strip_header,
             attach_meta_tags,
             fast_strip,
-            prefer_newline,
-        }
+        })
     }
 
     /// Get the full address string

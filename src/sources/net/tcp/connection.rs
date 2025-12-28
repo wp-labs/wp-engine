@@ -233,22 +233,14 @@ impl ConnectionManager {
                     batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
                 }
             }
-            FramingMode::Auto { prefer_newline } => {
-                let mut found = false;
-
-                if prefer_newline {
-                    while let Some(data) = FramingExtractor::extract_line_message(buf) {
-                        let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());
-                        batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
-                        found = true;
-                    }
+            FramingMode::Auto => {
+                while let Some(data) = FramingExtractor::extract_length_prefixed_message(buf) {
+                    let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());
+                    batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
                 }
-
-                if !found {
-                    while let Some(data) = FramingExtractor::extract_length_prefixed_message(buf) {
-                        let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());
-                        batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
-                    }
+                while let Some(data) = FramingExtractor::extract_line_message(buf) {
+                    let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());
+                    batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
                 }
             }
         }
@@ -344,32 +336,16 @@ impl ConnectionManager {
                     let _ = event_tx.try_send(event);
                 }
             }
-            FramingMode::Auto { prefer_newline } => {
-                let mut found = false;
-
-                if prefer_newline {
-                    while let Some(data) = FramingExtractor::extract_line_message(buf) {
-                        let event = Self::build_direct_source_event(
-                            key,
-                            client_ip,
-                            &data,
-                            base_stags.clone(),
-                        );
-                        let _ = event_tx.try_send(event);
-                        found = true;
-                    }
+            FramingMode::Auto => {
+                while let Some(data) = FramingExtractor::extract_length_prefixed_message(buf) {
+                    let event =
+                        Self::build_direct_source_event(key, client_ip, &data, base_stags.clone());
+                    let _ = event_tx.try_send(event);
                 }
-
-                if !found {
-                    while let Some(data) = FramingExtractor::extract_length_prefixed_message(buf) {
-                        let event = Self::build_direct_source_event(
-                            key,
-                            client_ip,
-                            &data,
-                            base_stags.clone(),
-                        );
-                        let _ = event_tx.try_send(event);
-                    }
+                while let Some(data) = FramingExtractor::extract_line_message(buf) {
+                    let event =
+                        Self::build_direct_source_event(key, client_ip, &data, base_stags.clone());
+                    let _ = event_tx.try_send(event);
                 }
             }
         }
@@ -565,7 +541,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_process_framing_auto_mode_prefer_newline() {
+    async fn test_process_framing_auto_handles_newlines() {
         let mut buf = BytesMut::from("hello\n5 world");
         let client_ip = "127.0.0.1".parse().unwrap();
         let mut batch_processor =
@@ -574,9 +550,7 @@ mod tests {
 
         ConnectionManager::process_framing(
             &mut buf,
-            FramingMode::Auto {
-                prefer_newline: true,
-            },
+            FramingMode::Auto,
             client_ip,
             &mut batch_processor,
             &zcp_tx,
@@ -596,7 +570,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_process_framing_auto_mode_not_prefer_newline() {
+    async fn test_process_framing_auto_prefers_length() {
         let mut buf = BytesMut::from("5 world\nhello");
         let client_ip = "127.0.0.1".parse().unwrap();
         let mut batch_processor =
@@ -605,17 +579,15 @@ mod tests {
 
         ConnectionManager::process_framing(
             &mut buf,
-            FramingMode::Auto {
-                prefer_newline: false,
-            },
+            FramingMode::Auto,
             client_ip,
             &mut batch_processor,
             &zcp_tx,
             "test_key",
         );
 
-        // Should extract length-prefixed message, leaving line message
-        assert_eq!(buf, BytesMut::from("\nhello"));
+        // Should extract length-prefixed message, leaving line message without newline
+        assert_eq!(buf, BytesMut::from("hello"));
 
         // Flush to send length-prefixed message
         batch_processor.flush(&zcp_tx, "test_key", client_ip);

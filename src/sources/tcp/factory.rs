@@ -8,14 +8,14 @@ use wp_connector_api::{
 use wp_data_model::tags::{parse_tags, validate_tags};
 
 use super::TcpAcceptor;
-use super::config::{MAX_TCP_SOURCE_INSTANCES, TcpConf};
+use super::config::TcpSourceSpec;
 use super::source::TcpSource;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use wp_conf::limits::tcp_reader_batch_channel_cap;
 
-// TcpConf moved to tcp/config.rs for clearer separation of concerns
+// TcpSourceSpec moved to tcp/config.rs for clearer separation of concerns
 
 pub struct TcpSourceFactory;
 
@@ -30,29 +30,7 @@ impl SourceFactory for TcpSourceFactory {
             if let Err(e) = validate_tags(&spec.tags) {
                 anyhow::bail!("Invalid tags: {}", e);
             }
-            if let Some(v) = spec.params.get("framing").and_then(|v| v.as_str()) {
-                let ok = matches!(
-                    v.to_ascii_lowercase().as_str(),
-                    "auto" | "line" | "len" | "length"
-                );
-                if !ok {
-                    anyhow::bail!("Invalid framing: {} (expect auto|line|len)", v);
-                }
-            }
-            if let Some(p) = spec.params.get("port").and_then(|v| v.as_i64())
-                && !(0..=65535).contains(&p)
-            {
-                anyhow::bail!("Invalid port: {}", p);
-            }
-            if let Some(i) = spec.params.get("instances").and_then(|v| v.as_i64())
-                && (i < 1 || i as usize > MAX_TCP_SOURCE_INSTANCES)
-            {
-                anyhow::bail!(
-                    "Invalid instances: {} (expect 1..={} )",
-                    i,
-                    MAX_TCP_SOURCE_INSTANCES
-                );
-            }
+            TcpSourceSpec::from_params(&spec.params)?;
             Ok(())
         })();
         res.map_err(|e| SourceReason::from_conf(e.to_string()).to_err())
@@ -64,7 +42,7 @@ impl SourceFactory for TcpSourceFactory {
         _ctx: &SourceBuildCtx,
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
-            let conf = TcpConf::from_params(&spec.params)?;
+            let conf = TcpSourceSpec::from_params(&spec.params)?;
             let tags = parse_tags(&spec.tags);
 
             let connection_registry = Arc::new(Mutex::new(HashSet::<u64>::new()));

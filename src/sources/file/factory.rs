@@ -10,6 +10,58 @@ use wp_connector_api::{
 use wp_data_model::tags::parse_tags;
 use wp_data_model::tags::validate_tags;
 
+const FILE_SOURCE_MAX_INSTANCES: usize = 32;
+
+#[derive(Clone, Debug)]
+struct FileSourceSpec {
+    path: String,
+    encoding: FileEncoding,
+    instances: usize,
+}
+
+impl FileSourceSpec {
+    fn from_resolved(resolved: &ResolvedSourceSpec) -> anyhow::Result<Self> {
+        let path = if let Some(p) = resolved.params.get("path").and_then(|v| v.as_str()) {
+            p.to_string()
+        } else {
+            let base = resolved
+                .params
+                .get("base")
+                .and_then(|v| v.as_str())
+                .unwrap_or("./data/in_dat");
+            let file = resolved
+                .params
+                .get("file")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| anyhow::anyhow!("Missing 'file' when using base+file"))?;
+            std::path::Path::new(base).join(file).display().to_string()
+        };
+        let encoding = match resolved.params.get("encode").and_then(|v| v.as_str()) {
+            None | Some("text") => FileEncoding::Text,
+            Some("base64") => FileEncoding::Base64,
+            Some("hex") => FileEncoding::Hex,
+            Some(v) => {
+                anyhow::bail!(
+                    "Invalid encode value for file source '{}': {}",
+                    resolved.name,
+                    v
+                );
+            }
+        };
+        let instances = resolved
+            .params
+            .get("instances")
+            .and_then(|v| v.as_i64())
+            .map(|n| n.clamp(1, FILE_SOURCE_MAX_INSTANCES as i64) as usize)
+            .unwrap_or(1);
+        Ok(Self {
+            path,
+            encoding,
+            instances,
+        })
+    }
+}
+
 pub struct FileSourceFactory;
 
 #[async_trait]
@@ -23,25 +75,7 @@ impl SourceFactory for FileSourceFactory {
             if let Err(e) = validate_tags(&resolved.tags) {
                 anyhow::bail!("Invalid tags: {}", e);
             }
-            let has_path = resolved.params.contains_key("path");
-            let has_base_file =
-                resolved.params.contains_key("base") && resolved.params.contains_key("file");
-            if !(has_path || has_base_file) {
-                anyhow::bail!(
-                    "File source '{}' missing required 'path' (or 'base'+'file') parameter(s)",
-                    resolved.name
-                );
-            }
-            if let Some(v) = resolved.params.get("encode").and_then(|v| v.as_str()) {
-                match v {
-                    "text" | "base64" | "hex" => {}
-                    other => anyhow::bail!(
-                        "Invalid encode value for file source '{}': {}",
-                        resolved.name,
-                        other
-                    ),
-                }
-            }
+            FileSourceSpec::from_resolved(resolved)?;
             Ok(())
         })();
         res.map_err(|e| SourceReason::from_conf(e.to_string()).to_err())
@@ -53,35 +87,9 @@ impl SourceFactory for FileSourceFactory {
         _ctx: &SourceBuildCtx,
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
-            let path = if let Some(p) = resolved.params.get("path").and_then(|v| v.as_str()) {
-                p.to_string()
-            } else {
-                let base = resolved
-                    .params
-                    .get("base")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("./data/in_dat");
-                let file = resolved
-                    .params
-                    .get("file")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("Missing 'file' when using base+file"))?;
-                std::path::Path::new(base).join(file).display().to_string()
-            };
-            let encode = match resolved.params.get("encode").and_then(|v| v.as_str()) {
-                None | Some("text") => FileEncoding::Text,
-                Some("base64") => FileEncoding::Base64,
-                Some("hex") => FileEncoding::Hex,
-                Some(x) => {
-                    return Err(anyhow::anyhow!(
-                        "Invalid encode value: {}. Must be 'text', 'base64', or 'hex'",
-                        x
-                    ));
-                }
-            };
+            let spec = FileSourceSpec::from_resolved(resolved)?;
             let tagset = parse_tags(&resolved.tags);
-            let instances = parse_instances(resolved);
-            let ranges = compute_file_ranges(Path::new(&path), instances)
+            let ranges = compute_file_ranges(Path::new(&spec.path), spec.instances)
                 .map_err(|e| anyhow::anyhow!("Failed to compute file ranges: {}", e))?;
             let mut handles = Vec::with_capacity(ranges.len());
             let multi = ranges.len() > 1;
@@ -93,8 +101,8 @@ impl SourceFactory for FileSourceFactory {
                 };
                 let source = FileSource::new(
                     key.clone(),
-                    &path,
-                    encode.clone(),
+                    &spec.path,
+                    spec.encoding.clone(),
                     tagset.clone(),
                     start,
                     end,
@@ -118,17 +126,6 @@ impl SourceFactory for FileSourceFactory {
 pub fn register_factory_only() {
     crate::connectors::registry::register_source_factory(FileSourceFactory);
 }
-
-fn parse_instances(resolved: &ResolvedSourceSpec) -> usize {
-    resolved
-        .params
-        .get("instances")
-        .and_then(|v| v.as_i64())
-        .map(|n| n.clamp(1, FILE_SOURCE_MAX_INSTANCES as i64) as usize)
-        .unwrap_or(1)
-}
-
-const FILE_SOURCE_MAX_INSTANCES: usize = 32;
 
 fn compute_file_ranges(path: &Path, instances: usize) -> std::io::Result<Vec<(u64, Option<u64>)>> {
     let size = std::fs::metadata(path)?.len();
@@ -211,18 +208,18 @@ mod tests {
     }
 
     #[test]
-    fn parse_instances_defaults_to_one() {
+    fn file_spec_instances_defaults_and_clamps() {
         let spec = build_spec_with_instances(None);
-        assert_eq!(parse_instances(&spec), 1);
-    }
+        let resolved = FileSourceSpec::from_resolved(&spec).expect("default instances");
+        assert_eq!(resolved.instances, 1);
 
-    #[test]
-    fn parse_instances_clamps_to_max_limit() {
         let over = build_spec_with_instances(Some((FILE_SOURCE_MAX_INSTANCES + 5) as i64));
-        assert_eq!(parse_instances(&over), FILE_SOURCE_MAX_INSTANCES);
+        let resolved_over = FileSourceSpec::from_resolved(&over).expect("clamp high");
+        assert_eq!(resolved_over.instances, FILE_SOURCE_MAX_INSTANCES);
 
         let under = build_spec_with_instances(Some(0));
-        assert_eq!(parse_instances(&under), 1);
+        let resolved_under = FileSourceSpec::from_resolved(&under).expect("clamp low");
+        assert_eq!(resolved_under.instances, 1);
     }
 
     #[test]

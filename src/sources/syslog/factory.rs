@@ -3,7 +3,7 @@
 //! This module provides the factory for creating syslog data sources
 //! with support for both UDP and TCP protocols.
 
-use super::config::SyslogConfig;
+use super::config::{Protocol, SyslogSourceSpec};
 use super::tcp_source::TcpSyslogSource;
 use super::udp_source::UdpSyslogSource;
 use crate::sources::tcp::{FramingMode, TcpAcceptor, TcpSource};
@@ -49,24 +49,7 @@ impl SourceFactory for SyslogSourceFactory {
         _ctx: &SourceBuildCtx,
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
-            if let Some(p) = spec.params.get("protocol").and_then(|v| v.as_str()) {
-                let p = p.to_ascii_lowercase();
-                if p != "udp" && p != "tcp" {
-                    anyhow::bail!("invalid protocol: {} (must be 'udp' or 'tcp')", p);
-                }
-            }
-            if let Some(v) = spec.params.get("tcp_recv_bytes").and_then(|v| v.as_i64())
-                && v <= 0
-            {
-                anyhow::bail!("tcp_recv_bytes must be > 0 (got {})", v);
-            }
-            if let Some(v) = spec.params.get("port").and_then(|v| v.as_i64())
-                && !(0..=65535).contains(&v)
-            {
-                anyhow::bail!("port out of range: {} (allow 0 or 1..=65535)", v);
-            }
-
-            let config = SyslogConfig::from_params(&spec.params);
+            let config = SyslogSourceSpec::from_params(&spec.params)?;
             let mut tags = TagSet::default();
             tags.set_tag("access_source", "syslog".to_string());
             tags.set_tag("syslog_protocol", format!("{:?}", config.protocol));
@@ -84,7 +67,7 @@ impl SourceFactory for SyslogSourceFactory {
             };
 
             let svc = match config.protocol {
-                super::config::Protocol::Udp => {
+                Protocol::Udp => {
                     let meta = meta_builder(&tags);
                     let source = UdpSyslogSource::new(
                         spec.name.clone(),
@@ -98,12 +81,10 @@ impl SourceFactory for SyslogSourceFactory {
                     SourceSvcIns::new()
                         .with_sources(vec![SourceHandle::new(Box::new(source), meta)])
                 }
-                super::config::Protocol::Tcp => {
+                Protocol::Tcp => {
                     let pool = Arc::new(Mutex::new(HashSet::<u64>::new()));
                     let (reg_tx, reg_rx) = mpsc::channel(tcp_reader_batch_channel_cap());
-                    let framing = FramingMode::Auto {
-                        prefer_newline: config.prefer_newline,
-                    };
+                    let framing = FramingMode::Auto;
 
                     let inner = TcpSource::new(
                         spec.name.clone(),

@@ -33,7 +33,7 @@ pub mod tcp_source;
 pub mod udp_source;
 
 // Re-export public API
-pub use config::{Protocol, SyslogConfig};
+pub use config::{Protocol, SyslogSourceSpec};
 pub use factory::SyslogSourceFactory;
 pub use tcp_source::TcpSyslogSource;
 pub use udp_source::UdpSyslogSource;
@@ -92,7 +92,9 @@ mod tests {
     #[test]
     fn test_syslog_config_defaults() {
         let params = toml::map::Map::new();
-        let config = SyslogConfig::from_params(&wp_connector_api::parammap_from_toml_map(params));
+        let config =
+            SyslogSourceSpec::from_params(&wp_connector_api::parammap_from_toml_map(params))
+                .expect("syslog defaults");
         assert_eq!(config.addr, "0.0.0.0");
         assert_eq!(config.port, 514);
         assert_eq!(config.protocol, Protocol::Udp);
@@ -108,7 +110,9 @@ mod tests {
             toml::Value::String("127.0.0.1".to_string()),
         );
 
-        let config = SyslogConfig::from_params(&wp_connector_api::parammap_from_toml_map(params));
+        let config =
+            SyslogSourceSpec::from_params(&wp_connector_api::parammap_from_toml_map(params))
+                .expect("custom addr");
         assert_eq!(config.addr, "127.0.0.1");
         assert_eq!(config.address(), "127.0.0.1:514");
     }
@@ -121,7 +125,9 @@ mod tests {
             toml::Value::String("TCP".to_string()),
         );
 
-        let config = SyslogConfig::from_params(&wp_connector_api::parammap_from_toml_map(params));
+        let config =
+            SyslogSourceSpec::from_params(&wp_connector_api::parammap_from_toml_map(params))
+                .expect("tcp protocol");
         assert_eq!(config.protocol, Protocol::Tcp);
     }
 

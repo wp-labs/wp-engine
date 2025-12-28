@@ -21,8 +21,8 @@ pub type MessageBatch = Vec<Message>;
 /// 分帧模式
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FramingMode {
-    /// 自动选择：默认优先 length 前缀；`prefer_newline=true` 时优先按行
-    Auto { prefer_newline: bool },
+    /// 自动选择：默认优先 length 前缀（若 length 不在进行中则回退到按行）
+    Auto,
     /// 按换行分帧
     Line,
     /// 按 RFC6587 风格 length 前缀分帧（`<len> <payload>`）
@@ -141,55 +141,33 @@ pub async fn drain_by_len(
     None
 }
 
-/// auto 模式下的“尽可能多” drain：
-/// - prefer_newline=false: 先尝试 length → 若 length 不在进行中则换行
-/// - prefer_newline=true:  若 length 在进行中则等待；否则先按换行，再按 length
+/// auto 模式下的“尽可能多” drain：先尝试 length → 若 length 不在进行中则回退到按行
 ///
 /// 对齐 syslog 的成熟实现：包含缓冲溢出防护（10MB）并在溢出时清空缓冲并返回错误。
 pub async fn drain_auto_all(
     buf: &mut BytesMut,
     client_ip: &Arc<str>,
     sender: &Sender<Message>,
-    prefer_newline: bool,
 ) -> SourceResult<Option<Message>> {
     loop {
         if buf.is_empty() {
             break;
         }
 
-        if prefer_newline {
-            // 若 length 前缀正在进行，则不要回退到按行分割
-            if octet_in_progress(buf) {
-                break;
+        if let Some(msg) = extract_octet_counted(buf) {
+            if sender.try_send((client_ip.clone(), msg.clone())).is_err() {
+                return Ok(Some((client_ip.clone(), msg)));
             }
-            if let Some(line) = extract_newline(buf) {
-                if !line.is_empty() && sender.try_send((client_ip.clone(), line.clone())).is_err() {
-                    return Ok(Some((client_ip.clone(), line)));
-                }
-                continue;
+            continue;
+        }
+        if octet_in_progress(buf) {
+            break;
+        }
+        if let Some(line) = extract_newline(buf) {
+            if !line.is_empty() && sender.try_send((client_ip.clone(), line.clone())).is_err() {
+                return Ok(Some((client_ip.clone(), line)));
             }
-            if let Some(msg) = extract_octet_counted(buf) {
-                if sender.try_send((client_ip.clone(), msg.clone())).is_err() {
-                    return Ok(Some((client_ip.clone(), msg)));
-                }
-                continue;
-            }
-        } else {
-            if let Some(msg) = extract_octet_counted(buf) {
-                if sender.try_send((client_ip.clone(), msg.clone())).is_err() {
-                    return Ok(Some((client_ip.clone(), msg)));
-                }
-                continue;
-            }
-            if octet_in_progress(buf) {
-                break;
-            }
-            if let Some(line) = extract_newline(buf) {
-                if !line.is_empty() && sender.try_send((client_ip.clone(), line.clone())).is_err() {
-                    return Ok(Some((client_ip.clone(), line)));
-                }
-                continue;
-            }
+            continue;
         }
 
         if buf.len() > MAX_FRAME_BYTES {
@@ -249,41 +227,24 @@ pub fn collect_auto_all(
     buf: &mut BytesMut,
     client_ip: &Arc<str>,
     out: &mut MessageBatch,
-    prefer_newline: bool,
     max_collect: usize,
 ) -> SourceResult<()> {
     loop {
         if buf.is_empty() || out.len() >= max_collect {
             break;
         }
-        if prefer_newline {
-            if octet_in_progress(buf) {
-                break;
+        if let Some(msg) = extract_octet_counted(buf) {
+            out.push((client_ip.clone(), msg));
+            continue;
+        }
+        if octet_in_progress(buf) {
+            break;
+        }
+        if let Some(line) = extract_newline(buf) {
+            if !line.is_empty() {
+                out.push((client_ip.clone(), line));
             }
-            if let Some(line) = extract_newline(buf) {
-                if !line.is_empty() {
-                    out.push((client_ip.clone(), line));
-                }
-                continue;
-            }
-            if let Some(msg) = extract_octet_counted(buf) {
-                out.push((client_ip.clone(), msg));
-                continue;
-            }
-        } else {
-            if let Some(msg) = extract_octet_counted(buf) {
-                out.push((client_ip.clone(), msg));
-                continue;
-            }
-            if octet_in_progress(buf) {
-                break;
-            }
-            if let Some(line) = extract_newline(buf) {
-                if !line.is_empty() {
-                    out.push((client_ip.clone(), line));
-                }
-                continue;
-            }
+            continue;
         }
         if buf.len() > MAX_FRAME_BYTES {
             let preview_len = buf.len().min(256);
@@ -345,23 +306,22 @@ mod tests {
     }
 
     #[test]
-    fn auto_prefer_newline_vs_len() {
+    fn auto_prefers_len_then_line() {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
-            // prefer newline first
-            let mut b1 = BytesMut::from(&b"abc\n"[..]);
-            let (tx1, mut rx1) = mpsc::channel::<Message>(1);
+            let mut b = BytesMut::from(&b"5 hello\n"[..]);
+            let (tx, mut rx) = mpsc::channel::<Message>(1);
             let ip: Arc<str> = Arc::<str>::from("127.0.0.1");
-            drain_auto_all(&mut b1, &ip, &tx1, true).await.unwrap();
-            let m = rx1.recv().await.unwrap();
-            assert_eq!(&m.1[..], b"abc");
+            drain_auto_all(&mut b, &ip, &tx).await.unwrap();
+            let m = rx.recv().await.unwrap();
+            assert_eq!(&m.1[..], b"hello");
 
-            // prefer len first
-            let mut b2 = BytesMut::from(&b"5 hello\n"[..]);
-            let (tx2, mut rx2) = mpsc::channel::<Message>(1);
-            drain_auto_all(&mut b2, &ip, &tx2, false).await.unwrap();
-            let m2 = rx2.recv().await.unwrap();
-            assert_eq!(&m2.1[..], b"hello");
+            // fallback to newline when no length prefix
+            let mut b_line = BytesMut::from(&b"abc\n"[..]);
+            let (tx_line, mut rx_line) = mpsc::channel::<Message>(1);
+            drain_auto_all(&mut b_line, &ip, &tx_line).await.unwrap();
+            let line_msg = rx_line.recv().await.unwrap();
+            assert_eq!(&line_msg.1[..], b"abc");
         });
     }
 
@@ -372,7 +332,7 @@ mod tests {
             let mut b = BytesMut::from(&b"7 incom"[..]); // incomplete length frame
             let (tx, mut rx) = mpsc::channel::<Message>(1);
             let ip: Arc<str> = Arc::<str>::from("127.0.0.1");
-            drain_auto_all(&mut b, &ip, &tx, true).await.unwrap(); // prefer newline but should wait
+            drain_auto_all(&mut b, &ip, &tx).await.unwrap();
             assert!(rx.try_recv().is_err());
         });
     }

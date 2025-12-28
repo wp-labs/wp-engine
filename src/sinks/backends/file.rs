@@ -7,6 +7,7 @@ use crate::sinks::{SinkEndpoint, SinkRecUnit};
 use crate::types::{AnyResult, Build1, SafeH};
 use anyhow::Context;
 use async_trait::async_trait;
+use std::path::Path;
 use std::sync::Arc;
 use wp_data_fmt::{DataFormat, FormatType};
 // use orion_conf::ToStructError; // unused here
@@ -18,7 +19,7 @@ use tokio::fs::OpenOptions;
 use tokio::io::{AsyncWriteExt, BufWriter};
 // no mpsc/interval after fast_file pivot
 use tokio_async_drop::tokio_async_drop;
-use wp_connector_api::{SinkReason, SinkResult};
+use wp_connector_api::{SinkBuildCtx, SinkReason, SinkResult, SinkSpec as ResolvedSinkSpec};
 use wp_model_core::model::fmt_def::TextFmt;
 
 pub fn create_watch_out(fmt: TextFmt) -> (SafeH<Cursor<Vec<u8>>>, SinkEndpoint) {
@@ -28,6 +29,84 @@ pub fn create_watch_out(fmt: TextFmt) -> (SafeH<Cursor<Vec<u8>>>, SinkEndpoint) 
     out.next_pipe(buffer_out);
     let out = SinkEndpoint::Buffer(out);
     (buffer, out)
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct FileSinkSpec {
+    fmt: TextFmt,
+    base: String,
+    file_name: String,
+    path: String,
+    use_base_path: bool,
+}
+
+impl FileSinkSpec {
+    pub(crate) fn from_resolved(kind: &str, spec: &ResolvedSinkSpec) -> AnyResult<Self> {
+        let has_path = spec.params.get("path").and_then(|v| v.as_str()).is_some();
+        let has_base_file = spec.params.get("base").and_then(|v| v.as_str()).is_some()
+            && spec.params.get("file").and_then(|v| v.as_str()).is_some();
+        if !(has_path || has_base_file) {
+            anyhow::bail!("{} sink requires either 'path' or 'base'+'file'", kind);
+        }
+        if let Some(s) = spec.params.get("fmt").and_then(|v| v.as_str()) {
+            let ok = matches!(
+                s,
+                "json" | "csv" | "show" | "kv" | "raw" | "proto" | "proto-text"
+            );
+            if !ok {
+                anyhow::bail!(
+                    "invalid fmt: '{}'; allowed: json,csv,show,kv,raw,proto,proto-text",
+                    s
+                );
+            }
+        }
+        let fmt = spec
+            .params
+            .get("fmt")
+            .and_then(|v| v.as_str())
+            .map(TextFmt::from)
+            .unwrap_or(TextFmt::Json);
+        let base = spec
+            .params
+            .get("base")
+            .and_then(|v| v.as_str())
+            .unwrap_or("./data/out_dat")
+            .to_string();
+        let file_name = spec
+            .params
+            .get("file")
+            .and_then(|v| v.as_str())
+            .unwrap_or("out.dat")
+            .to_string();
+        let path = spec
+            .params
+            .get("path")
+            .and_then(|v| v.as_str())
+            .unwrap_or("./data/out_dat/out.dat")
+            .to_string();
+        Ok(Self {
+            fmt,
+            base,
+            file_name,
+            path,
+            use_base_path: has_base_file,
+        })
+    }
+
+    pub(crate) fn text_fmt(&self) -> TextFmt {
+        self.fmt
+    }
+
+    pub(crate) fn resolve_path(&self, _ctx: &SinkBuildCtx) -> String {
+        if self.use_base_path {
+            Path::new(&self.base)
+                .join(&self.file_name)
+                .display()
+                .to_string()
+        } else {
+            self.path.clone()
+        }
+    }
 }
 
 #[derive(Clone)]

@@ -153,13 +153,9 @@ struct TcpConnection {
 match self.framing {
     FramingMode::Line => FramingExtractor::extract_line_message(buffer),
     FramingMode::Len => FramingExtractor::extract_length_prefixed_message(buffer),
-    FramingMode::Auto { prefer_newline } => {
-        if prefer_newline {
-            FramingExtractor::extract_line_message(buffer)
-                .or_else(|| FramingExtractor::extract_length_prefixed_message(buffer))
-        } else {
-            FramingExtractor::extract_length_prefixed_message(buffer)
-        }
+    FramingMode::Auto => {
+        FramingExtractor::extract_length_prefixed_message(buffer)
+            .or_else(|| FramingExtractor::extract_line_message(buffer))
     }
 }
 ```
@@ -168,12 +164,12 @@ match self.framing {
 
 #### 工厂模式配置解析
 ```rust
-// factory.rs - TcpConf::from_params()
-struct TcpConf {
+// factory.rs - TcpSourceSpec::from_params()
+struct TcpSourceSpec {
     addr: String,              // 默认: "0.0.0.0"
     port: u16,                 // 默认: 9000
     tcp_recv_bytes: usize,     // 默认: DEFAULT_TCP_RECV_BYTES
-    framing: FramingMode,      // 默认: Auto { prefer_newline: false }
+    framing: FramingMode,      // 默认: Auto
 }
 ```
 
@@ -187,7 +183,6 @@ connect = "tcp_src"
 params = {
     port = 19001,                    # 监听端口
     addr = "127.0.0.1",             # 监听地址
-    prefer_newline = true,          # 消息帧偏好
     tcp_recv_bytes = 8192           # 缓冲区大小
 }
 ```

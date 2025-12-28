@@ -15,6 +15,57 @@ enum Framing {
     Len,
 }
 
+#[derive(Clone, Debug)]
+struct TcpSinkSpec {
+    addr: String,
+    port: u16,
+    framing: Framing,
+}
+
+impl TcpSinkSpec {
+    fn from_resolved(spec: &ResolvedSinkSpec) -> AnyResult<Self> {
+        let addr = match spec.params.get("addr").and_then(|v| v.as_str()) {
+            Some(s) => s.to_string(),
+            None => anyhow::bail!("tcp.addr must be a string"),
+        };
+        let port = match spec.params.get("port").and_then(|v| v.as_i64()) {
+            Some(p) if (1..=65535).contains(&p) => p as u16,
+            Some(_) => anyhow::bail!("tcp.port must be in 1..=65535"),
+            None => 9000,
+        };
+        let framing = spec
+            .params
+            .get("framing")
+            .and_then(|v| v.as_str())
+            .unwrap_or("line");
+        let framing = match framing.to_ascii_lowercase().as_str() {
+            "len" | "length" => Framing::Len,
+            "line" => Framing::Line,
+            _ => anyhow::bail!("tcp.framing must be 'line' or 'len'"),
+        };
+        Self::ensure_bool(spec, "max_backoff")?;
+        Self::ensure_bool(spec, "sendq_backpressure")?;
+        Ok(Self {
+            addr,
+            port,
+            framing,
+        })
+    }
+
+    fn ensure_bool(spec: &ResolvedSinkSpec, key: &str) -> AnyResult<()> {
+        if let Some(v) = spec.params.get(key) {
+            if v.as_bool().is_none() {
+                anyhow::bail!("tcp.{key} must be a boolean");
+            }
+        }
+        Ok(())
+    }
+
+    fn target_addr(&self) -> String {
+        format!("{}:{}", self.addr, self.port)
+    }
+}
+
 // Max seconds to wait for kernel TCP send-queue to drain at shutdown
 const TCP_DRAIN_MAX_SECS: u64 = 10;
 
@@ -25,13 +76,8 @@ pub struct TcpSink {
 }
 
 impl TcpSink {
-    async fn connect(
-        addr: &str,
-        port: i64,
-        framing: Framing,
-        rate_limit_rps: usize,
-    ) -> AnyResult<Self> {
-        let target = format!("{}:{}", addr, port);
+    async fn connect(spec: &TcpSinkSpec, rate_limit_rps: usize) -> AnyResult<Self> {
+        let target = spec.target_addr();
         // 根据限速目标决定策略：
         // - rate_limit_rps == 0（无限速）：启用背压能力（ForceOn）——仅在水位/包型需要时退让；
         // - rate_limit_rps > 0（限速）：关闭背压能力（ForceOff），避免与源端限速叠加造成双重退让。
@@ -52,7 +98,7 @@ impl TcpSink {
         log::info!("tcp sink connected: target={}", target);
         Ok(Self {
             writer,
-            framing,
+            framing: spec.framing,
             sent_cnt: 0,
         })
     }
@@ -199,63 +245,17 @@ impl SinkFactory for TcpFactory {
         "tcp"
     }
     fn validate_spec(&self, spec: &ResolvedSinkSpec) -> anyhow::Result<()> {
-        if spec.params.get("addr").and_then(|v| v.as_str()).is_none() {
-            anyhow::bail!("tcp.addr must be a string");
-        }
-        if let Some(i) = spec.params.get("port").and_then(|v| v.as_i64())
-            && !(1..=65535).contains(&i)
-        {
-            anyhow::bail!("tcp.port must be in 1..=65535");
-        }
-        if let Some(f) = spec.params.get("framing").and_then(|v| v.as_str()) {
-            let ok = matches!(f.to_ascii_lowercase().as_str(), "line" | "len" | "length");
-            if !ok {
-                anyhow::bail!("tcp.framing must be 'line' or 'len'");
-            }
-        }
-        // 可选背压参数校验（仅开关；保持兼容旧名）
-        if let Some(v) = spec.params.get("max_backoff")
-            && v.as_bool().is_none()
-        {
-            anyhow::bail!("tcp.max_backoff must be a boolean");
-        }
-        if let Some(v) = spec.params.get("sendq_backpressure")
-            && v.as_bool().is_none()
-        {
-            anyhow::bail!("tcp.sendq_backpressure must be a boolean");
-        }
-        // rate_limit_rps 由外部入口线程/全局提示传递；不从 params 读取
-        Ok(())
+        TcpSinkSpec::from_resolved(spec).map(|_| ())
     }
     async fn build(
         &self,
         spec: &ResolvedSinkSpec,
         ctx: &SinkBuildCtx,
     ) -> anyhow::Result<SinkHandle> {
-        let addr = spec
-            .params
-            .get("addr")
-            .and_then(|v| v.as_str())
-            .unwrap_or("127.0.0.1");
-        let port = spec
-            .params
-            .get("port")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(9000);
-        let framing = match spec
-            .params
-            .get("framing")
-            .and_then(|v| v.as_str())
-            .unwrap_or("line")
-            .to_ascii_lowercase()
-            .as_str()
-        {
-            "len" | "length" => Framing::Len,
-            _ => Framing::Line,
-        };
+        let resolved = TcpSinkSpec::from_resolved(spec)?;
         // Internal defaults: no ACK; auto-drain at shutdown.
         // 限速目标：由 SinkBuildCtx 统一传入，TcpSink 内部据此构建 SendPolicy。
-        let runtime = TcpSink::connect(addr, port, framing, ctx.rate_limit_rps).await?;
+        let runtime = TcpSink::connect(&resolved, ctx.rate_limit_rps).await?;
         Ok(SinkHandle::new(Box::new(runtime)))
     }
 }
