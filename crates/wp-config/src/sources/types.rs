@@ -1,7 +1,7 @@
 use crate::connectors::ConnectorTomlFile;
 use getset::WithSetters;
 use serde::{Deserialize, Serialize};
-use wp_connector_api::ConnectorDef;
+use wp_connector_api::{ConnectorDef, ParamMap};
 
 pub type SrcConnectorFileRec = ConnectorTomlFile;
 pub type SourceConnector = ConnectorDef;
@@ -17,7 +17,7 @@ pub struct WpSource {
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(default, rename = "params", alias = "params_override")]
-    pub params: toml::value::Table,
+    pub params: ParamMap,
 }
 
 /// Deprecated alias: maintained for crates that still refer to `SourceItem`

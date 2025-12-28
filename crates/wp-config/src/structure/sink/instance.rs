@@ -50,7 +50,7 @@ impl SinkInstanceConf {
     pub fn set_kind(&mut self, kind: String) {
         self.core.kind = kind;
     }
-    pub fn set_params(&mut self, params: toml::value::Table) {
+    pub fn set_params(&mut self, params: ParamMap) {
         self.core.params = params;
     }
     pub fn set_filter(&mut self, filter: Option<String>) {
@@ -97,7 +97,7 @@ impl SinkInstanceConf {
             core: wp_specs::CoreSinkSpec {
                 name,
                 kind,
-                params,
+                params: params,
                 filter,
                 tags: Vec::new(),
             },
@@ -133,7 +133,7 @@ impl SinkInstanceConf {
         let mut params = ParamMap::new();
         params.insert(
             "path".to_string(),
-            toml::Value::String(path.as_ref().display().to_string()),
+            serde_json::Value::String(path.as_ref().display().to_string()),
         );
         Self::new_type(name, txt_fmt, "file".to_string(), params, filter)
     }
@@ -183,7 +183,7 @@ impl SinkInstanceConf {
     pub fn resolved_kind_str(&self) -> String {
         self.core.kind.clone()
     }
-    pub fn resolved_params_table(&self) -> toml::value::Table {
+    pub fn resolved_params_table(&self) -> ParamMap {
         self.core.params.clone()
     }
 }
@@ -253,11 +253,11 @@ impl Validate for SinkInstanceConf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use toml::value::Table;
+    use serde_json::json;
 
-    fn tbl(k: &str, v: &str) -> Table {
-        let mut t = Table::new();
-        t.insert(k.to_string(), toml::Value::String(v.to_string()));
+    fn tbl(k: &str, v: &str) -> ParamMap {
+        let mut t = ParamMap::new();
+        t.insert(k.to_string(), json!(v.to_string()));
         t
     }
 
@@ -305,12 +305,9 @@ path = "p2.dat"
         assert_eq!(s.resolved_kind_str(), "kafka".to_string());
         assert_eq!(s.core.kind, "kafka".to_string());
 
-        let mut p = Table::new();
-        p.insert(
-            "brokers".to_string(),
-            toml::Value::String("127.0.0.1:9092".to_string()),
-        );
-        p.insert("topic".to_string(), toml::Value::String("t".to_string()));
+        let mut p = ParamMap::new();
+        p.insert("brokers".to_string(), json!("127.0.0.1:9092".to_string()));
+        p.insert("topic".to_string(), json!("t".to_string()));
         s.set_params(p.clone());
         assert_eq!(s.resolved_params_table(), p);
         assert_eq!(s.core.params, p);

@@ -3,6 +3,7 @@ use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::error::OrionConfResult;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use wp_connector_api::ConnectorScope;
 
 use super::types::SourceConnector;
 

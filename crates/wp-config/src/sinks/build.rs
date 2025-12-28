@@ -44,9 +44,9 @@ pub trait SinkFactoryLookup {
 
 fn pick_string(m: &ParamMap, key: &str) -> Option<String> {
     m.get(key).and_then(|v| match v {
-        toml::Value::String(s) => Some(s.clone()),
-        toml::Value::Integer(i) => Some(i.to_string()),
-        toml::Value::Array(arr) => arr
+        serde_json::Value::String(s) => Some(s.clone()),
+        serde_json::Value::Number(i) => Some(i.to_string()),
+        serde_json::Value::Array(arr) => arr
             .iter()
             .filter_map(|x| x.as_str().map(|s| s.to_string()))
             .next(),

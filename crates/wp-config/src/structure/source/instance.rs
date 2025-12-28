@@ -1,3 +1,4 @@
+use crate::connectors::{ParamMap, param_map_from_table_ref};
 use crate::structure::Validate;
 use orion_conf::{
     ToStructError,
@@ -32,7 +33,7 @@ impl SourceInstanceConf {
         self.core.kind = kind;
     }
     pub fn set_params(&mut self, params: toml::value::Table) {
-        self.core.params = params;
+        self.core.params = param_map_from_table_ref(&params);
     }
     pub fn set_tags(&mut self, tags: Vec<String>) {
         self.core.tags = tags;
@@ -40,13 +41,13 @@ impl SourceInstanceConf {
     pub fn resolved_kind_str(&self) -> String {
         self.core.kind.clone()
     }
-    pub fn resolved_params_table(&self) -> toml::value::Table {
+    pub fn resolved_params_table(&self) -> ParamMap {
         self.core.params.clone()
     }
     pub fn new_type(
         name: String,
         kind: String,
-        params: toml::value::Table,
+        params: crate::connectors::ParamMap,
         tags: Vec<String>,
     ) -> Self {
         Self {
@@ -81,14 +82,13 @@ impl Validate for SourceInstanceConf {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
     #[test]
     fn construct_min_ok() {
-        let mut tbl = toml::value::Table::new();
-        tbl.insert(
-            "path".to_string(),
-            toml::Value::String("in.dat".to_string()),
-        );
+        let mut tbl = ParamMap::new();
+        tbl.insert("path".to_string(), json!("in.dat".to_string()));
         let s = SourceInstanceConf::new_type("src1".into(), "file".into(), tbl.clone(), vec![]);
         assert_eq!(s.name(), &"src1".to_string());
         assert_eq!(s.resolved_kind_str(), "file".to_string());

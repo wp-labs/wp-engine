@@ -16,7 +16,7 @@ pub fn core_to_resolved(core: &CoreSinkSpec) -> wp_connector_api::SinkSpec {
         name: core.name.clone(),
         kind: core.kind.clone(),
         connector_id: String::new(),
-        params: wp_connector_api::parammap_from_toml_table(core.params.clone()),
+        params: core.params.clone(),
         filter: core.filter.clone(),
     }
 }

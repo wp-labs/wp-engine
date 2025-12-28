@@ -53,7 +53,7 @@ fn merge_params(
     base: &ParamMap,
     override_tbl: &ParamMap,
     allow: &[String],
-) -> OrionConfResult<toml::value::Table> {
+) -> OrionConfResult<ParamMap> {
     let mut out = base.clone();
     for (k, v) in override_tbl.iter() {
         if is_nested_field_blacklisted(k) {
@@ -169,6 +169,7 @@ mod tests {
     use super::*;
     use crate::sources::{io, types};
     use orion_conf::UvsConfFrom;
+    use serde_json::json;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
     use wp_connector_api::{ConnectorScope, SourceReason, SourceResult, SourceSvcIns};
@@ -197,27 +198,27 @@ connect = "conn1"
 
     #[test]
     fn merge_params_whitelist_ok_and_err() {
-        let mut base = toml::value::Table::new();
-        base.insert("endpoint".into(), toml::Value::String("127.0.0.1".into()));
+        let mut base = ParamMap::new();
+        base.insert("endpoint".into(), json!("127.0.0.1"));
         let allow = vec!["path".to_string(), "fmt".to_string()];
 
         // ok: allowed key
         let mut over = ParamMap::new();
-        over.insert("path".into(), toml::Value::String("/a".into()));
+        over.insert("path".into(), json!("/a"));
         let ok = merge_params(&base, &over, &allow).expect("ok");
         assert_eq!(ok.get("path").and_then(|v| v.as_str()), Some("/a"));
 
         // err: disallowed key
-        let mut bad = toml::value::Table::new();
-        bad.insert("badkey".into(), toml::Value::String("v".into()));
+        let mut bad = ParamMap::new();
+        bad.insert("badkey".into(), json!("v"));
         let e = merge_params(&base, &bad, &allow)
             .expect_err("err")
             .to_string();
         assert!(e.contains("override not allowed"));
 
         // err: nested blacklisted field
-        let mut nested = toml::value::Table::new();
-        nested.insert("params".into(), toml::Value::String("x".into()));
+        let mut nested = ParamMap::new();
+        nested.insert("params".into(), json!("x"));
         let e2 = merge_params(&base, &nested, &allow)
             .expect_err("err")
             .to_string();
@@ -235,7 +236,7 @@ connect = "conn1"
                     kind: "dummy".into(),
                     scope: ConnectorScope::Source,
                     allow_override: vec!["a".into()],
-                    default_params: toml::value::Table::new(),
+                    default_params: ParamMap::new(),
                     origin: None,
                 },
             );
@@ -248,14 +249,14 @@ connect = "conn1"
                     enable: Some(false),
                     connect: "c1".into(),
                     tags: vec![],
-                    params: toml::value::Table::new(),
+                    params: ParamMap::new(),
                 },
                 types::WpSource {
                     key: "s2".into(),
                     enable: Some(true),
                     connect: "c1".into(),
                     tags: vec![],
-                    params: toml::value::Table::new(),
+                    params: ParamMap::new(),
                 },
             ],
         };
@@ -334,12 +335,8 @@ type = "dummy"
     #[test]
     fn plugin_validate_fails_without_param() {
         // prepare one spec without 'a'
-        let mut inst = SourceInstanceConf::new_type(
-            "s1".into(),
-            "dummy".into(),
-            toml::value::Table::new(),
-            vec![],
-        );
+        let mut inst =
+            SourceInstanceConf::new_type("s1".into(), "dummy".into(), ParamMap::new(), vec![]);
         inst.connector_id = Some("c1".into());
         let reg = DummyReg;
         let err = validate_specs_with_factory(&[inst], &reg)
