@@ -140,7 +140,7 @@ impl WpGenConfig {
     /// Initialize WpGenConfig to a path with generic path parameter support
     pub fn init_to_path<P: AsRef<Path>>(path: P) -> OrionConfResult<Self> {
         let mut conf = Self::default();
-        conf.output.connect = Some("file_raw_sink".to_string());
+        conf.output.connect = Some("file_json_sink".to_string());
         conf.output
             .params
             .insert("base".into(), "data/in_dat".into());
@@ -169,7 +169,7 @@ impl ConfStdOperation for WpGenConfig {
         Self: Sized,
     {
         let mut conf = WpGenConfig::default();
-        conf.output.connect = Some("file_raw_sink".to_string());
+        conf.output.connect = Some("file_json_sink".to_string());
         conf.output
             .params
             .insert("base".into(), "data/in_dat".into());

@@ -81,7 +81,7 @@ pub fn total_input_from_wpsrc(
                             .and_then(|v| v.as_table())
                             .cloned()
                             .unwrap_or_default();
-                        let merged = merge_params(&conn.params, &ov, &conn.allow_override);
+                        let merged = merge_params(&conn.default_params, &ov, &conn.allow_override);
                         // 支持 path 或 base+file 两种写法
                         let maybe_path = merged
                             .get("path")
@@ -168,7 +168,7 @@ pub fn list_file_sources_with_lines(
                 if !conn.kind.eq_ignore_ascii_case("file") {
                     continue;
                 }
-                let merged = merge_params(&conn.params, &ov, &conn.allow_override);
+                let merged = merge_params(&conn.default_params, &ov, &conn.allow_override);
                 // 支持 path 或 base+file 两种写法
                 let path_str = merged
                     .get("path")

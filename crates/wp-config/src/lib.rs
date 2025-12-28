@@ -13,6 +13,7 @@ pub use winnow::*;
 mod buildin;
 mod common;
 mod cond;
+pub mod connectors;
 pub mod constants;
 pub mod error;
 pub mod limits;

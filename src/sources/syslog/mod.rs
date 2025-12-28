@@ -43,12 +43,7 @@ use crate::connectors::registry;
 
 /// Register the syslog source factory
 pub fn register_syslog_factory() {
-    registry::register_source_factory(factory::SyslogSourceFactory::new());
-}
-
-/// Register the syslog source alias
-pub fn register_syslog_alias() {
-    registry::register_source_factory(factory::SyslogSourceFactory::new());
+    registry::register_source_ex_factory(factory::SyslogSourceFactory::new());
 }
 
 // Auto-register removed: registration is centralized in connectors::startup

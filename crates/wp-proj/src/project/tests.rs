@@ -184,7 +184,7 @@ file = "gen.dat"
 encode = "text"
 "#;
     fs::write(
-        format!("{}/connectors/source.d/00-file-default.toml", work_root),
+        format!("{}/connectors/source.d/00-file-file_src.toml", work_root),
         connector_content,
     )
     .unwrap();
@@ -196,6 +196,7 @@ fn cleanup_test_dir(work_root: &str) {
     let _ = std::fs::remove_dir_all(work_root);
 }
 
+#[cfg(test)]
 #[cfg(test)]
 mod tests {
 

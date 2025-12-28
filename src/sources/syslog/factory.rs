@@ -12,6 +12,8 @@ use orion_error::ToStructError;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
+use toml::value::{Table, Value};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
 use wp_conf::limits::tcp_reader_batch_channel_cap;
 use wp_connector_api::SourceReason;
 use wp_connector_api::{
@@ -125,5 +127,32 @@ impl SourceFactory for SyslogSourceFactory {
 
         fut.await
             .map_err(|e: anyhow::Error| SourceReason::from_conf(e.to_string()).to_err())
+    }
+}
+
+impl ConnectorDefProvider for SyslogSourceFactory {
+    fn source_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("addr".into(), Value::String("0.0.0.0".into()));
+        params.insert("port".into(), Value::Integer(514));
+        params.insert("protocol".into(), Value::String("udp".into()));
+        params.insert("tcp_recv_bytes".into(), Value::Integer(10_485_760));
+        params.insert("header_mode".into(), Value::String("strip".into()));
+        params.insert("prefer_newline".into(), Value::Boolean(false));
+        ConnectorDef {
+            id: "syslog_src".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Source,
+            allow_override: vec![
+                "addr".into(),
+                "port".into(),
+                "protocol".into(),
+                "tcp_recv_bytes".into(),
+                "header_mode".into(),
+                "prefer_newline".into(),
+            ],
+            default_params: params,
+            origin: Some("builtin:syslog_source".into()),
+        }
     }
 }

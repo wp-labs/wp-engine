@@ -100,13 +100,13 @@ impl WarpConf {
         Ok((start_root, conn))
     }
 
-    // 2.2) 合并 output.params 到 connector.params，并校验 allow_override 白名单和误用嵌套表
+    // 2.2) 合并 output.params 到 connector.default_params，并校验 allow_override 白名单和误用嵌套表
     fn merge_params_with_whitelist(
         conn: &wp_conf::sinks::ConnectorRec,
         override_tbl: &toml::value::Table,
         conn_id: &str,
     ) -> OrionConfResult<toml::value::Table> {
-        let mut merged = conn.params.clone();
+        let mut merged = conn.default_params.clone();
         for (k, v) in override_tbl.iter() {
             if k == "params" || k == "params_override" {
                 return ConfIOReason::from_validation(format!(

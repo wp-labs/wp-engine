@@ -1,25 +1,13 @@
+use crate::connectors::{ConnectorDef, ConnectorTomlFile};
 use crate::structure::GroupExpectSpec;
 use crate::structure::SinkExpectOverride;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use toml::value::Table;
+use wp_connector_api::ParamMap;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ConnectorFile {
-    #[serde(default)]
-    pub connectors: Vec<ConnectorRec>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ConnectorRec {
-    pub id: String,
-    #[serde(rename = "type")]
-    pub kind: String,
-    #[serde(default)]
-    pub allow_override: Vec<String>,
-    #[serde(default)]
-    pub params: Table,
-}
+pub type ConnectorFile = ConnectorTomlFile;
+pub type ConnectorRec = ConnectorDef;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RouteFile {
@@ -62,7 +50,7 @@ pub struct RouteSink {
     inner_name: Option<String>,
     // 统一写法：params（不再兼容 params_override）
     #[serde(default, rename = "params")]
-    params: Table,
+    params: ParamMap,
     /// sink 级标签
     #[serde(default)]
     tags: Option<Vec<String>>,
@@ -82,7 +70,7 @@ impl RouteSink {
     pub fn inner_name(&self) -> Option<&str> {
         self.inner_name.as_deref()
     }
-    pub fn params(&self) -> &Table {
+    pub fn params(&self) -> &ParamMap {
         &self.params
     }
     pub fn expect(&self) -> Option<&SinkExpectOverride> {

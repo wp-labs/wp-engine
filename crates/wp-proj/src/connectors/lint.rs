@@ -1,24 +1,8 @@
-use std::fs;
 use std::path::{Path, PathBuf};
-use wp_conf::sources::{io::resolve_connectors_base_dir, types::SrcConnectorFileRec};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, load_connector_defs_from_dir};
+use wp_conf::sources::io::resolve_connectors_base_dir;
 
 use super::types::{LintRow, LintSeverity, Side, SilentErrKind};
-
-fn toml_files_in_dir(dir: &Path) -> Vec<PathBuf> {
-    if !dir.exists() {
-        return vec![];
-    }
-    let mut v: Vec<_> = fs::read_dir(dir)
-        .ok()
-        .into_iter()
-        .flatten()
-        .filter_map(|e| e.ok())
-        .map(|e| e.path())
-        .filter(|p| p.extension().map(|s| s == "toml").unwrap_or(false))
-        .collect();
-    v.sort();
-    v
-}
 fn kind_hint_from_filename_path(p: &Path) -> Option<String> {
     p.file_stem().and_then(|s| s.to_str()).and_then(|name| {
         let parts: Vec<&str> = name.split('-').collect();
@@ -57,15 +41,15 @@ fn resolve_dir(side: Side, start: &Path) -> PathBuf {
 }
 fn validate_connector(
     side: Side,
-    id: &str,
-    kind_raw: &str,
+    def: &ConnectorDef,
     hint: Option<&str>,
 ) -> (LintSeverity, String, Option<SilentErrKind>) {
     let mut sev = LintSeverity::Ok;
     let mut msg = String::new();
     let mut first_err: Option<SilentErrKind> = None;
 
-    let kind = kind_raw.to_ascii_lowercase();
+    let kind = def.kind.to_ascii_lowercase();
+    let id = def.id.as_str();
 
     if !ok_id_chars_fn(id) {
         sev = sev_max(sev, LintSeverity::Error);
@@ -123,74 +107,41 @@ fn validate_connector(
 fn lint_side_rows_from(start: &Path, side: Side) -> Vec<LintRow> {
     let dir = resolve_dir(side, start);
     let mut rows: Vec<LintRow> = Vec::new();
-    for fp in toml_files_in_dir(&dir) {
-        let hint = kind_hint_from_filename_path(&fp);
-        let raw = fs::read_to_string(&fp).unwrap_or_default();
-        match side {
-            Side::Sources => {
-                let rec: Result<SrcConnectorFileRec, toml::de::Error> = toml::from_str(&raw);
-                match rec {
-                    Ok(cf) => {
-                        for c in cf.connectors {
-                            let (sev, msg, silent_err) =
-                                validate_connector(side, &c.id, &c.kind, hint.as_deref());
-                            rows.push(LintRow {
-                                scope: side.label(),
-                                file: fp.to_string_lossy().to_string(),
-                                id: c.id,
-                                kind: c.kind.to_ascii_lowercase(),
-                                sev,
-                                msg: if msg.is_empty() { "-".into() } else { msg },
-                                silent_err,
-                            });
-                        }
-                    }
-                    Err(e) => {
-                        rows.push(LintRow {
-                            scope: side.label(),
-                            file: fp.to_string_lossy().to_string(),
-                            id: "-".into(),
-                            kind: "-".into(),
-                            sev: LintSeverity::Error,
-                            msg: format!("parse failed: {}", e),
-                            silent_err: None,
-                        });
-                    }
-                }
-            }
-            Side::Sinks => {
-                let rec: Result<wp_conf::sinks::types::ConnectorFile, toml::de::Error> =
-                    toml::from_str(&raw);
-                match rec {
-                    Ok(cf) => {
-                        for c in cf.connectors {
-                            let (sev, msg, silent_err) =
-                                validate_connector(side, &c.id, &c.kind, hint.as_deref());
-                            rows.push(LintRow {
-                                scope: side.label(),
-                                file: fp.to_string_lossy().to_string(),
-                                id: c.id,
-                                kind: c.kind.to_ascii_lowercase(),
-                                sev,
-                                msg: if msg.is_empty() { "-".into() } else { msg },
-                                silent_err,
-                            });
-                        }
-                    }
-                    Err(e) => {
-                        rows.push(LintRow {
-                            scope: side.label(),
-                            file: fp.to_string_lossy().to_string(),
-                            id: "-".into(),
-                            kind: "-".into(),
-                            sev: LintSeverity::Error,
-                            msg: format!("parse failed: {}", e),
-                            silent_err: None,
-                        });
-                    }
-                }
+    let scope = match side {
+        Side::Sources => ConnectorScope::Source,
+        Side::Sinks => ConnectorScope::Sink,
+    };
+    match load_connector_defs_from_dir(&dir, scope) {
+        Ok(defs) => {
+            for def in defs {
+                let hint = def
+                    .origin
+                    .as_ref()
+                    .and_then(|p| kind_hint_from_filename_path(Path::new(p)));
+                let (sev, msg, silent_err) = validate_connector(side, &def, hint.as_deref());
+                rows.push(LintRow {
+                    scope: side.label(),
+                    file: def
+                        .origin
+                        .clone()
+                        .unwrap_or_else(|| dir.display().to_string()),
+                    id: def.id.clone(),
+                    kind: def.kind.to_ascii_lowercase(),
+                    sev,
+                    msg: if msg.is_empty() { "-".into() } else { msg },
+                    silent_err,
+                });
             }
         }
+        Err(err) => rows.push(LintRow {
+            scope: side.label(),
+            file: dir.display().to_string(),
+            id: "-".into(),
+            kind: "-".into(),
+            sev: LintSeverity::Error,
+            msg: format!("load failed: {}", err),
+            silent_err: None,
+        }),
     }
     rows
 }
@@ -210,13 +161,21 @@ mod tests {
 
     #[test]
     fn filename_hint_extracts_kind_segment() {
-        let path = Path::new("source.d/00-file-default.toml");
+        let path = Path::new("source.d/00-file-file_src.toml");
         assert_eq!(kind_hint_from_filename_path(path), Some("file".into()));
     }
 
     #[test]
     fn validate_connector_enforces_source_suffix() {
-        let (sev, msg, silent) = validate_connector(Side::Sources, "bad", "file", Some("file"));
+        let def = ConnectorDef {
+            id: "bad".into(),
+            kind: "file".into(),
+            scope: ConnectorScope::Source,
+            allow_override: vec![],
+            default_params: toml::value::Table::new(),
+            origin: None,
+        };
+        let (sev, msg, silent) = validate_connector(Side::Sources, &def, Some("file"));
         assert_eq!(sev, LintSeverity::Error);
         assert!(msg.contains("_src"));
         assert!(matches!(silent, Some(SilentErrKind::SourcesIdMustEndSrc)));

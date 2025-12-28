@@ -4,9 +4,8 @@ use std::path::{Path, PathBuf};
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
-use wp_conf::sources::{
-    SourceConnector, WpSourcesConfig, find_connectors_dir, load_connectors_for,
-};
+use wp_conf::connectors::{ConnectorScope, load_connector_defs_from_dir};
+use wp_conf::sources::{SourceConnector, WpSourcesConfig, find_connectors_dir};
 
 /// A flattened row for listing source connectors and their usages.
 #[derive(Debug, Clone)]
@@ -48,7 +47,8 @@ fn resolve_wpsrc_path(work_root: &str) -> OrionConfResult<PathBuf> {
 
 /// Load connectors map from `connectors/source.d` (dedup and validate ids).
 fn load_connectors_map(base_dir: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
-    load_connectors_for(base_dir)
+    let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source)?;
+    Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
 }
 
 /// Merge per-source overrides onto connector defaults, honoring the connector whitelist.
@@ -106,7 +106,7 @@ pub fn list_connectors(work_root: &str) -> OrionConfResult<Vec<ConnectorListRow>
             id: id.clone(),
             kind: c.kind.clone(),
             allow_override: c.allow_override.clone(),
-            detail: detail_of(&c.kind, &c.params),
+            detail: detail_of(&c.kind, &c.default_params),
             refs: *refs.get(id).unwrap_or(&0),
         })
         .collect();
@@ -130,7 +130,7 @@ pub fn route_table(work_root: &str, path_like: Option<&str>) -> OrionConfResult<
         let conn = conn_map.get(&src.connect).ok_or_else(|| {
             ConfIOReason::from_validation(format!("connector not found: {}", src.connect))
         })?;
-        let merged = merge_params(&conn.params, &src.params, &conn.allow_override)?;
+        let merged = merge_params(&conn.default_params, &src.params, &conn.allow_override)?;
         let detail = detail_of(&conn.kind, &merged);
         let row = RouteRow {
             key: src.key,

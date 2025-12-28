@@ -1,5 +1,7 @@
 use async_trait::async_trait;
 use std::str::FromStr;
+use toml::value::{Table, Value};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
 use wp_conf::structure::Protocol as ConfProtocol;
 use wp_conf::structure::SyslogSinkConf as OutSyslog;
 use wp_connector_api::SinkResult;
@@ -276,7 +278,7 @@ impl AsyncRawDataSink for SyslogSink {
 }
 
 pub fn register_factory_syslog() {
-    crate::connectors::registry::register_sink_factory(SyslogFactory);
+    crate::connectors::registry::register_sink_ex_factory(SyslogFactory);
 }
 
 // ---- Runtime factory from resolved route (for future decoupling) ----
@@ -311,6 +313,26 @@ impl SinkFactory for SyslogFactory {
             }
         };
         Ok(SinkHandle::new(Box::new(runtime)))
+    }
+}
+
+impl ConnectorDefProvider for SyslogFactory {
+    fn sink_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("addr".into(), Value::String("127.0.0.1".into()));
+        params.insert("port".into(), Value::Integer(1514));
+        params.insert("protocol".into(), Value::String("udp".into()));
+        params.insert("strip_header".into(), Value::Boolean(true));
+        params.insert("attach_meta_tags".into(), Value::Boolean(true));
+        params.insert("tcp_recv_bytes".into(), Value::Integer(10_485_760));
+        ConnectorDef {
+            id: "syslog_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["addr".into(), "port".into(), "protocol".into()],
+            default_params: params,
+            origin: Some("builtin:syslog_sink".into()),
+        }
     }
 }
 

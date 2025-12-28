@@ -1,103 +1,67 @@
+use super::defaults::{ConnectorTemplate, registered_templates};
 use orion_conf::{ErrorOwe, ErrorWith};
 use std::fs;
-use std::io::Write;
 use std::path::Path;
+use toml::Value;
+use wp_conf::connectors::{ConnectorDef, ConnectorScope};
 use wp_error::run_error::RunResult;
 
-macro_rules! connector_template {
-    ($rel:literal) => {
-        include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../connectors/",
-            $rel
-        ))
-    };
-}
-
-fn write_templates_if_absent(dir: &Path, templates: &[(&str, &str)]) -> RunResult<()> {
-    fs::create_dir_all(dir)
-        .owe_res()
-        .want("create dir")
-        .with(dir)?;
-    for (name, body) in templates {
-        let p = dir.join(name);
-        if !p.exists() {
-            let mut f = fs::File::create(&p)
-                .owe_res()
-                .want("create file")
-                .with(&p)?;
-            f.write_all(body.as_bytes())
-                .owe_res()
-                .want("write file")
-                .with(&p)?;
-        }
+pub fn init_definitions<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
+    for template in registered_templates() {
+        write_template_if_absent(work_root.as_ref(), &template)?;
     }
     Ok(())
 }
 
-fn ensure_source_connectors<P: AsRef<std::path::Path>>(work_root: P) -> RunResult<()> {
-    let dir = work_root.as_ref().join("connectors").join("source.d");
-    let templates: &[(&str, &str)] = &[
-        (
-            "00-file-default.toml",
-            connector_template!("source.d/00-file-default.toml"),
-        ),
-        (
-            "10-syslog-udp.toml",
-            connector_template!("source.d/10-syslog-udp.toml"),
-        ),
-        (
-            "11-syslog-tcp.toml",
-            connector_template!("source.d/11-syslog-tcp.toml"),
-        ),
-        (
-            "30-kafka.toml",
-            connector_template!("source.d/30-kafka.toml"),
-        ),
-    ];
-    write_templates_if_absent(&dir, templates)
-}
-
-fn ensure_sink_connectors<P: AsRef<std::path::Path>>(work_root: P) -> RunResult<()> {
-    let dir = work_root.as_ref().join("connectors").join("sink.d");
-    let templates: &[(&str, &str)] = &[
-        (
-            "01-file-prototext.toml",
-            connector_template!("sink.d/01-file-prototext.toml"),
-        ),
-        (
-            "02-file-json.toml",
-            connector_template!("sink.d/02-file-json.toml"),
-        ),
-        (
-            "03-file-kv.toml",
-            connector_template!("sink.d/03-file-kv.toml"),
-        ),
-        (
-            "04-file-raw.toml",
-            connector_template!("sink.d/04-file-raw.toml"),
-        ),
-        (
-            "10-syslog-udp.toml",
-            connector_template!("sink.d/10-syslog-udp.toml"),
-        ),
-        (
-            "11-syslog-tcp.toml",
-            connector_template!("sink.d/11-syslog-tcp.toml"),
-        ),
-        ("30-kafka.toml", connector_template!("sink.d/30-kafka.toml")),
-        (
-            "30-prometheus.toml",
-            connector_template!("sink.d/40-prometheus.toml"),
-        ),
-    ];
-    write_templates_if_absent(&dir, templates)
-}
-
-pub fn init_templates<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
-    ensure_source_connectors(&work_root)?;
-    ensure_sink_connectors(&work_root)?;
+fn write_template_if_absent(work_root: &Path, template: &ConnectorTemplate) -> RunResult<()> {
+    let dir = match template.scope {
+        ConnectorScope::Source => work_root.join("connectors/source.d"),
+        ConnectorScope::Sink => work_root.join("connectors/sink.d"),
+    };
+    fs::create_dir_all(&dir)
+        .owe_res()
+        .want("create connector template dir")
+        .with(&dir)?;
+    let path = dir.join(&template.file_name);
+    if path.exists() {
+        return Ok(());
+    }
+    let body = render_connector_file(&template.connectors)?;
+    fs::write(&path, body.as_bytes())
+        .owe_res()
+        .want("write connector template")
+        .with(&path)?;
     Ok(())
+}
+
+fn render_connector_file(connectors: &[ConnectorDef]) -> RunResult<String> {
+    let mut entries = Vec::new();
+    for def in connectors {
+        entries.push(connector_to_value(def));
+    }
+    let mut root = toml::value::Table::new();
+    root.insert("connectors".to_string(), Value::Array(entries));
+    toml::to_string(&Value::Table(root))
+        .owe_res()
+        .want("serialize connector template")
+}
+
+fn connector_to_value(def: &ConnectorDef) -> Value {
+    let mut entry = toml::value::Table::new();
+    entry.insert("id".into(), Value::String(def.id.clone()));
+    entry.insert("type".into(), Value::String(def.kind.clone()));
+    if !def.allow_override.is_empty() {
+        let arr = def
+            .allow_override
+            .iter()
+            .map(|s| Value::String(s.clone()))
+            .collect();
+        entry.insert("allow_override".into(), Value::Array(arr));
+    }
+    if !def.default_params.is_empty() {
+        entry.insert("params".into(), Value::Table(def.default_params.clone()));
+    }
+    Value::Table(entry)
 }
 
 #[cfg(test)]
@@ -108,24 +72,65 @@ mod tests {
     #[test]
     fn init_templates_creates_expected_files() {
         let temp = temp_workdir();
-        init_templates(temp.path().to_str().unwrap()).expect("init templates");
-
-        let source_file = temp.path().join("connectors/source.d/00-file-default.toml");
-        let sink_file = temp.path().join("connectors/sink.d/02-file-json.toml");
-        assert!(source_file.exists());
-        assert!(sink_file.exists());
+        init_definitions(temp.path()).expect("init templates");
+        let templates = registered_templates();
+        let first_source = templates
+            .iter()
+            .find(|t| t.scope == ConnectorScope::Source)
+            .expect("source template");
+        assert!(
+            temp.path()
+                .join(format!("connectors/source.d/{}", first_source.file_name))
+                .exists()
+        );
+        let first_sink = templates
+            .iter()
+            .find(|t| t.scope == ConnectorScope::Sink)
+            .expect("sink template");
+        assert!(
+            temp.path()
+                .join(format!("connectors/sink.d/{}", first_sink.file_name))
+                .exists()
+        );
     }
 
     #[test]
     fn init_templates_does_not_overwrite_existing_file() {
         let temp = temp_workdir();
-        let custom = temp.path().join("connectors/source.d/00-file-default.toml");
-        std::fs::create_dir_all(custom.parent().unwrap()).unwrap();
-        std::fs::write(&custom, "[[connectors]]\ncustom = true\n").unwrap();
+        let templates = registered_templates();
+        let sample = templates
+            .iter()
+            .find(|t| t.scope == ConnectorScope::Source)
+            .expect("source template");
+        let custom = temp
+            .path()
+            .join(format!("connectors/source.d/{}", sample.file_name));
+        fs::create_dir_all(custom.parent().unwrap()).unwrap();
+        fs::write(&custom, "[[connectors]]\ncustom = true\n").unwrap();
 
-        init_templates(temp.path().to_str().unwrap()).expect("init templates");
+        init_definitions(temp.path()).expect("init templates");
 
         let body = std::fs::read_to_string(&custom).unwrap();
         assert!(body.contains("custom"));
+    }
+
+    #[test]
+    fn render_connector_file_matches_expected_keys() {
+        let temp_def = ConnectorDef {
+            id: "demo".into(),
+            kind: "file".into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into()],
+            default_params: {
+                let mut t = toml::value::Table::new();
+                t.insert("base".into(), Value::String("./out".into()));
+                t
+            },
+            origin: None,
+        };
+        let body = render_connector_file(&[temp_def]).expect("render");
+        assert!(body.contains("[[connectors]]"));
+        assert!(body.contains("id = \"demo\""));
+        assert!(body.contains("allow_override"));
     }
 }

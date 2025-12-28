@@ -2,7 +2,7 @@ use std::path::Path;
 
 use crate::connectors::{
     lint::lint_rows_from_root,
-    templates::init_templates,
+    templates::init_definitions,
     types::{LintRow, LintSeverity, SilentErrKind},
 };
 
@@ -24,9 +24,9 @@ impl Connectors {
         lint_rows_from_root(work_root)
     }
 
-    pub fn init_templates<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
+    pub fn init_definition<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
         // 仅生成 connectors/ 内的模板目录，避免在工作根制造 legacy source.d/sink.d
-        init_templates(work_root)
+        init_definitions(work_root)
     }
 
     /// 检查连接器配置是否有效

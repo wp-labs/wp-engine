@@ -108,7 +108,7 @@ impl WarpProject {
 
         // 连接器模板初始化
         if mode.enable_connector() {
-            self.connectors().init_templates(self.work_root())?;
+            self.connectors().init_definition(self.work_root())?;
         }
         if mode.enable_topology() {
             // 输出接收器骨架初始化
@@ -221,6 +221,22 @@ mod tests {
     const MODELS_OML_EXAMPLE_FILE: &str = "models/oml/example.oml";
     const MODELS_OML_KNOWDB_FILE: &str = "models/oml/knowdb.toml";
     const TOPOLOGY_WPSRC_FILE: &str = "topology/sources/wpsrc.toml";
+
+    fn connector_template_exists<P: AsRef<std::path::Path>>(dir: P, id: &str) -> bool {
+        let suffix = format!("-{}.toml", id);
+        std::fs::read_dir(dir)
+            .ok()
+            .and_then(|entries| {
+                entries.filter_map(|entry| entry.ok()).find(|entry| {
+                    entry
+                        .file_name()
+                        .to_str()
+                        .map(|name| name.ends_with(&suffix))
+                        .unwrap_or(false)
+                })
+            })
+            .is_some()
+    }
 
     #[test]
     fn test_init_mode_from_str() {
@@ -388,15 +404,11 @@ mod tests {
 
         // 验证连接器模板
         assert!(
-            work_root
-                .join(format!("{}/00-file-default.toml", CONNECTORS_SOURCE_DIR))
-                .exists(),
+            connector_template_exists(work_root.join(CONNECTORS_SOURCE_DIR), "file_src"),
             "file source connector should exist"
         );
         assert!(
-            work_root
-                .join(format!("{}/02-file-json.toml", CONNECTORS_SINK_DIR))
-                .exists(),
+            connector_template_exists(work_root.join(CONNECTORS_SINK_DIR), "file_json_sink"),
             "file sink connector should exist"
         );
     }

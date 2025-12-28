@@ -54,7 +54,7 @@ fmt = "json"
 base = "./data/out_dat"
 file = "out.dat"
 "#;
-    write_file(cdir.join("00-file-json.toml"), connectors);
+    write_file(cdir.join("file_json_sink.toml"), connectors);
 
     // New-format config: rule mode; explicitly set output.connect to file_json_sink
     let wpgen_toml = r#"version = "1.0"

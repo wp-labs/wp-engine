@@ -1,4 +1,5 @@
 use super::types::*;
+use crate::connectors::{ConnectorScope, load_connector_defs_from_dir};
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
@@ -19,32 +20,10 @@ pub fn find_connectors_base_dir(sink_root: &Path) -> Option<PathBuf> {
 }
 
 pub fn load_connectors_for(sink_root: &str) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
-    let base = find_connectors_base_dir(Path::new(sink_root));
-    let mut files: Vec<PathBuf> = Vec::new();
-    if let Some(sinkd) = base {
-        let mut entries: Vec<_> = fs::read_dir(&sinkd)
-            .owe_conf()
-            .with(&sinkd)?
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().map(|s| s == FILE_EXT_TOML).unwrap_or(false))
-            .collect();
-        entries.sort();
-        files.extend(entries);
-    }
     let mut map = BTreeMap::new();
-    for fp in files {
-        let cf: ConnectorFile = ConnectorFile::load_toml(&fp)?;
-        for c in cf.connectors {
-            if map.contains_key(&c.id) {
-                return ConfIOReason::from_validation(format!(
-                    "duplicate connector id '{}' (file {})",
-                    c.id,
-                    fp.display()
-                ))
-                .err_result();
-            }
-            map.insert(c.id.clone(), c);
+    if let Some(dir) = find_connectors_base_dir(Path::new(sink_root)) {
+        for def in load_connector_defs_from_dir(&dir, ConnectorScope::Sink)? {
+            map.insert(def.id.clone(), def);
         }
     }
     Ok(map)

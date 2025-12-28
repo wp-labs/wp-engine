@@ -3,6 +3,9 @@ use crate::sinks::backends::tcp::TcpFactory;
 use crate::sinks::sink_build::build_file_sink;
 use crate::sinks::{ASinkTestProxy, BlackHoleSink, HealthController, SyslogFactory};
 use async_trait::async_trait;
+use toml::value::{Table, Value};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
+use wp_connector_api::SinkFactory;
 //
 
 // Built-in lightweight no-op sink implementing Async* traits
@@ -30,6 +33,19 @@ impl wp_connector_api::SinkFactory for BlackHoleFactory {
     }
 }
 
+impl ConnectorDefProvider for BlackHoleFactory {
+    fn sink_def(&self) -> ConnectorDef {
+        ConnectorDef {
+            id: "blackhole_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: Vec::new(),
+            default_params: Table::new(),
+            origin: Some("builtin:blackhole".into()),
+        }
+    }
+}
+
 struct FileFactory;
 
 #[async_trait]
@@ -52,6 +68,23 @@ impl wp_connector_api::SinkFactory for FileFactory {
         // Build using existing file builder (AsyncFormatter<AsyncFileSink>)
         let f = build_file_sink(&dummy, &path).await?;
         Ok(wp_connector_api::SinkHandle::new(Box::new(f)))
+    }
+}
+
+impl ConnectorDefProvider for FileFactory {
+    fn sink_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("fmt".into(), Value::String("json".into()));
+        params.insert("base".into(), Value::String("./data/out_dat".into()));
+        params.insert("file".into(), Value::String("default.json".into()));
+        ConnectorDef {
+            id: "file_json_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into(), "file".into()],
+            default_params: params,
+            origin: Some("builtin:file".into()),
+        }
     }
 }
 
@@ -81,14 +114,41 @@ impl wp_connector_api::SinkFactory for TestRescueFactory {
     }
 }
 
+impl ConnectorDefProvider for TestRescueFactory {
+    fn sink_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("fmt".into(), Value::String("kv".into()));
+        params.insert("base".into(), Value::String("./data/out_dat".into()));
+        params.insert("file".into(), Value::String("default.kv".into()));
+        ConnectorDef {
+            id: "file_rescue_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into(), "file".into()],
+            default_params: params,
+            origin: Some("builtin:test_rescue".into()),
+        }
+    }
+}
+
 // fast_file 工厂已移除
 
 pub fn register_builtin_factories() {
-    crate::connectors::registry::register_sink_factory(BlackHoleFactory);
-    crate::connectors::registry::register_sink_factory(FileFactory);
-    crate::connectors::registry::register_sink_factory(SyslogFactory);
-    crate::connectors::registry::register_sink_factory(TcpFactory);
-    crate::connectors::registry::register_sink_factory(TestRescueFactory);
+    crate::connectors::registry::register_sink_ex_factory(BlackHoleFactory);
+    crate::connectors::registry::register_sink_ex_factory(FileFactory);
+    crate::connectors::registry::register_sink_ex_factory(SyslogFactory);
+    crate::connectors::registry::register_sink_ex_factory(TcpFactory);
+    crate::connectors::registry::register_sink_ex_factory(TestRescueFactory);
+}
+
+pub fn builtin_sink_defs() -> Vec<ConnectorDef> {
+    vec![
+        BlackHoleFactory.sink_def(),
+        FileFactory.sink_def(),
+        SyslogFactory.sink_def(),
+        TcpFactory.sink_def(),
+        TestRescueFactory.sink_def(),
+    ]
 }
 
 #[allow(dead_code)]

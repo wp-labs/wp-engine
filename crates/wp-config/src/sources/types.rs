@@ -1,22 +1,10 @@
+use crate::connectors::ConnectorDef;
+use crate::connectors::ConnectorTomlFile;
 use getset::WithSetters;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct SrcConnectorFileRec {
-    #[serde(default)]
-    pub connectors: Vec<SourceConnector>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct SourceConnector {
-    pub id: String,
-    #[serde(rename = "type")]
-    pub kind: String,
-    #[serde(default)]
-    pub allow_override: Vec<String>,
-    #[serde(default)]
-    pub params: toml::value::Table,
-}
+pub type SrcConnectorFileRec = ConnectorTomlFile;
+pub type SourceConnector = ConnectorDef;
 
 // V2 [[sources]] 项（应用层 SourceConfigParser 的配置数据结构迁移至配置层，便于统一装配）
 #[derive(Debug, Clone, Deserialize, Serialize, WithSetters)]

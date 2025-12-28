@@ -4,6 +4,7 @@ use orion_error::{ToStructError, UvsValidationFrom};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
+use wp_connector_api::ParamMap;
 use wp_model_core::model::fmt_def::TextFmt;
 
 pub fn build_sink_use_from(
@@ -41,7 +42,7 @@ pub trait SinkFactoryLookup {
     fn get(&self, kind: &str) -> Option<Arc<dyn wp_connector_api::SinkFactory + 'static>>;
 }
 
-fn pick_string(m: &toml::value::Table, key: &str) -> Option<String> {
+fn pick_string(m: &ParamMap, key: &str) -> Option<String> {
     m.get(key).and_then(|v| match v {
         toml::Value::String(s) => Some(s.clone()),
         toml::Value::Integer(i) => Some(i.to_string()),
@@ -56,7 +57,7 @@ fn pick_string(m: &toml::value::Table, key: &str) -> Option<String> {
 /// 决定输出文本格式
 /// - 文件类（file/test_rescue）：从合并后的参数表读取 `fmt`（允许覆写），若缺省则默认 `json`
 /// - 其它类型：固定为 `json`
-pub fn decide_fmt(conn: &ConnectorRec, params: &toml::value::Table) -> TextFmt {
+pub fn decide_fmt(conn: &ConnectorRec, params: &ParamMap) -> TextFmt {
     const CONNECTOR_TYPE_FILE: &str = "file";
     const CONNECTOR_TYPE_TEST_RESCUE: &str = "test_rescue";
     const FIELD_FMT: &str = "fmt";
@@ -75,13 +76,13 @@ pub fn merge_params(
     origin: Option<&Path>,
     conn: &ConnectorRec,
     r: &RouteSink,
-) -> OrionConfResult<toml::value::Table> {
+) -> OrionConfResult<ParamMap> {
     let sink_name = r
         .inner_name()
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("[{}]", index));
     merge_params_with_allowlist(
-        &conn.params,
+        &conn.default_params,
         r.params(),
         &conn.allow_override,
         group_name,
@@ -101,14 +102,14 @@ use super::types::{ConnectorRec, DefaultsBody, RouteFile, StringOrArray};
 
 /// 合并 connector 默认参数与覆盖表，并执行白名单/嵌套校验（可被 CLI/工具链共用）
 pub(crate) fn merge_params_with_allowlist(
-    base: &toml::value::Table,
-    overrides: &toml::value::Table,
+    base: &ParamMap,
+    overrides: &ParamMap,
     allow: &[String],
     group_name: &str,
     sink_name: &str,
     conn_id: &str,
     origin: Option<&Path>,
-) -> OrionConfResult<toml::value::Table> {
+) -> OrionConfResult<ParamMap> {
     let mut m = base.clone();
     for (k, v) in overrides.iter() {
         if is_nested_field_blacklisted(k) {

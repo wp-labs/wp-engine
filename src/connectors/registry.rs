@@ -6,10 +6,11 @@ use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::panic::Location;
 use std::sync::{Arc, RwLock};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider};
 use wp_connector_api::{SinkFactory, SourceFactory};
 
-type SinkRec = (Arc<dyn SinkFactory>, &'static Location<'static>);
-type SrcRec = (Arc<dyn SourceFactory>, &'static Location<'static>);
+type SinkRec = (Arc<dyn SinkExFactory>, &'static Location<'static>);
+type SrcRec = (Arc<dyn SourceExFactory>, &'static Location<'static>);
 type SinkReg = RwLock<HashMap<String, SinkRec>>;
 type SrcReg = RwLock<HashMap<String, SrcRec>>;
 static SINKS: OnceCell<SinkReg> = OnceCell::new();
@@ -22,26 +23,31 @@ fn src_reg() -> &'static SrcReg {
     SRCS.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
+pub trait SinkExFactory: SinkFactory + ConnectorDefProvider {}
+impl<T> SinkExFactory for T where T: SinkFactory + ConnectorDefProvider {}
+
+pub trait SourceExFactory: SourceFactory + ConnectorDefProvider {}
+impl<T> SourceExFactory for T where T: SourceFactory + ConnectorDefProvider {}
+
 // ---------- Sink ----------
 #[track_caller]
-pub fn register_sink_factory<F: SinkFactory>(f: F) {
-    let kind = f.kind().to_string();
-    let arc: Arc<dyn SinkFactory> = Arc::new(f);
+pub fn register_sink_ex_factory<F>(f: F)
+where
+    F: SinkExFactory,
+{
+    let base: Arc<F> = Arc::new(f);
+    let ex_arc: Arc<dyn SinkExFactory> = base.clone();
+    let kind = ex_arc.kind().to_string();
     if let Ok(mut w) = sink_reg().write() {
-        w.insert(kind, (arc, Location::caller()));
+        w.insert(kind, (ex_arc.clone(), Location::caller()));
     }
 }
-#[track_caller]
-pub fn register_sink_arc(kind: &str, f: Arc<dyn SinkFactory>) {
-    if let Ok(mut w) = sink_reg().write() {
-        w.insert(kind.to_string(), (f, Location::caller()));
-    }
-}
+
 pub fn get_sink_factory(kind: &str) -> Option<Arc<dyn SinkFactory>> {
     sink_reg()
         .read()
         .ok()
-        .and_then(|r| r.get(kind).map(|(f, _)| f.clone()))
+        .and_then(|r| r.get(kind).map(|(f, _)| f.clone() as Arc<dyn SinkFactory>))
 }
 pub fn list_sink_kinds() -> Vec<String> {
     sink_reg()
@@ -51,32 +57,46 @@ pub fn list_sink_kinds() -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Collect connector definitions from all registered sink factories.
+pub fn registered_sink_defs() -> Vec<ConnectorDef> {
+    sink_reg()
+        .read()
+        .map(|reg| reg.values().map(|(f, _)| f.sink_def()).collect())
+        .unwrap_or_default()
+}
+
 // ---------- Source ----------
 #[track_caller]
-pub fn register_source_factory<F: SourceFactory>(f: F) {
-    let kind = f.kind().to_string();
-    let arc: Arc<dyn SourceFactory> = Arc::new(f);
+pub fn register_source_ex_factory<F>(f: F)
+where
+    F: SourceExFactory,
+{
+    let base: Arc<F> = Arc::new(f);
+    let ex_arc: Arc<dyn SourceExFactory> = base.clone();
+    let kind = ex_arc.kind().to_string();
     if let Ok(mut w) = src_reg().write() {
-        w.insert(kind, (arc, Location::caller()));
-    }
-}
-#[track_caller]
-pub fn register_source_arc(kind: &str, f: Arc<dyn SourceFactory>) {
-    if let Ok(mut w) = src_reg().write() {
-        w.insert(kind.to_string(), (f, Location::caller()));
+        w.insert(kind, (ex_arc.clone(), Location::caller()));
     }
 }
 pub fn get_source_factory(kind: &str) -> Option<Arc<dyn SourceFactory>> {
-    src_reg()
-        .read()
-        .ok()
-        .and_then(|r| r.get(kind).map(|(f, _)| f.clone()))
+    src_reg().read().ok().and_then(|r| {
+        r.get(kind)
+            .map(|(f, _)| f.clone() as Arc<dyn SourceFactory>)
+    })
 }
 pub fn list_source_kinds() -> Vec<String> {
     src_reg()
         .read()
         .ok()
         .map(|r| r.keys().cloned().collect())
+        .unwrap_or_default()
+}
+
+/// Collect connector definitions from all registered source factories.
+pub fn registered_source_defs() -> Vec<ConnectorDef> {
+    src_reg()
+        .read()
+        .map(|reg| reg.values().map(|(f, _)| f.source_def()).collect())
         .unwrap_or_default()
 }
 

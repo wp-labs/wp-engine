@@ -3,6 +3,8 @@ use async_trait::async_trait;
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;
 use std::path::Path;
+use toml::value::{Table, Value};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
 use wp_connector_api::{
     SourceBuildCtx, SourceFactory, SourceHandle, SourceMeta, SourceReason, SourceResult,
     SourceSpec as ResolvedSourceSpec, SourceSvcIns,
@@ -123,8 +125,25 @@ impl SourceFactory for FileSourceFactory {
     }
 }
 
+impl ConnectorDefProvider for FileSourceFactory {
+    fn source_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("base".into(), Value::String("./data/in_dat".into()));
+        params.insert("file".into(), Value::String("gen.dat".into()));
+        params.insert("encode".into(), Value::String("text".into()));
+        ConnectorDef {
+            id: "file_src".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Source,
+            allow_override: vec!["base".into(), "file".into(), "encode".into()],
+            default_params: params,
+            origin: Some("builtin:file_source".into()),
+        }
+    }
+}
+
 pub fn register_factory_only() {
-    crate::connectors::registry::register_source_factory(FileSourceFactory);
+    crate::connectors::registry::register_source_ex_factory(FileSourceFactory);
 }
 
 fn compute_file_ranges(path: &Path, instances: usize) -> std::io::Result<Vec<(u64, Option<u64>)>> {

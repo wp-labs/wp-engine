@@ -38,7 +38,7 @@ pub use utils::view::ViewOuter; // used by apps
 // feature-coupling the core library with extension crates.
 
 // Built-in factories (null/file/test_rescue) are always available
-mod builtin_factories;
+pub(crate) mod builtin_factories;
 pub use builtin_factories::register_builtin_factories;
 // Backward-compat alias for older tests/tools
 pub use builtin_factories::register_builtin_factories as register_builtin_sinks;

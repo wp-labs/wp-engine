@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use toml::value::{Table, Value};
+use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
 use wp_connector_api::SinkResult;
 use wp_connector_api::{
     AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkFactory, SinkHandle,
@@ -257,6 +259,29 @@ impl SinkFactory for TcpFactory {
         // 限速目标：由 SinkBuildCtx 统一传入，TcpSink 内部据此构建 SendPolicy。
         let runtime = TcpSink::connect(&resolved, ctx.rate_limit_rps).await?;
         Ok(SinkHandle::new(Box::new(runtime)))
+    }
+}
+
+impl ConnectorDefProvider for TcpFactory {
+    fn sink_def(&self) -> ConnectorDef {
+        let mut params = Table::new();
+        params.insert("addr".into(), Value::String("127.0.0.1".into()));
+        params.insert("port".into(), Value::Integer(9000));
+        params.insert("framing".into(), Value::String("line".into()));
+        params.insert("max_backoff".into(), Value::Boolean(false));
+        ConnectorDef {
+            id: "tcp_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec![
+                "addr".into(),
+                "port".into(),
+                "framing".into(),
+                "max_backoff".into(),
+            ],
+            default_params: params,
+            origin: Some("builtin:tcp_sink".into()),
+        }
     }
 }
 

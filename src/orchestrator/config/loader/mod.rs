@@ -67,7 +67,7 @@ output = "stdout"
         let cdir = format!("{}/connectors/sink.d", cm.work_root_path());
         std::fs::create_dir_all(&cdir)?;
         let cfile = format!(
-            "{}/connectors/sink.d/00-file-json.toml",
+            "{}/connectors/sink.d/file_json_sink.toml",
             cm.work_root_path()
         );
         let connectors = r#"

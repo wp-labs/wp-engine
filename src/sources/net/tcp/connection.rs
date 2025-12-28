@@ -4,7 +4,7 @@
 //! spawning, handling, and cleanup of TCP connections.
 
 use crate::sources::event_id::next_event_id;
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 use std::collections::HashMap;
 use std::io::ErrorKind;
 use std::net::IpAddr;
@@ -23,7 +23,7 @@ use wp_connector_api::{SourceEvent, Tags};
 
 use super::batch::BatchProcessor;
 use super::config::TcpTunables;
-use crate::sources::tcp::framing::FramingExtractor;
+use crate::sources::tcp::framing::{FramingExtractor, octet_in_progress};
 
 /// Callback function type for direct message processing
 pub type MessageCallback = Arc<dyn Fn(SourceEvent) + Send + Sync>;
@@ -234,9 +234,19 @@ impl ConnectionManager {
                 }
             }
             FramingMode::Auto => {
+                let mut extracted_len = false;
                 while let Some(data) = FramingExtractor::extract_length_prefixed_message(buf) {
                     let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());
                     batch_processor.add_message(zcp_msg, zcp_sender, key, client_ip);
+                    extracted_len = true;
+                }
+                // If we already processed a length-prefixed message or are mid-octet payload,
+                // prefer length framing and skip line extraction for now.
+                if extracted_len || octet_in_progress(buf) {
+                    while buf.first().is_some_and(|b| matches!(*b, b'\n' | b'\r')) {
+                        buf.advance(1);
+                    }
+                    return;
                 }
                 while let Some(data) = FramingExtractor::extract_line_message(buf) {
                     let zcp_msg = ZcpMessage::from_ip_addr(client_ip, data.to_vec());

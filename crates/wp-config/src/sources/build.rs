@@ -6,6 +6,7 @@ use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
+use wp_connector_api::ParamMap;
 
 /// 仅解析并执行最小校验（不进行实际构建，不触发 I/O）
 pub fn parse_and_validate_only(config_str: &str) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
@@ -49,8 +50,8 @@ fn is_nested_field_blacklisted(k: &str) -> bool {
 }
 
 fn merge_params(
-    base: &toml::value::Table,
-    override_tbl: &toml::value::Table,
+    base: &ParamMap,
+    override_tbl: &ParamMap,
     allow: &[String],
 ) -> OrionConfResult<toml::value::Table> {
     let mut out = base.clone();
@@ -120,7 +121,7 @@ pub fn specs_from_wrapper(
             ))
             .to_err()
         })?;
-        let merged = merge_params(&conn.params, &s.params, &conn.allow_override)?;
+        let merged = merge_params(&conn.default_params, &s.params, &conn.allow_override)?;
         let mut inst = SourceInstanceConf::new_type(s.key, conn.kind.clone(), merged, s.tags);
         inst.connector_id = Some(conn.id.clone());
         specs.push(inst);
@@ -166,6 +167,7 @@ pub fn validate_specs_with_factory_and_registry(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::connectors::ConnectorScope;
     use crate::sources::{io, types};
     use orion_conf::UvsConfFrom;
     use std::fs;
@@ -232,8 +234,10 @@ connect = "conn1"
                 SourceConnector {
                     id: "c1".into(),
                     kind: "dummy".into(),
+                    scope: ConnectorScope::Source,
                     allow_override: vec!["a".into()],
-                    params: toml::value::Table::new(),
+                    default_params: toml::value::Table::new(),
+                    origin: None,
                 },
             );
             m

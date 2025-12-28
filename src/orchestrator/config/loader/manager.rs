@@ -86,10 +86,11 @@ impl WarpConf {
         // 默认清理 connectors default + models templates（wpsrc）
         {
             // minimal: 清理 connectors source default + src conf
-            let conn_path = self
-                .work_root
-                .join("connectors/source.d/00-file-default.toml");
-            backup_clean(&conn_path)?;
+            if let Some(conn_path) =
+                connector_template_by_id(&self.work_root.join("connectors/source.d"), "file_src")
+            {
+                backup_clean(conn_path)?;
+            }
             backup_clean(wp_conf.src_conf_of(WPSRC_TOML))?;
         }
         Ok(())
@@ -111,4 +112,20 @@ impl WarpConf {
         let path = self.config_path_string(file_name);
         T::try_load(path.as_str()).ok()?
     }
+}
+
+fn connector_template_by_id(dir: &Path, id: &str) -> Option<PathBuf> {
+    let suffix = format!("-{}.toml", id);
+    std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .find(|path| {
+            path.is_file()
+                && path
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .map(|name| name.ends_with(&suffix))
+                    .unwrap_or(false)
+        })
 }
