@@ -32,7 +32,7 @@ pub struct RouteRow {
 /// Locate `wpsrc.toml` starting from a work root (supports `topology/sources/` and legacy `source/`).
 fn resolve_wpsrc_path(work_root: &str) -> OrionConfResult<PathBuf> {
     let wr = PathBuf::from(work_root);
-    let candidate1 = wr.join("models").join("sources").join("wpsrc.toml");
+    let candidate1 = wr.join("topology").join("sources").join("wpsrc.toml");
     if candidate1.exists() {
         return Ok(candidate1);
     }
@@ -182,7 +182,7 @@ allow_override = ["path","fmt"]
         )
         .unwrap();
         // wpsrc under root/topology/sources/wpsrc.toml
-        let wpsrc = root.join("models").join("sources");
+        let wpsrc = root.join("topology").join("sources");
         fs::create_dir_all(&wpsrc).unwrap();
         fs::write(
             wpsrc.join("wpsrc.toml"),
@@ -220,7 +220,7 @@ allow_override = ["path","fmt"]
         )
         .unwrap();
         // wpsrc
-        let wpsrc = root.join("models").join("sources");
+        let wpsrc = root.join("topology").join("sources");
         fs::create_dir_all(&wpsrc).unwrap();
         fs::write(
             wpsrc.join("wpsrc.toml"),
@@ -254,7 +254,7 @@ allow_override = ["path"]
 "#,
         )
         .unwrap();
-        let wpsrc = root.join("models").join("sources");
+        let wpsrc = root.join("topology").join("sources");
         fs::create_dir_all(&wpsrc).unwrap();
         fs::write(
             wpsrc.join("wpsrc.toml"),
