@@ -208,6 +208,8 @@ mod tests {
             init::PrjScope,
         },
     };
+    use std::sync::Arc;
+    use wp_conf::engine::EngineConfig;
 
     use super::*;
 
@@ -219,10 +221,10 @@ mod tests {
         // 在空目录中创建项目（没有任何配置文件）
         let project = WarpProject::bare(&work);
 
-        // load_main should succeed even with no config (creates defaults)
-        assert!(wp_engine::facade::config::load_warp_engine_confs(&work).is_err());
-        assert!(project.sources_c().check_sources_config(&work).is_err());
-        assert!(check_to_result(project.sources_c().check(&work)).is_err());
+        // load_main should succeed (engine config auto-initialized)
+        assert!(wp_engine::facade::config::load_warp_engine_confs(&work).is_ok());
+        assert!(project.sources_c().check_sources_config().is_err());
+        assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.wpl().check(&work)).is_err());
         assert!(check_to_result(project.oml().check(&work)).is_ok());
 
@@ -261,12 +263,12 @@ mod tests {
 
         // 详细调试检查逻辑
         println!("DEBUG minimal - Calling check_sources...");
-        let sources_result = project.sources_c().check_sources_config(&work);
+        let sources_result = project.sources_c().check_sources_config();
         println!("DEBUG minimal - check_sources result: {:?}", sources_result);
 
         // 检查 input_sources
         println!("DEBUG minimal - Calling check_input_sources...");
-        let input_sources_result = check_to_result(project.sources_c().check(&work));
+        let input_sources_result = check_to_result(project.sources_c().check());
         println!(
             "DEBUG minimal - check_input_sources result: {:?}",
             input_sources_result
@@ -306,7 +308,7 @@ mod tests {
         );
         println!(
             "Minimal structure - sources: {:?}",
-            project.sources_c().check_sources_config(&work)
+            project.sources_c().check_sources_config()
         );
         println!(
             "Minimal structure - wpl: {:?}",
@@ -336,9 +338,9 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config(&work).is_ok());
+        assert!(project.sources_c().check_sources_config().is_ok());
         // check_input_sources 在有连接器配置时应该通过
-        assert!(check_to_result(project.sources_c().check(&work)).is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
 
         // 注意：由于实现问题，WPL 和 OML 检查在文件不存在时可能返回 Ok(true)
         // 这是已知的一致性问题，不影响核心功能
@@ -363,11 +365,11 @@ mod tests {
         );
         println!(
             "With sources - sources: {:?}",
-            project.sources_c().check_sources_config(&work)
+            project.sources_c().check_sources_config()
         );
         println!(
             "With sources - input_sources: {:?}",
-            check_to_result(project.sources_c().check(&work))
+            check_to_result(project.sources_c().check())
         );
 
         cleanup_test_dir(&work);
@@ -396,11 +398,11 @@ mod tests {
         );
         println!(
             "DEBUG with_wpl - check_sources: {:?}",
-            project.sources_c().check_sources_config(&work)
+            project.sources_c().check_sources_config()
         );
         println!(
             "DEBUG with_wpl - check_input_sources: {:?}",
-            check_to_result(project.sources_c().check(&work))
+            check_to_result(project.sources_c().check())
         );
 
         // 调试：手动检查文件是否存在
@@ -429,8 +431,8 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config(&work).is_ok());
-        assert!(check_to_result(project.sources_c().check(&work)).is_ok());
+        assert!(project.sources_c().check_sources_config().is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
         assert!(check_to_result(project.wpl().check(&work)).is_ok());
 
         // 调试OML检查
@@ -488,11 +490,11 @@ mod tests {
         );
         println!(
             "check_sources: {:?}",
-            project.sources_c().check_sources_config(&work)
+            project.sources_c().check_sources_config()
         );
         println!(
             "check_input_sources: {:?}",
-            check_to_result(project.sources_c().check(&work))
+            check_to_result(project.sources_c().check())
         );
         println!(
             "check_wpl: {:?}",
@@ -567,8 +569,8 @@ mod tests {
                 .is_ok()
         );
         // 注意：由于修复了检查逻辑，现在需要文件存在时才能通过
-        assert!(project.sources_c().check_sources_config(&work).is_ok());
-        assert!(check_to_result(project.sources_c().check(&work)).is_ok());
+        assert!(project.sources_c().check_sources_config().is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
         // WPL和OML也需要处理路径问题
         // assert!(check_to_result(project.wpl().check(&work)).is_ok());
         // assert!(check_to_result(project.oml().check(&work)).is_ok());
@@ -598,8 +600,6 @@ mod tests {
             std::fs::read_to_string(&config_path).unwrap_or_default()
         );
 
-        let _project = WarpProject::bare(&work);
-
         let load_result = wp_engine::facade::config::load_warp_engine_confs(&work);
         println!("Invalid config load result is_ok: {}", load_result.is_ok());
         assert!(load_result.is_err());
@@ -622,12 +622,12 @@ mod tests {
         let project = WarpProject::bare(&work);
 
         // check_sources 现在应该失败，因为文件内容无效
-        assert!(project.sources_c().check_sources_config(&work).is_err()); // 修复后：无效TOML应该失败
-        assert!(check_to_result(project.sources_c().check(&work)).is_err());
+        assert!(project.sources_c().check_sources_config().is_err());
+        assert!(check_to_result(project.sources_c().check()).is_err());
 
         println!(
             "Invalid sources - should fail: {:?}",
-            project.sources_c().check_sources_config(&work)
+            project.sources_c().check_sources_config()
         );
 
         cleanup_test_dir(&work);
@@ -690,8 +690,9 @@ mod tests {
 
         let paths = ProjectPaths::from_root(&work);
         let connectors = Connectors::new(paths.connectors.clone());
-        let sinks = Sinks::new();
-        let sources = Sources::new();
+        let eng = Arc::new(EngineConfig::init(&work));
+        let sinks = Sinks::new(&work, eng.clone());
+        let sources = Sources::new(&work, eng);
         let wpl = Wpl::new();
         let oml = Oml::new();
         let _knowledge = Knowledge::new();
@@ -699,7 +700,7 @@ mod tests {
         // 独立测试各个组件
         println!("Connectors check: {:?}", connectors.check(&work));
         println!("Sinks check: {:?}", check_to_result(sinks.check(&work)));
-        println!("Sources check: {:?}", check_to_result(sources.check(&work)));
+        println!("Sources check: {:?}", check_to_result(sources.check()));
         println!("WPL check: {:?}", check_to_result(wpl.check(&work)));
         println!("OML check: {:?}", check_to_result(oml.check(&work)));
 
@@ -711,14 +712,16 @@ mod tests {
     fn test_sources_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let sources = Sources::new();
+        let eng = Arc::new(EngineConfig::init(&work));
+        let sources = Sources::new(&work, eng.clone());
 
         // 测试空目录
-        let result = check_to_result(sources.check(&work));
+        let result = check_to_result(sources.check());
         println!("Empty directory sources check: {:?}", result);
 
         // 测试无效目录
-        let invalid_result = check_to_result(sources.check("/nonexistent/directory"));
+        let invalid_sources = Sources::new("/nonexistent/directory", eng);
+        let invalid_result = check_to_result(invalid_sources.check());
         println!("Invalid directory sources check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);

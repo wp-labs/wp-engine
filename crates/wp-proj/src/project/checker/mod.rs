@@ -103,10 +103,10 @@ fn evaluate_target(
     }
 
     if comps.sources {
-        let sources_parse = project.sources_c().check_sources_config(&wrs).map(|_| ());
+        let sources_parse = project.sources_c().check_sources_config().map(|_| ());
         let sources_runtime = project
             .sources_c()
-            .check(&wrs)
+            .check()
             .map_err(|e| e.reason().to_string())
             .map(|_| ());
         let parse_cell = Cell::from_result(sources_parse);

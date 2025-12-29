@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use super::{Connectors, Oml, ProjectPaths, Sinks, Sources, Wpl, init::PrjScope};
 use crate::{
@@ -22,7 +23,7 @@ use wp_error::run_error::RunResult;
 pub struct WarpProject {
     // 项目路径管理器
     paths: ProjectPaths,
-    pub(super) eng_conf: Option<EngineConfig>,
+    eng_conf: Arc<EngineConfig>,
     // 连接器管理
     connectors: Connectors,
     // 输出接收器管理
@@ -44,9 +45,10 @@ pub struct WarpProject {
 impl WarpProject {
     fn build(work_root: &Path) -> Self {
         let paths = ProjectPaths::from_root(work_root);
+        let eng_conf = Arc::new(EngineConfig::load_or_init(work_root).expect("load engine config"));
         let connectors = Connectors::new(paths.connectors.clone());
-        let sinks_c = Sinks::new();
-        let sources_c = Sources::new();
+        let sinks_c = Sinks::new(work_root, eng_conf.clone());
+        let sources_c = Sources::new(work_root, eng_conf.clone());
         let wpl = Wpl::new();
         let oml = Oml::new();
         let knowledge = Knowledge::new();
@@ -55,7 +57,7 @@ impl WarpProject {
 
         Self {
             paths,
-            eng_conf: None,
+            eng_conf,
             connectors,
             sinks_c,
             sources_c,
@@ -122,13 +124,11 @@ impl WarpProject {
         &self.knowledge
     }
 
-    pub(crate) fn apply_engine_paths(&mut self) {
-        if let Some(conf) = &self.eng_conf {
-            let sink_root = Self::resolve_with_root(self.work_root_path(), conf.sink_root());
-            self.sinks_c.set_root(sink_root);
-            let src_root = Self::resolve_with_root(self.work_root_path(), conf.src_root());
-            self.sources_c.set_root(src_root);
-        }
+    pub(crate) fn replace_engine_conf(&mut self, conf: EngineConfig) {
+        let arc = Arc::new(conf);
+        self.eng_conf = arc.clone();
+        self.sinks_c.update_engine_conf(arc.clone());
+        self.sources_c.update_engine_conf(arc);
     }
 
     // ========== 配置管理方法 ==========

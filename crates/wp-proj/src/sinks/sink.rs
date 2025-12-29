@@ -3,27 +3,35 @@ use std::path::{Path, PathBuf};
 use wp_cli_core::connectors::sinks as sinks_core;
 use wp_error::run_error::RunResult;
 
-use crate::utils::config_path::{ConfigPathResolver, SpecConfPath};
+use crate::utils::config_path::ConfigPathResolver;
+use std::sync::Arc;
+use wp_conf::engine::EngineConfig;
 
 #[derive(Clone, Default)]
 pub struct Sinks {
-    root_override: Option<PathBuf>,
+    work_root: PathBuf,
+    eng_conf: Arc<EngineConfig>,
 }
 
 impl Sinks {
-    pub fn new() -> Self {
-        Self { root_override: None }
+    pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
+        Self {
+            work_root: work_root.as_ref().to_path_buf(),
+            eng_conf,
+        }
     }
 
-    pub(crate) fn set_root<P: AsRef<Path>>(&mut self, root: P) {
-        self.root_override = Some(root.as_ref().to_path_buf());
+    pub(crate) fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
+        self.eng_conf = eng_conf;
     }
 
-    fn resolve_root<P: AsRef<Path>>(&self, work_root: P) -> RunResult<PathBuf> {
-        if let Some(root) = &self.root_override {
-            Ok(root.clone())
+    fn sink_root(&self) -> PathBuf {
+        let raw = self.eng_conf.sink_root();
+        let candidate = Path::new(raw);
+        if candidate.is_absolute() {
+            candidate.to_path_buf()
         } else {
-            SpecConfPath::topology(work_root.as_ref().to_path_buf(), "sinks")
+            self.work_root.join(candidate)
         }
     }
 
@@ -50,9 +58,8 @@ impl Sinks {
     }
 
     // 初始化 sinks 骨架（写入配置指定的sink目录，如果配置不存在则使用默认路径）
-    pub fn init<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
-        // 使用统一的路径解析器
-        let sink_root = self.resolve_root(work_root.as_ref())?;
+    pub fn init(&self) -> RunResult<()> {
+        let sink_root = self.sink_root();
 
         Self::ensure_defaults_file(&sink_root)?;
         Self::ensure_business_demo(&sink_root)?;
@@ -132,10 +139,9 @@ mod tests {
     fn init_populates_sink_templates() {
         let temp = temp_workdir();
         write_basic_wparse_config(temp.path());
-        let sinks = Sinks::new();
-        sinks
-            .init(temp.path().to_str().unwrap())
-            .expect("init sinks");
+        let eng = Arc::new(EngineConfig::init(temp.path()));
+        let sinks = Sinks::new(temp.path(), eng);
+        sinks.init().expect("init sinks");
 
         let sink_root = temp.path().join("topology/sinks");
         assert!(sink_root.join("defaults.toml").exists());

@@ -98,8 +98,7 @@ impl WarpProject {
     pub(crate) fn load_components(&mut self, mode: PrjScope) -> RunResult<()> {
         if mode.enable_conf() {
             let eng_conf = Self::load_engine_config_only(self.work_root_path())?;
-            self.eng_conf = Some(eng_conf);
-            self.apply_engine_paths();
+            self.replace_engine_conf(eng_conf);
             Self::load_wpgen_config_only(self.work_root_path())?;
         }
         if mode.enable_connector() {
@@ -109,7 +108,7 @@ impl WarpProject {
         }
         if mode.enable_topology() {
             self.sinks_c().check(self.work_root())?;
-            self.sources_c().check(self.work_root())?;
+            self.sources_c().check()?;
         }
         if mode.enable_model() {
             self.wpl().check(self.work_root())?;
@@ -127,8 +126,7 @@ impl WarpProject {
         if mode.enable_conf() {
             // wparse/wpgen 主配置初始化（如不存在则复制示例文件）
             let eng_conf = Self::init_engine_config(self.work_root_path())?;
-            self.eng_conf = Some(eng_conf);
-            self.apply_engine_paths();
+            self.replace_engine_conf(eng_conf);
             Self::init_wpgen_config(self.work_root_path())?;
         }
 
@@ -138,9 +136,9 @@ impl WarpProject {
         }
         if mode.enable_topology() {
             // 输出接收器骨架初始化
-            self.sinks_c().init(self.work_root())?;
+            self.sinks_c().init()?;
             // 输入源和连接器补齐
-            self.sources_c().init(self.work_root())?;
+            self.sources_c().init()?;
             // 知识库目录骨架初始化
         }
 
@@ -587,11 +585,11 @@ mod tests {
         WarpProject::init(work_root, PrjScope::Data)
             .expect("Data mode initialization should succeed");
 
-        // Data 模式只创建基础目录，不创建模型相关内容（修复后）
-        // Data 模式不应该创建配置或连接器
+        // Data 模式会创建基础数据目录以及最小配置（engine 默认）
+        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
         assert!(
-            !work_root.join(CONF_DIR).exists(),
-            "conf directory should not exist in Data mode"
+            work_root.join(CONF_WPARSE_FILE).exists(),
+            "wparse.toml should exist"
         );
         assert!(
             !work_root.join(CONNECTORS_DIR).exists(),

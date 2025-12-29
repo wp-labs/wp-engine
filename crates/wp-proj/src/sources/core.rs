@@ -8,14 +8,13 @@ use orion_conf::TomlIO;
 use orion_error::{ErrorConv, ToStructError, UvsConfFrom};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use wp_cli_core::connectors::sources as sources_core;
-use wp_conf::sources::build::build_specs_with_ids_from_file;
 use wp_conf::sources::types::{SourceItem, WarpSources};
-use wp_engine::facade::config::{WPSRC_TOML, load_warp_engine_confs};
+use wp_conf::{engine::EngineConfig, sources::build::build_specs_with_ids_from_file};
+use wp_engine::facade::config::WPSRC_TOML;
 use wp_engine::sources::SourceConfigParser;
 use wp_error::run_error::{RunReason, RunResult};
-
-use crate::utils::config_path::SpecConfPath;
 
 // Re-export modules and types
 pub use super::source_builder::source_builders;
@@ -32,45 +31,41 @@ pub const DEFAULT_SYSLOG_PORT: i64 = 1514;
 /// The `Sources` struct provides a centralized interface for managing all
 /// source-related operations including validation, initialization, and routing
 /// of data sources within the project.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Sources {
-    root_override: Option<PathBuf>,
+    work_root: PathBuf,
+    eng_conf: Arc<EngineConfig>,
 }
 
 impl Sources {
     /// Creates a new Sources instance
-    pub fn new() -> Self {
-        Self { root_override: None }
-    }
-
-    pub(crate) fn set_root<P: AsRef<Path>>(&mut self, root: P) {
-        self.root_override = Some(root.as_ref().to_path_buf());
-    }
-
-    fn resolve_root<P: AsRef<Path>>(&self, work_root: P) -> RunResult<PathBuf> {
-        if let Some(root) = &self.root_override {
-            Ok(root.clone())
-        } else {
-            SpecConfPath::topology(work_root.as_ref().to_path_buf(), "sources")
+    pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
+        Self {
+            work_root: work_root.as_ref().to_path_buf(),
+            eng_conf,
         }
     }
 
-    // =================== CORE OPERATIONS ===================
+    pub(crate) fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
+        self.eng_conf = eng_conf;
+    }
 
-    /// Performs comprehensive validation of source configuration
-    ///
-    /// This method validates the wpsrc.toml configuration file and attempts
-    /// to build source specifications to ensure they are syntactically correct
-    /// and can be instantiated.
-    ///
-    /// # Arguments
-    /// * `work_root` - The project root directory
-    ///
-    /// # Returns
-    /// Ok(()) if validation succeeds, Err(RunError) otherwise
-    pub fn check<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
-        let work_root = work_root.as_ref();
-        let wpsrc_path = self.resolve_wpsrc_path(work_root)?;
+    fn sources_root(&self) -> PathBuf {
+        let raw = self.eng_conf.src_root();
+        let candidate = Path::new(raw);
+        if candidate.is_absolute() {
+            candidate.to_path_buf()
+        } else {
+            self.work_root.join(candidate)
+        }
+    }
+
+    fn wpsrc_path(&self) -> PathBuf {
+        self.sources_root().join(WPSRC_TOML)
+    }
+
+    pub fn check(&self) -> RunResult<()> {
+        let wpsrc_path = self.wpsrc_path();
 
         // Verify configuration file exists
         if !wpsrc_path.exists() {
@@ -82,7 +77,7 @@ impl Sources {
         }
 
         // Parse and validate configuration
-        self.validate_wpsrc_config(work_root, &wpsrc_path)?;
+        self.validate_wpsrc_config(&self.work_root, &wpsrc_path)?;
 
         // Attempt to build specifications to ensure they are valid
         self.build_source_specs(&wpsrc_path)?;
@@ -91,45 +86,19 @@ impl Sources {
         Ok(())
     }
 
-    /// Performs lightweight configuration check
-    ///
-    /// Returns a simple boolean result indicating whether the sources
-    /// configuration is valid without performing comprehensive validation.
-    ///
-    /// # Arguments
-    /// * `work_root` - The project root directory
-    ///
-    /// # Returns
-    /// Result containing boolean validity status or error message
-    pub fn check_sources_config<P: AsRef<Path>>(&self, work_root: P) -> Result<bool, String> {
-        let work_root = work_root.as_ref();
-        let wpsrc_path = match self.resolve_wpsrc_path_with_engine(work_root) {
-            Ok(path) => path,
-            Err(e) => return Err(format!("Failed to resolve configuration: {}", e)),
-        };
-
+    pub fn check_sources_config(&self) -> Result<bool, String> {
+        let wpsrc_path = self.wpsrc_path();
         if !wpsrc_path.exists() {
             return Err("Configuration error: wpsrc.toml file does not exist".to_string());
         }
 
-        self.parse_config_only(work_root, &wpsrc_path)
+        self.parse_config_only(&self.work_root, &wpsrc_path)
             .map(|_| true)
             .map_err(|e| format!("Parse sources failed: {}", e))
     }
 
-    /// Initializes sources configuration with default values
-    ///
-    /// Creates a default wpsrc.toml configuration if it doesn't exist
-    /// and ensures the necessary connector templates are available.
-    ///
-    /// # Arguments
-    /// * `work_root` - The project root directory
-    ///
-    /// # Returns
-    /// Ok(()) if initialization succeeds, Err(RunError) otherwise
-    pub fn init<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
-        let work_root = work_root.as_ref();
-        let wpsrc_dir = self.resolve_root(work_root)?;
+    pub fn init(&self) -> RunResult<()> {
+        let wpsrc_dir = self.sources_root();
         let wpsrc_path = wpsrc_dir.join(WPSRC_TOML);
 
         // Ensure parent directory exists
@@ -150,52 +119,6 @@ impl Sources {
         Ok(())
     }
 
-    // =================== CONFIGURATION MANAGEMENT ===================
-
-    /// Resolves wpsrc.toml path using internal configuration loading
-    fn resolve_wpsrc_path(&self, work_root: &Path) -> RunResult<PathBuf> {
-        let (cm, main) =
-            load_warp_engine_confs(work_root.to_string_lossy().as_ref()).map_err(|e| {
-                RunReason::from_conf(format!("Failed to load main config: {}", e)).to_err()
-            })?;
-
-        let wpsrc_str = main.src_conf_of(WPSRC_TOML);
-        let wpsrc_path = Path::new(&wpsrc_str);
-
-        Ok(if wpsrc_path.is_absolute() {
-            wpsrc_path.to_path_buf()
-        } else {
-            PathBuf::from(cm.work_root_path()).join(wpsrc_path)
-        })
-    }
-
-    /// Resolves wpsrc.toml path using engine configuration
-    fn resolve_wpsrc_path_with_engine(&self, work_root: &Path) -> Result<PathBuf, String> {
-        let (cm, main) =
-            wp_engine::facade::config::load_warp_engine_confs(work_root.to_string_lossy().as_ref())
-                .map_err(|e| e.to_string())?;
-
-        let wpsrc_str = main.src_conf_of(WPSRC_TOML);
-        let wpsrc_path = Path::new(&wpsrc_str);
-
-        Ok(if wpsrc_path.is_absolute() {
-            wpsrc_path.to_path_buf()
-        } else {
-            PathBuf::from(cm.work_root_path()).join(wpsrc_path)
-        })
-    }
-
-    /// Validates wpsrc.toml configuration parsing
-    ///
-    /// This method loads the configuration from wpsrc.toml, serializes it back to TOML format,
-    /// and then uses the parser to validate the configuration structure and content.
-    ///
-    /// # Arguments
-    /// * `work_root` - The project root directory
-    /// * `wpsrc_path` - Path to the wpsrc.toml configuration file
-    ///
-    /// # Returns
-    /// Ok(()) if validation succeeds, Err(RunError) otherwise
     fn validate_wpsrc_config(&self, work_root: &Path, wpsrc_path: &Path) -> RunResult<()> {
         let parser = SourceConfigParser::new(work_root.to_path_buf());
 
@@ -217,18 +140,6 @@ impl Sources {
         Ok(())
     }
 
-    /// Parses configuration without comprehensive validation
-    ///
-    /// This method performs lightweight configuration parsing by loading the TOML file
-    /// (or using an empty configuration if the file doesn't exist) and validating
-    /// the basic structure without full validation.
-    ///
-    /// # Arguments
-    /// * `work_root` - The project root directory
-    /// * `wpsrc_path` - Path to the wpsrc.toml configuration file
-    ///
-    /// # Returns
-    /// Ok(()) if parsing succeeds, Err(RunError) otherwise
     fn parse_config_only(&self, work_root: &Path, wpsrc_path: &Path) -> RunResult<()> {
         let parser = SourceConfigParser::new(work_root.to_path_buf());
 
@@ -275,16 +186,6 @@ impl Sources {
         }
     }
 
-    /// Adds default sources to configuration
-    ///
-    /// This method adds default file and syslog sources to the configuration
-    /// if they don't already exist. The syslog source is added but disabled by default.
-    ///
-    /// # Arguments
-    /// * `config` - Mutable reference to the WarpSources configuration
-    ///
-    /// # Returns
-    /// Ok(()) if operation succeeds, Err(RunError) otherwise
     fn add_default_sources(&self, config: &mut WarpSources) -> RunResult<()> {
         let default_sources = vec![
             // Add a default file source that reads from gen.dat
@@ -379,13 +280,16 @@ impl Sources {
 #[cfg(test)]
 mod tests {
 
+    use crate::test_utils::temp_workdir;
     use serde_json::json;
 
     use super::*;
 
     #[test]
     fn test_sources_creation() {
-        let _sources = Sources::new();
+        let temp = temp_workdir();
+        let eng = std::sync::Arc::new(EngineConfig::init(temp.path()));
+        let _sources = Sources::new(temp.path(), eng);
         assert!(true); // Basic test to ensure struct can be created
     }
 
