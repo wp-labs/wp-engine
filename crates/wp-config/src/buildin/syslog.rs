@@ -11,11 +11,22 @@ pub struct SyslogSinkConf {
     #[educe(Default = 514)]
     pub(crate) port: usize,
     pub protocol: Protocol,
+    #[serde(default)]
+    pub app_name: Option<String>,
 }
 
 impl SyslogSinkConf {
     pub fn addr_str(&self) -> String {
         format!("{}:{}", self.addr, self.port)
+    }
+
+    pub fn resolved_app_name(&self, fallback: &str) -> String {
+        self.app_name
+            .as_ref()
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| fallback.to_string())
     }
 }
 

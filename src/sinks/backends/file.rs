@@ -36,18 +36,10 @@ pub(crate) struct FileSinkSpec {
     fmt: TextFmt,
     base: String,
     file_name: String,
-    path: String,
-    use_base_path: bool,
 }
 
 impl FileSinkSpec {
     pub(crate) fn from_resolved(kind: &str, spec: &ResolvedSinkSpec) -> AnyResult<Self> {
-        let has_path = spec.params.get("path").and_then(|v| v.as_str()).is_some();
-        let has_base_file = spec.params.get("base").and_then(|v| v.as_str()).is_some()
-            && spec.params.get("file").and_then(|v| v.as_str()).is_some();
-        if !(has_path || has_base_file) {
-            anyhow::bail!("{} sink requires either 'path' or 'base'+'file'", kind);
-        }
         if let Some(s) = spec.params.get("fmt").and_then(|v| v.as_str()) {
             let ok = matches!(
                 s,
@@ -78,18 +70,10 @@ impl FileSinkSpec {
             .and_then(|v| v.as_str())
             .unwrap_or("out.dat")
             .to_string();
-        let path = spec
-            .params
-            .get("path")
-            .and_then(|v| v.as_str())
-            .unwrap_or("./data/out_dat/out.dat")
-            .to_string();
         Ok(Self {
             fmt,
             base,
             file_name,
-            path,
-            use_base_path: has_base_file,
         })
     }
 
@@ -98,14 +82,10 @@ impl FileSinkSpec {
     }
 
     pub(crate) fn resolve_path(&self, _ctx: &SinkBuildCtx) -> String {
-        if self.use_base_path {
-            Path::new(&self.base)
-                .join(&self.file_name)
-                .display()
-                .to_string()
-        } else {
-            self.path.clone()
-        }
+        Path::new(&self.base)
+            .join(&self.file_name)
+            .display()
+            .to_string()
     }
 }
 
@@ -179,50 +159,6 @@ impl RecSyncSink for FileSink {
         }
     }
 }
-
-/*
-#[async_trait]
-impl FFVSyncSink for FileSink {
-    fn send_ffv_to_sink(&self, data: SinkFFVUnit) -> SinkResult<()> {
-        // FileSink 可以处理 FFV 数据，将其转换为字符串写入
-        // 这里应该根据配置的格式进行转换
-        // 暂时实现为简单的字符串输出
-        if let Ok(mut out_io) = self.out_io.write() {
-            // 简单地将 FFV 数据转换为字符串输出
-            // 实际实现应该根据格式配置进行转换
-            for field in data.data() {
-                out_io
-                    .write_all(format!("{}\t", field.data_field).as_bytes())
-                    .owe(SinkReason::sink("file out fail"))?;
-            }
-            out_io
-                .write_all(b"\n")
-                .owe(SinkReason::sink("file out fail"))?;
-        }
-        Ok(())
-    }
-
-    fn try_send_ffv_to_sink(&self, data: SinkFFVUnit) -> TrySendStatus {
-        match self.send_ffv_to_sink(data) {
-            Ok(()) => TrySendStatus::Sended,
-            Err(e) => TrySendStatus::Err(Arc::new(e)),
-        }
-    }
-
-    fn send_ffv_batch_to_sink(&self, data: Vec<SinkFFVUnit>) -> SinkResult<()> {
-        for ffv_unit in data {
-            self.send_ffv_to_sink(ffv_unit)?;
-        }
-        Ok(())
-    }
-
-    fn try_send_ffv_batch_to_sink(&self, data: Vec<SinkFFVUnit>) -> Vec<TrySendStatus> {
-        data.into_iter()
-            .map(|unit| self.try_send_ffv_to_sink(unit))
-            .collect()
-    }
-}
-*/
 
 // Default buffer for classic file sink (kept for compatibility)
 const FILE_BUF_SIZE: usize = 102_400; // 100 KiB

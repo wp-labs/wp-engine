@@ -4,7 +4,7 @@ use serde_json::json;
 use std::str::FromStr;
 use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope, param_map_to_table};
 use wp_conf::structure::Protocol as ConfProtocol;
-use wp_conf::structure::SyslogSinkConf as OutSyslog;
+use wp_conf::structure::SyslogSinkConf;
 use wp_connector_api::SinkResult;
 use wp_connector_api::{
     AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkFactory, SinkHandle,
@@ -19,67 +19,49 @@ use crate::sinks::net::transport::{
     BackoffMode, NetSendPolicy, NetWriter, Transport, net_backoff_adaptive,
 };
 
-#[derive(Clone, Debug)]
-struct SyslogSinkSpec {
-    conf: OutSyslog,
-    app_name: Option<String>,
-}
-
-impl SyslogSinkSpec {
-    fn from_resolved(spec: &ResolvedSinkSpec) -> AnyResult<Self> {
-        let addr = spec
-            .params
-            .get("addr")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("syslog.addr must be a string"))?;
-        if let Some(i) = spec.params.get("port").and_then(|v| v.as_i64())
-            && !(1..=65535).contains(&i)
-        {
-            anyhow::bail!("syslog.port must be in 1..=65535");
+fn syslog_conf_from_spec(spec: &ResolvedSinkSpec) -> AnyResult<SyslogSinkConf> {
+    let addr = spec
+        .params
+        .get("addr")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow::anyhow!("syslog.addr must be a string"))?;
+    if let Some(i) = spec.params.get("port").and_then(|v| v.as_i64())
+        && !(1..=65535).contains(&i)
+    {
+        anyhow::bail!("syslog.port must be in 1..=65535");
+    }
+    if let Some(p) = spec.params.get("protocol").and_then(|v| v.as_str()) {
+        let v = p.to_ascii_lowercase();
+        if v != "udp" && v != "tcp" {
+            anyhow::bail!("syslog.protocol must be 'udp' or 'tcp'");
         }
-        if let Some(p) = spec.params.get("protocol").and_then(|v| v.as_str()) {
-            let v = p.to_ascii_lowercase();
-            if v != "udp" && v != "tcp" {
-                anyhow::bail!("syslog.protocol must be 'udp' or 'tcp'");
-            }
-        }
-        let port = spec
-            .params
-            .get("port")
-            .and_then(|v| v.as_i64())
-            .unwrap_or(514);
-        let protocol = spec
-            .params
-            .get("protocol")
-            .and_then(|v| v.as_str())
-            .unwrap_or("udp");
-        let proto =
-            ConfProtocol::from_str(&protocol.to_ascii_lowercase()).unwrap_or(ConfProtocol::UDP);
-        let mut params = wp_connector_api::ParamMap::new();
-        params.insert("addr".to_string(), json!(addr));
-        params.insert("port".to_string(), json!(port));
-        params.insert("protocol".to_string(), json!(proto.to_string()));
-        let toml_str = toml::to_string(&param_map_to_table(&params))?;
-        let conf: OutSyslog = toml::from_str(&toml_str)?;
-        let app_name = spec
-            .params
-            .get("app_name")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
-        Ok(Self { conf, app_name })
     }
-
-    fn target_addr(&self) -> String {
-        self.conf.addr_str()
+    if let Some(v) = spec.params.get("app_name")
+        && v.as_str().is_none()
+    {
+        anyhow::bail!("syslog.app_name must be a string");
     }
-
-    fn protocol(&self) -> ConfProtocol {
-        self.conf.protocol.clone()
+    let port = spec
+        .params
+        .get("port")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(514);
+    let protocol = spec
+        .params
+        .get("protocol")
+        .and_then(|v| v.as_str())
+        .unwrap_or("udp");
+    let proto = ConfProtocol::from_str(&protocol.to_ascii_lowercase()).unwrap_or(ConfProtocol::UDP);
+    let mut params = wp_connector_api::ParamMap::new();
+    params.insert("addr".to_string(), json!(addr));
+    params.insert("port".to_string(), json!(port));
+    params.insert("protocol".to_string(), json!(proto.to_string()));
+    if let Some(app) = spec.params.get("app_name").and_then(|v| v.as_str()) {
+        params.insert("app_name".to_string(), json!(app));
     }
-
-    fn resolved_app_name(&self, default: &str) -> String {
-        self.app_name.clone().unwrap_or_else(|| default.to_string())
-    }
+    let toml_str = toml::to_string(&param_map_to_table(&params))?;
+    let conf: SyslogSinkConf = toml::from_str(&toml_str)?;
+    Ok(conf)
 }
 
 pub struct SyslogSink {
@@ -289,24 +271,24 @@ impl SinkFactory for SyslogFactory {
         "syslog"
     }
     fn validate_spec(&self, spec: &ResolvedSinkSpec) -> SinkResult<()> {
-        SyslogSinkSpec::from_resolved(spec).owe_conf()?;
+        syslog_conf_from_spec(spec).owe_conf()?;
         Ok(())
     }
     async fn build(&self, spec: &ResolvedSinkSpec, _ctx: &SinkBuildCtx) -> SinkResult<SinkHandle> {
-        let resolved = SyslogSinkSpec::from_resolved(spec).owe_conf()?;
-        let proto = resolved.protocol();
-        let target = resolved.target_addr();
+        let conf = syslog_conf_from_spec(spec).owe_conf()?;
+        let proto = conf.protocol.clone();
+        let target = conf.addr_str();
         // Log resolved target to aid diagnosing mismatched params
         log::info!("syslog sink build: target={} protocol={}", target, proto);
-        let app_name = resolved.resolved_app_name(&spec.name);
+        let app_name = conf.resolved_app_name(&spec.name);
 
         // Build runtime sink directly; pass rate_limit_rps to TCP writer
         let runtime = match proto {
-            ConfProtocol::UDP => SyslogSink::udp(target.as_str(), Some(app_name))
+            ConfProtocol::UDP => SyslogSink::udp(target.as_str(), Some(app_name.clone()))
                 .await
                 .owe_res()?,
             ConfProtocol::TCP => {
-                SyslogSink::tcp(target.as_str(), Some(app_name), _ctx.rate_limit_rps)
+                SyslogSink::tcp(target.as_str(), Some(app_name.clone()), _ctx.rate_limit_rps)
                     .await
                     .owe_res()?
             }
@@ -328,7 +310,12 @@ impl ConnectorDefProvider for SyslogFactory {
             id: "syslog_sink".into(),
             kind: self.kind().into(),
             scope: ConnectorScope::Sink,
-            allow_override: vec!["addr".into(), "port".into(), "protocol".into()],
+            allow_override: vec![
+                "addr".into(),
+                "port".into(),
+                "protocol".into(),
+                "app_name".into(),
+            ],
             default_params: params,
             origin: Some("builtin:syslog_sink".into()),
         }

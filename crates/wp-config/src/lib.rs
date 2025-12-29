@@ -9,7 +9,7 @@ extern crate wp_knowledge as wp_know;
 pub use winnow::*;
 
 /// 开发期适配器统一注册入口（MySQL/Kafka）
-/// 内置（file/tcp/syslog）配置聚合
+/// 内置（file/syslog）配置聚合
 mod buildin;
 mod common;
 mod cond;
@@ -48,7 +48,7 @@ pub mod test_support;
 mod types;
 pub mod utils;
 // 便于外部复用：核心配置结构快速重导出
-//pub use buildin::{OutFile, Syslog, TcpSinkConf};
+//pub use buildin::{OutFile, Syslog};
 pub use sinks::{ConnectorRec, DefaultsBody, RouteFile, RouteGroup, RouteSink, StringOrArray};
 
 pub use common::io_locate::find_connectors_base_dir;
