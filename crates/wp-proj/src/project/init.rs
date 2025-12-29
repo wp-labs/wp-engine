@@ -585,7 +585,10 @@ mod tests {
             .expect("Data mode initialization should succeed");
 
         // Data 模式会创建基础数据目录以及最小配置（engine 默认）
-        assert!(work_root.join(CONF_DIR).exists(), "conf directory should exist");
+        assert!(
+            work_root.join(CONF_DIR).exists(),
+            "conf directory should exist"
+        );
         assert!(
             work_root.join(CONF_WPARSE_FILE).exists(),
             "wparse.toml should exist"

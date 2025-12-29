@@ -1,11 +1,18 @@
 use orion_error::ErrorConv;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use wp_cli_core::connectors::sinks as sinks_core;
+use wp_conf::connectors::param_map_to_table;
+use wp_conf::engine::EngineConfig;
+use wp_conf::sinks::{
+    build_route_conf_from,
+    io::{business_dir, infra_dir, load_connectors_for, load_route_files_from, load_sink_defaults},
+};
+use wp_conf::structure::SinkInstanceConf;
+use wp_connector_api::ParamMap;
 use wp_error::run_error::RunResult;
 
 use crate::utils::config_path::ConfigPathResolver;
-use std::sync::Arc;
-use wp_conf::engine::EngineConfig;
 
 #[derive(Clone, Default)]
 pub struct Sinks {
@@ -39,6 +46,61 @@ impl Sinks {
     pub fn check(&self) -> RunResult<()> {
         sinks_core::validate_routes(self.work_root.to_string_lossy().as_ref()).err_conv()
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
+    }
+
+    pub fn route_rows(
+        &self,
+        group_filters: &[String],
+        sink_filters: &[String],
+    ) -> RunResult<Vec<sinks_core::RouteRow>> {
+        fn matched(name: &str, filters: &[String]) -> bool {
+            filters.is_empty() || filters.iter().any(|f| name.contains(f))
+        }
+
+        let sink_root = self.sink_root();
+        let defaults = load_sink_defaults(&sink_root).err_conv()?;
+        let conn_map = load_connectors_for(sink_root.to_string_lossy().as_ref()).err_conv()?;
+        let mut rows = Vec::new();
+
+        for (scope, dir) in [
+            ("biz", business_dir(&sink_root)),
+            ("infra", infra_dir(&sink_root)),
+        ] {
+            let route_files = load_route_files_from(&dir).err_conv()?;
+            for rf in route_files {
+                let conf = build_route_conf_from(&rf, defaults.as_ref(), &conn_map).err_conv()?;
+                let group = conf.sink_group;
+                if !matched(group.name(), group_filters) {
+                    continue;
+                }
+                let rules: Vec<String> =
+                    group.rule.as_ref().iter().map(|m| m.to_string()).collect();
+                let oml_patterns: Vec<String> =
+                    group.oml().as_ref().iter().map(|m| m.to_string()).collect();
+
+                for sink in group.sinks.iter() {
+                    if !matched(sink.name(), sink_filters) {
+                        continue;
+                    }
+                    let (target, detail) = target_detail_of(sink);
+                    rows.push(sinks_core::RouteRow {
+                        scope: scope.to_string(),
+                        group: group.name().to_string(),
+                        full_name: sink.full_name(),
+                        name: sink.name().to_string(),
+                        connector: sink.connector_id.clone().unwrap_or_else(|| "-".to_string()),
+                        target,
+                        fmt: sink.fmt().to_string(),
+                        detail,
+                        rules: rules.clone(),
+                        oml: oml_patterns.clone(),
+                    });
+                }
+            }
+        }
+
+        rows.sort_by(|a, b| a.scope.cmp(&b.scope).then(a.full_name.cmp(&b.full_name)));
+        Ok(rows)
     }
 
     // 展平成路由表（biz+infra），带过滤
@@ -112,6 +174,30 @@ impl Sinks {
         }
 
         Ok(())
+    }
+}
+
+fn target_detail_of(s: &SinkInstanceConf) -> (String, String) {
+    let kind = s.resolved_kind_str();
+    let params = s.resolved_params_table();
+    let target = if kind == "syslog" {
+        let proto = params
+            .get("protocol")
+            .and_then(|v| v.as_str())
+            .unwrap_or("udp");
+        format!("syslog/{}", proto)
+    } else {
+        kind.clone()
+    };
+    let detail = params_one_line(&params);
+    (target, detail)
+}
+
+fn params_one_line(params: &ParamMap) -> String {
+    let table = param_map_to_table(params);
+    match toml::to_string(&table) {
+        Ok(s) => s.replace(['\n', '\t'], " ").trim().to_string(),
+        Err(_) => format!("{:?}", params),
     }
 }
 

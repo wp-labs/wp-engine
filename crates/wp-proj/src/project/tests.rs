@@ -496,14 +496,8 @@ mod tests {
             "check_input_sources: {:?}",
             check_to_result(project.sources_c().check())
         );
-        println!(
-            "check_wpl: {:?}",
-            check_to_result(project.wpl().check())
-        );
-        println!(
-            "check_oml: {:?}",
-            check_to_result(project.oml().check())
-        );
+        println!("check_wpl: {:?}", check_to_result(project.wpl().check()));
+        println!("check_oml: {:?}", check_to_result(project.oml().check()));
 
         // 调试路径问题
         let manual_path = format!("{}/topology/sources/wpsrc.toml", work);
