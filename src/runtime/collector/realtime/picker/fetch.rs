@@ -156,6 +156,11 @@ impl ActPicker {
                 res = source.receive() => {
                     match res {
                         Ok(batch) => {
+                            for v in &batch {
+                                trace_data!(
+                                    "[{}] => received data : {}",source.identifier(),v.payload
+                                );
+                            }
                             self.extend_pending(batch);
                             total += 1;
                         }
