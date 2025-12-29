@@ -150,6 +150,7 @@ mod tests {
     use super::*;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use wp_conf::engine::EngineConfig;
 
     fn tmp_dir(prefix: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
@@ -194,7 +195,8 @@ params_override = { path = "/x" }
         )
         .unwrap();
 
-        let rows = list_connectors(root.to_string_lossy().as_ref()).expect("list");
+        let eng = EngineConfig::init(root.to_string_lossy().as_ref());
+        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng).expect("list");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, "c1");
         assert_eq!(rows[0].refs, 2);
@@ -228,7 +230,8 @@ params_override = { path = "/data/x.dat" }
         )
         .unwrap();
 
-        let rows = route_table(root.to_string_lossy().as_ref(), None).expect("routes");
+        let eng = EngineConfig::init(root.to_string_lossy().as_ref());
+        let rows = route_table(root.to_string_lossy().as_ref(), &eng, None).expect("routes");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].key, "s1");
         assert_eq!(rows[0].kind, "file");
@@ -262,10 +265,11 @@ params_override = { path = "/data/a.dat" }
         )
         .unwrap();
 
-        let rows_all = route_table(root.to_string_lossy().as_ref(), None).expect("all");
+        let eng = EngineConfig::init(root.to_string_lossy().as_ref());
+        let rows_all = route_table(root.to_string_lossy().as_ref(), &eng, None).expect("all");
         assert_eq!(rows_all.len(), 1);
         let rows_none =
-            route_table(root.to_string_lossy().as_ref(), Some("b.dat")).expect("filtered");
+            route_table(root.to_string_lossy().as_ref(), &eng, Some("b.dat")).expect("filtered");
         assert_eq!(rows_none.len(), 0);
     }
 }
