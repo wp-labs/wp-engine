@@ -1,7 +1,8 @@
 use orion_error::{ToStructError, UvsConfFrom};
-use std::path::Path;
-use wp_conf::utils::find_conf_files;
-use wp_engine::facade::config::{WPARSE_OML_FILE, load_warp_engine_confs};
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use wp_conf::{engine::EngineConfig, utils::find_conf_files};
+use wp_engine::facade::config::WPARSE_OML_FILE;
 use wp_engine::facade::generator::fetch_oml_data;
 use wp_error::run_error::{RunReason, RunResult};
 
@@ -9,32 +10,50 @@ use crate::types::CheckStatus;
 use crate::utils::{config_path::ConfigPathResolver, error_handler::ErrorHandler};
 
 #[derive(Clone)]
-pub struct Oml;
+pub struct Oml {
+    work_root: PathBuf,
+    eng_conf: Arc<EngineConfig>,
+}
 
 impl Oml {
-    pub fn new() -> Self {
-        Oml
+    pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
+        Self {
+            work_root: work_root.as_ref().to_path_buf(),
+            eng_conf,
+        }
+    }
+
+    pub fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
+        self.eng_conf = eng_conf;
+    }
+
+    fn oml_root(&self) -> PathBuf {
+        let raw = self.eng_conf.oml_root();
+        let candidate = Path::new(raw);
+        if candidate.is_absolute() {
+            candidate.to_path_buf()
+        } else {
+            self.work_root.join(candidate)
+        }
     }
 
     /// Initialize OML with example content for the specified project directory
-    pub fn init_with_examples<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
-        let work_root = work_root.as_ref();
+    pub fn init_with_examples(&self) -> RunResult<()> {
+        let work_root = &self.work_root;
         let example_oml_content = include_str!("../example/oml/nginx.oml");
         if !example_oml_content.contains("name") || !example_oml_content.contains("rule") {
             return ErrorHandler::config_error("example OML content is missing essential fields");
         }
 
-        Self::create_example_files(work_root)?;
+        self.create_example_files(work_root)?;
 
         println!("OML initialized successfully with example content");
         Ok(())
     }
 
     /// Create example OML files in the specified project directory
-    fn create_example_files(work_root: &Path) -> RunResult<()> {
-        // 使用统一的路径解析器
-        let oml_dir =
-            ConfigPathResolver::resolve_model_path(work_root.to_string_lossy().as_ref(), "oml")?;
+    fn create_example_files(&self, _work_root: &Path) -> RunResult<()> {
+        let oml_dir = self.oml_root();
 
         // Create OML directory
         ConfigPathResolver::ensure_dir_exists(&oml_dir)?;
@@ -64,14 +83,8 @@ rule = "/example/*"
         Ok(())
     }
 
-    pub fn check<P: AsRef<Path>>(&self, work_root: P) -> RunResult<CheckStatus> {
-        let work_root = work_root.as_ref();
-
-        // 先尝试加载配置，如果失败则继续检查 OML
-        let _config_load_result = load_warp_engine_confs(work_root.to_string_lossy().as_ref());
-
-        let oml_root =
-            ConfigPathResolver::resolve_model_path(work_root.to_string_lossy().as_ref(), "oml")?;
+    pub fn check(&self) -> RunResult<CheckStatus> {
+        let oml_root = self.oml_root();
         if !oml_root.exists() {
             return Ok(CheckStatus::Miss);
         }
@@ -101,12 +114,16 @@ rule = "/example/*"
 mod tests {
     use super::*;
     use crate::test_utils::temp_workdir;
+    use std::sync::Arc;
+    use wp_conf::engine::EngineConfig;
 
     #[test]
     fn initialize_examples_creates_valid_files() {
         let temp = temp_workdir();
         let root = temp.path().to_str().unwrap();
-        Oml::init_with_examples(root).expect("init examples");
+        let eng = Arc::new(EngineConfig::init(root));
+        let oml = Oml::new(root, eng);
+        oml.init_with_examples().expect("init examples");
 
         let example_file = temp.path().join("models/oml/example.oml");
         assert!(example_file.exists());

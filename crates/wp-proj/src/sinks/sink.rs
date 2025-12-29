@@ -36,27 +36,12 @@ impl Sinks {
     }
 
     // 校验路由（严格）
-    pub fn check<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
-        sinks_core::validate_routes(work_root.as_ref().to_string_lossy().as_ref()).err_conv()
+    pub fn check(&self) -> RunResult<()> {
+        sinks_core::validate_routes(self.work_root.to_string_lossy().as_ref()).err_conv()
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
     }
 
     // 展平成路由表（biz+infra），带过滤
-    pub fn route_rows<P: AsRef<Path>>(
-        &self,
-        work_root: P,
-        group_names: &[String],
-        sink_names: &[String],
-    ) -> RunResult<Vec<sinks_core::RouteRow>> {
-        sinks_core::route_table(
-            work_root.as_ref().to_string_lossy().as_ref(),
-            group_names,
-            sink_names,
-        )
-        .err_conv()
-        //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
-    }
-
     // 初始化 sinks 骨架（写入配置指定的sink目录，如果配置不存在则使用默认路径）
     pub fn init(&self) -> RunResult<()> {
         let sink_root = self.sink_root();

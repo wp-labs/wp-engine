@@ -150,7 +150,7 @@ fn evaluate_target(
         row.sinks = Cell::from_result(
             project
                 .sinks_c()
-                .check(&wrs)
+                .check()
                 .map_err(|e| e.reason().to_string())
                 .map(|_| ()),
         );
@@ -165,7 +165,7 @@ fn evaluate_target(
         row.wpl = Cell::from_result(
             project
                 .wpl()
-                .check(&wrs)
+                .check()
                 .map_err(|e| e.reason().to_string())
                 .map(|_| ()),
         );
@@ -177,7 +177,7 @@ fn evaluate_target(
     }
 
     if comps.oml {
-        row.oml = match project.oml().check(&wrs) {
+        row.oml = match project.oml().check() {
             Ok(check_status) => match check_status {
                 CheckStatus::Suc => Cell::success(),
                 CheckStatus::Miss => Cell::success_with_message("OML 文件缺失".to_string()),

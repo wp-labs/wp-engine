@@ -225,13 +225,13 @@ mod tests {
         assert!(wp_engine::facade::config::load_warp_engine_confs(&work).is_ok());
         assert!(project.sources_c().check_sources_config().is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());
-        assert!(check_to_result(project.wpl().check(&work)).is_err());
-        assert!(check_to_result(project.oml().check(&work)).is_ok());
+        assert!(check_to_result(project.wpl().check()).is_err());
+        assert!(check_to_result(project.oml().check()).is_ok());
 
         // 连接器检查可能会通过，因为它只检查目录结构
         let connectors_result = project.connectors().check(&work);
         // sinks 检查也可能通过，取决于实现
-        let sinks_result = check_to_result(project.sinks_c().check(&work));
+        let sinks_result = check_to_result(project.sinks_c().check());
 
         println!("Empty dir - connectors: {:?}", connectors_result);
         println!("Empty dir - sinks: {:?}", sinks_result);
@@ -297,8 +297,8 @@ mod tests {
         ); // 也应该失败
 
         // 修复后：WPL 和 OML 检查在文件不存在时应该返回失败
-        assert!(check_to_result(project.wpl().check(&work)).is_err());
-        assert!(check_to_result(project.oml().check(&work)).is_err());
+        assert!(check_to_result(project.wpl().check()).is_err());
+        assert!(check_to_result(project.oml().check()).is_err());
 
         println!(
             "Minimal structure - config: {:?}",
@@ -312,7 +312,7 @@ mod tests {
         );
         println!(
             "Minimal structure - wpl: {:?}",
-            check_to_result(project.wpl().check(&work))
+            check_to_result(project.wpl().check())
         );
 
         cleanup_test_dir(&work);
@@ -344,17 +344,17 @@ mod tests {
 
         // 注意：由于实现问题，WPL 和 OML 检查在文件不存在时可能返回 Ok(true)
         // 这是已知的一致性问题，不影响核心功能
-        // assert!(check_to_result(project.wpl().check(&work)).is_err());
-        // assert!(check_to_result(project.oml().check(&work)).is_err());
+        // assert!(check_to_result(project.wpl().check()).is_err());
+        // assert!(check_to_result(project.oml().check()).is_err());
 
         // 实际上，由于检查逻辑不一致，这些可能都返回 Ok(true)
         println!(
             "DEBUG: WPL check result: {:?}",
-            check_to_result(project.wpl().check(&work))
+            check_to_result(project.wpl().check())
         );
         println!(
             "DEBUG: OML check result: {:?}",
-            check_to_result(project.oml().check(&work))
+            check_to_result(project.oml().check())
         );
 
         println!(
@@ -421,7 +421,7 @@ mod tests {
 
         println!(
             "DEBUG with_wpl - check_wpl: {:?}",
-            check_to_result(project.wpl().check(&work))
+            check_to_result(project.wpl().check())
         );
 
         // 配置、sources 和 WPL 应该通过
@@ -433,12 +433,12 @@ mod tests {
         );
         assert!(project.sources_c().check_sources_config().is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
-        assert!(check_to_result(project.wpl().check(&work)).is_ok());
+        assert!(check_to_result(project.wpl().check()).is_ok());
 
         // 调试OML检查
         println!(
             "DEBUG: OML check result: {:?}",
-            check_to_result(project.oml().check(&work))
+            check_to_result(project.oml().check())
         );
         // 检查OML文件是否存在
         let oml_path_toml = format!("{}/models/oml/knowdb.toml", work);
@@ -455,11 +455,11 @@ mod tests {
         );
 
         // 修复后：OML检查现在应该正确失败，因为文件不存在
-        assert!(check_to_result(project.oml().check(&work)).is_err());
+        assert!(check_to_result(project.oml().check()).is_err());
 
         println!(
             "With WPL - wpl: {:?}",
-            check_to_result(project.wpl().check(&work))
+            check_to_result(project.wpl().check())
         );
 
         cleanup_test_dir(&work);
@@ -498,11 +498,11 @@ mod tests {
         );
         println!(
             "check_wpl: {:?}",
-            check_to_result(project.wpl().check(&work))
+            check_to_result(project.wpl().check())
         );
         println!(
             "check_oml: {:?}",
-            check_to_result(project.oml().check(&work))
+            check_to_result(project.oml().check())
         );
 
         // 调试路径问题
@@ -572,8 +572,8 @@ mod tests {
         assert!(project.sources_c().check_sources_config().is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
         // WPL和OML也需要处理路径问题
-        // assert!(check_to_result(project.wpl().check(&work)).is_ok());
-        // assert!(check_to_result(project.oml().check(&work)).is_ok());
+        // assert!(check_to_result(project.wpl().check()).is_ok());
+        // assert!(check_to_result(project.oml().check()).is_ok());
 
         println!("Complete project - all checks should pass");
 
@@ -692,17 +692,17 @@ mod tests {
         let connectors = Connectors::new(paths.connectors.clone());
         let eng = Arc::new(EngineConfig::init(&work));
         let sinks = Sinks::new(&work, eng.clone());
-        let sources = Sources::new(&work, eng);
-        let wpl = Wpl::new();
-        let oml = Oml::new();
+        let sources = Sources::new(&work, eng.clone());
+        let wpl = Wpl::new(&work, eng.clone());
+        let oml = Oml::new(&work, eng.clone());
         let _knowledge = Knowledge::new();
 
         // 独立测试各个组件
         println!("Connectors check: {:?}", connectors.check(&work));
-        println!("Sinks check: {:?}", check_to_result(sinks.check(&work)));
+        println!("Sinks check: {:?}", check_to_result(sinks.check()));
         println!("Sources check: {:?}", check_to_result(sources.check()));
-        println!("WPL check: {:?}", check_to_result(wpl.check(&work)));
-        println!("OML check: {:?}", check_to_result(oml.check(&work)));
+        println!("WPL check: {:?}", check_to_result(wpl.check()));
+        println!("OML check: {:?}", check_to_result(oml.check()));
 
         cleanup_test_dir(&work);
     }
@@ -732,10 +732,11 @@ mod tests {
     fn test_wpl_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let wpl = Wpl::new();
+        let eng = Arc::new(EngineConfig::init(&work));
+        let wpl = Wpl::new(&work, eng);
 
         // 测试空目录
-        let result = check_to_result(wpl.check(&work));
+        let result = check_to_result(wpl.check());
         println!("Empty directory WPL check: {:?}", result);
 
         // 测试无效 WPL 文件
@@ -749,7 +750,7 @@ mod tests {
             return; // 如果无法创建文件，跳过这个测试
         }
 
-        let invalid_result = check_to_result(wpl.check(&work));
+        let invalid_result = check_to_result(wpl.check());
         println!("Invalid WPL file check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);
@@ -760,10 +761,11 @@ mod tests {
     fn test_oml_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let oml = Oml::new();
+        let eng = Arc::new(EngineConfig::init(&work));
+        let oml = Oml::new(&work, eng);
 
         // 测试空目录
-        let result = check_to_result(oml.check(&work));
+        let result = check_to_result(oml.check());
         println!("Empty directory OML check: {:?}", result);
 
         // 测试无效 OML 文件
@@ -773,7 +775,7 @@ mod tests {
         fs::create_dir_all(std::path::Path::new(&invalid_oml_path).parent().unwrap()).unwrap();
         fs::write(invalid_oml_path, "invalid oml content").unwrap();
 
-        let invalid_result = check_to_result(oml.check(&work));
+        let invalid_result = check_to_result(oml.check());
         println!("Invalid OML file check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);

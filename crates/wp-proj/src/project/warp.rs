@@ -49,8 +49,8 @@ impl WarpProject {
         let connectors = Connectors::new(paths.connectors.clone());
         let sinks_c = Sinks::new(work_root, eng_conf.clone());
         let sources_c = Sources::new(work_root, eng_conf.clone());
-        let wpl = Wpl::new();
-        let oml = Oml::new();
+        let wpl = Wpl::new(work_root, eng_conf.clone());
+        let oml = Oml::new(work_root, eng_conf.clone());
         let knowledge = Knowledge::new();
         let wparse_manager = WParseManager::new(work_root);
         let wpgen_manager = WpGenManager::new(work_root);
@@ -128,7 +128,9 @@ impl WarpProject {
         let arc = Arc::new(conf);
         self.eng_conf = arc.clone();
         self.sinks_c.update_engine_conf(arc.clone());
-        self.sources_c.update_engine_conf(arc);
+        self.sources_c.update_engine_conf(arc.clone());
+        self.wpl.update_engine_conf(arc.clone());
+        self.oml.update_engine_conf(arc);
     }
 
     // ========== 配置管理方法 ==========

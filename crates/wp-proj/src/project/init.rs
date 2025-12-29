@@ -1,5 +1,4 @@
 use super::warp::WarpProject;
-use super::{Oml, Wpl};
 use crate::utils::error_handler::ErrorHandler;
 use orion_conf::{ErrorOwe, ToStructError, TomlIO};
 use orion_error::{UvsConfFrom, UvsValidationFrom};
@@ -70,8 +69,8 @@ impl WarpProject {
 
     /// 初始化 WPL 和 OML 模型（基于示例文件）
     pub fn init_models(&mut self) -> RunResult<()> {
-        Wpl::init_with_examples(self.work_root())?;
-        Oml::init_with_examples(self.work_root())?;
+        self.wpl().init_with_examples()?;
+        self.oml().init_with_examples()?;
         Ok(())
     }
 
@@ -107,12 +106,12 @@ impl WarpProject {
                 .map_err(|e| RunReason::from_conf(e).to_err())?;
         }
         if mode.enable_topology() {
-            self.sinks_c().check(self.work_root())?;
+            self.sinks_c().check()?;
             self.sources_c().check()?;
         }
         if mode.enable_model() {
-            self.wpl().check(self.work_root())?;
-            let _ = self.oml().check(self.work_root())?;
+            self.wpl().check()?;
+            let _ = self.oml().check()?;
         }
         Ok(())
     }

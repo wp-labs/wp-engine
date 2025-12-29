@@ -1,22 +1,44 @@
 use orion_error::{ToStructError, UvsConfFrom};
 use std::path::{Path, PathBuf};
-use wp_engine::facade::config::{WPARSE_RULE_FILE, load_warp_engine_confs};
+use std::sync::Arc;
+use wp_conf::engine::EngineConfig;
+use wp_engine::facade::config::WPARSE_RULE_FILE;
 use wp_error::run_error::{RunReason, RunResult};
 use wpl::WplCode;
 
 use crate::utils::{config_path::ConfigPathResolver, error_handler::ErrorHandler};
 
 #[derive(Clone)]
-pub struct Wpl;
+pub struct Wpl {
+    work_root: PathBuf,
+    eng_conf: Arc<EngineConfig>,
+}
 
 impl Wpl {
-    pub fn new() -> Self {
-        Wpl
+    pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
+        Self {
+            work_root: work_root.as_ref().to_path_buf(),
+            eng_conf,
+        }
+    }
+
+    pub fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
+        self.eng_conf = eng_conf;
+    }
+
+    fn rule_root(&self) -> PathBuf {
+        let raw = self.eng_conf.rule_root();
+        let candidate = Path::new(raw);
+        if candidate.is_absolute() {
+            candidate.to_path_buf()
+        } else {
+            self.work_root.join(candidate)
+        }
     }
 
     /// Initialize WPL with example content for the specified project directory
-    pub fn init_with_examples<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
-        let work_root = work_root.as_ref();
+    pub fn init_with_examples(&self) -> RunResult<()> {
+        let work_root = &self.work_root;
         // Include example WPL content using include_str!
         let example_wpl_content = include_str!("../example/wpl/nginx/parse.wpl");
 
@@ -32,17 +54,15 @@ impl Wpl {
         })?;
 
         // Create WPL directory and example files
-        Self::create_example_files(work_root)?;
+        self.create_example_files(work_root)?;
 
         println!("WPL initialized successfully with example content and sample data");
         Ok(())
     }
 
     /// Create example WPL files in the specified project directory
-    fn create_example_files(work_root: &Path) -> RunResult<()> {
-        // 使用统一的路径解析器
-        let wpl_dir =
-            ConfigPathResolver::resolve_model_path(work_root.to_string_lossy().as_ref(), "wpl")?;
+    fn create_example_files(&self, _work_root: &Path) -> RunResult<()> {
+        let wpl_dir = self.rule_root();
 
         // Create WPL directory
         ConfigPathResolver::ensure_dir_exists(&wpl_dir)?;
@@ -69,26 +89,16 @@ impl Wpl {
         include_str!("../example/wpl/nginx/sample.dat")
     }
 
-    pub fn check<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
-        let work_root = work_root.as_ref();
-        let (_cm, main) = load_warp_engine_confs(work_root.to_string_lossy().as_ref())?;
-
+    pub fn check(&self) -> RunResult<()> {
+        let rule_root = self.rule_root();
         let rules =
-            wp_conf::utils::find_conf_files(main.rule_root(), WPARSE_RULE_FILE).unwrap_or_default();
+            wp_conf::utils::find_conf_files(rule_root.to_string_lossy().as_ref(), WPARSE_RULE_FILE)
+                .unwrap_or_default();
 
         // 如果没有找到规则文件，尝试手动查找 *.wpl 文件
         if rules.is_empty() {
-            let rule_root = main.rule_root();
-
-            // 需要获取绝对路径来搜索文件
-            let absolute_rule_root = if std::path::Path::new(rule_root).is_absolute() {
-                rule_root.to_string()
-            } else {
-                // 相对路径需要与work_root组合
-                work_root.join(rule_root).to_string_lossy().to_string()
-            };
-
-            let wpl_pattern = format!("{}/*.wpl", absolute_rule_root);
+            let absolute_rule_root = self.rule_root();
+            let wpl_pattern = format!("{}/*.wpl", absolute_rule_root.display());
 
             if let Ok(glob_results) = glob::glob(&wpl_pattern) {
                 let wpl_files: Vec<_> = glob_results.filter_map(Result::ok).collect();
