@@ -55,7 +55,7 @@ pub fn call_fun_args1<T: Fun1Builder>(data: &mut &str) -> WResult<T> {
 
 pub fn call_fun_args0<T: Fun0Builder>(data: &mut &str) -> WResult<T> {
     T::fun_name().parse_next(data)?;
-    let _ = take_call_args0::<T>.parse_next(data)?;
+    take_call_args0::<T>.parse_next(data)?;
     let obj = T::build();
     Ok(obj)
 }

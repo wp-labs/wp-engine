@@ -39,7 +39,7 @@ pub(crate) struct FileSinkSpec {
 }
 
 impl FileSinkSpec {
-    pub(crate) fn from_resolved(kind: &str, spec: &ResolvedSinkSpec) -> AnyResult<Self> {
+    pub(crate) fn from_resolved(_kind: &str, spec: &ResolvedSinkSpec) -> AnyResult<Self> {
         if let Some(s) = spec.params.get("fmt").and_then(|v| v.as_str()) {
             let ok = matches!(
                 s,

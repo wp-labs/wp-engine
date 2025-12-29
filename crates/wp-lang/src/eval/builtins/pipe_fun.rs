@@ -250,20 +250,17 @@ fn decode_json_escapes(raw: &str) -> Option<String> {
 
 #[inline]
 fn value_json_unescape(v: &mut Value) -> bool {
-    match v {
-        Value::Chars(s) => {
-            // fast path: 没有反斜杠则无需反转义
-            if !s.as_bytes().contains(&b'\\') {
-                return true;
-            }
-            if let Some(decoded) = decode_json_escapes(s) {
-                *s = decoded;
-                return true;
-            }
+    if let Value::Chars(s) = v {
+        // fast path: 没有反斜杠则无需反转义
+        if !s.as_bytes().contains(&b'\\') {
+            return true;
         }
-        _ => {}
+        if let Some(decoded) = decode_json_escapes(s) {
+            *s = decoded;
+            return true;
+        }
     }
-    return false;
+    false
 }
 
 impl FiledSetProcessor for JsonUnescape {
@@ -296,17 +293,15 @@ impl FiledSetProcessor for Base64Decode {
 fn value_base64_decode(v: &mut Value) -> bool {
     match v {
         Value::Chars(s) => {
-            if let Ok(decoded) = general_purpose::STANDARD.decode(s.as_bytes()) {
-                if let Ok(vstring) = String::from_utf8(decoded) {
-                    *s = vstring;
-                    return true;
-                }
+            if let Ok(decoded) = general_purpose::STANDARD.decode(s.as_bytes())
+                && let Ok(vstring) = String::from_utf8(decoded)
+            {
+                *s = vstring;
+                return true;
             }
-            return false;
+            false
         }
-        _ => {
-            return false;
-        }
+        _ => false,
     }
 }
 
