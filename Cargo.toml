@@ -338,7 +338,7 @@ orion_conf = { version = "~0.3", features = ["yaml", "toml"] }
 criterion = "~0.8"
 tokio-test = "0.4.4"
 mockall = "~0.14"
-tempfile = "~3.23"
+tempfile = "~3.24"
 serial_test = "3"
 httpmock = "~0.8"
 collection_literals = "~1.0"
