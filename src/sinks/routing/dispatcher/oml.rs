@@ -248,8 +248,10 @@ impl SinkDispatcher {
         outputs
     }
 
-    fn emit_without_transform_batch(&self, entries: Vec<SinkRecUnit>) -> Vec<Vec<SinkRecUnit>> {
-        let mut per_sink = vec![Vec::new(); self.sinks.len()];
+    fn emit_without_transform_batch(&mut self, entries: Vec<SinkRecUnit>) -> Vec<Vec<SinkRecUnit>> {
+        let mut per_sink: Vec<Vec<SinkRecUnit>> = (0..self.sinks.len())
+            .map(|_| self.unit_pool.take())
+            .collect();
         for entry in entries {
             let (pkg_id, meta, base_arc) = entry.into_parts();
             for (idx, sink) in self.sinks.iter().enumerate() {
@@ -302,8 +304,13 @@ impl SinkDispatcher {
         Ok(outputs)
     }
 
-    fn fanout_transformed_batch(&self, entries: Vec<TransformedRecUnit>) -> Vec<Vec<SinkRecUnit>> {
-        let mut per_sink = vec![Vec::new(); self.sinks.len()];
+    fn fanout_transformed_batch(
+        &mut self,
+        entries: Vec<TransformedRecUnit>,
+    ) -> Vec<Vec<SinkRecUnit>> {
+        let mut per_sink: Vec<Vec<SinkRecUnit>> = (0..self.sinks.len())
+            .map(|_| self.unit_pool.take())
+            .collect();
         for entry in entries {
             let (pkg_id, meta, record) = entry.into_parts();
             self.push_transformed_record(pkg_id, meta, record, &mut per_sink);
