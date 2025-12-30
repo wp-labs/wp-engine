@@ -101,6 +101,18 @@ impl Display for UrlGet {
     }
 }
 
+pub const PIPE_KV: &str = "kv";
+#[derive(Default, Debug, Clone)]
+pub struct KvGet {
+    pub key: String,
+}
+
+impl Display for KvGet {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}({})", PIPE_KV, self.key)
+    }
+}
+
 #[derive(Default, Builder, Debug, Clone, Getters, Serialize, Deserialize)]
 pub struct Dumb {}
 impl Display for Dumb {

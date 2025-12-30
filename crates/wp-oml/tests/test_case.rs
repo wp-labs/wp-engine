@@ -590,4 +590,3 @@ fn test_value_arr1() {
         Some(&DataField::from_chars("X3", "hello3"))
     );
 }
-//}

@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
 use crate::language::{
-    Base64Decode, EncodeType, Get, HtmlEscape, HtmlUnescape, JsonEscape, JsonUnescape, Nth,
+    Base64Decode, EncodeType, Get, HtmlEscape, HtmlUnescape, JsonEscape, JsonUnescape, KvGet, Nth,
     PIPE_BASE64_DECODE, PIPE_GET, PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_JSON_ESCAPE,
-    PIPE_JSON_UNESCAPE, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET,
-    PIPE_TIME_TO_TS, PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON,
-    PIPE_URL, PathGet, PathType, PreciseEvaluator, SkipEmpty, StrEscape, SxfGet, TimeStampUnit,
-    TimeToTs, TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, UrlGet, UrlType,
+    PIPE_JSON_UNESCAPE, PIPE_KV, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE,
+    PIPE_SXF_GET, PIPE_TIME_TO_TS, PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE,
+    PIPE_TO_JSON, PIPE_URL, PathGet, PathType, PreciseEvaluator, SkipEmpty, StrEscape, SxfGet,
+    TimeStampUnit, TimeToTs, TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, UrlGet, UrlType,
 };
 use crate::language::{Base64Encode, PIPE_BASE64_ENCODE, PIPE_TO_STR, ToStr};
 use crate::language::{Ip4ToInt, PIPE_IP4_TO_INT, PiPeOperation, PipeFun};
@@ -183,6 +183,24 @@ impl Fun1Builder for UrlGet {
         UrlGet { key: args }
     }
 }
+impl Fun1Builder for KvGet {
+    type ARG1 = String;
+    fn args1(data: &mut &str) -> WResult<Self::ARG1> {
+        multispace0.parse_next(data)?;
+        let val: &str = alphanumeric0::<&str, ErrMode<ContextError>>
+            .parse_next(data)
+            .unwrap();
+        Ok(val.to_string())
+    }
+
+    fn fun_name() -> &'static str {
+        PIPE_KV
+    }
+
+    fn build(args: Self::ARG1) -> Self {
+        KvGet { key: args }
+    }
+}
 pub fn oml_aga_pipe(data: &mut &str) -> WResult<PreciseEvaluator> {
     kw_gw_pipe.parse_next(data)?;
     let from = oml_var_get.parse_next(data)?;
@@ -214,6 +232,7 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
         parser::call_fun_args1::<SxfGet>.map(PipeFun::SxfGet),
         parser::call_fun_args1::<PathGet>.map(PipeFun::PathGet),
         parser::call_fun_args1::<UrlGet>.map(PipeFun::UrlGet),
+        parser::call_fun_args1::<KvGet>.map(PipeFun::KvGet),
         PIPE_HTML_ESCAPE.map(|_| PipeFun::HtmlEscape(HtmlEscape::default())),
         PIPE_HTML_UNESCAPE.map(|_| PipeFun::HtmlUnescape(HtmlUnescape::default())),
         PIPE_STR_ESCAPE.map(|_| PipeFun::StrEscape(StrEscape::default())),
