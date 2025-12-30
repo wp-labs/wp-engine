@@ -31,6 +31,26 @@ enum OmlOutcome {
     Failure(DataRecord),
 }
 
+struct TransformedRecUnit {
+    pkg_id: PkgID,
+    meta: ProcMeta,
+    record: DataRecord,
+}
+
+impl TransformedRecUnit {
+    fn new(pkg_id: PkgID, meta: ProcMeta, record: DataRecord) -> Self {
+        Self {
+            pkg_id,
+            meta,
+            record,
+        }
+    }
+
+    fn into_parts(self) -> (PkgID, ProcMeta, DataRecord) {
+        (self.pkg_id, self.meta, self.record)
+    }
+}
+
 impl SinkDispatcher {
     fn has_conditions(&self) -> bool {
         self.sinks.iter().any(|sink| sink.get_cond().is_some())
@@ -83,9 +103,18 @@ impl SinkDispatcher {
         wpl_meta: &ProcMeta,
         input: Vec<SinkRecUnit>,
         cache: &mut FieldQueryCache,
-    ) -> SinkResult<(Vec<SinkRecUnit>, Vec<SinkRecUnit>)> {
+    ) -> SinkResult<(Vec<TransformedRecUnit>, Vec<SinkRecUnit>)> {
         let Some(om_ins) = self.get_match_oml(wpl_meta) else {
-            return Ok((input, Vec::new()));
+            let passthrough = input
+                .into_iter()
+                .map(|unit| {
+                    let (pkg_id, meta, record_arc) = unit.into_parts();
+                    let record =
+                        Arc::try_unwrap(record_arc).unwrap_or_else(|arc| arc.as_ref().clone());
+                    TransformedRecUnit::new(pkg_id, meta, record)
+                })
+                .collect();
+            return Ok((passthrough, Vec::new()));
         };
 
         let mut successes = Vec::with_capacity(input.len());
@@ -112,7 +141,7 @@ impl SinkDispatcher {
                     Arc::new(failed),
                 ));
             } else {
-                successes.push(SinkRecUnit::with_record(pkg_id, meta, Arc::new(output)));
+                successes.push(TransformedRecUnit::new(pkg_id, meta, output));
             }
         }
         Ok((successes, failures))
@@ -273,12 +302,11 @@ impl SinkDispatcher {
         Ok(outputs)
     }
 
-    fn fanout_transformed_batch(&self, entries: Vec<SinkRecUnit>) -> Vec<Vec<SinkRecUnit>> {
+    fn fanout_transformed_batch(&self, entries: Vec<TransformedRecUnit>) -> Vec<Vec<SinkRecUnit>> {
         let mut per_sink = vec![Vec::new(); self.sinks.len()];
         for entry in entries {
-            let (pkg_id, meta, record_arc) = entry.into_parts();
-            let base = Arc::try_unwrap(record_arc).unwrap_or_else(|arc| arc.as_ref().clone());
-            self.push_transformed_record(pkg_id, meta, base, &mut per_sink);
+            let (pkg_id, meta, record) = entry.into_parts();
+            self.push_transformed_record(pkg_id, meta, record, &mut per_sink);
         }
         per_sink
     }
