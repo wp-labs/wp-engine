@@ -53,7 +53,7 @@ mod tests {
     use super::*;
     use std::collections::HashSet;
     use std::path::PathBuf;
-    use wp_connector_api::{SourceBuildCtx, SourceFactory, SourceSpec as ResolvedSourceSpec};
+    use wp_connector_api::{SourceBuildCtx, SourceFactory, SourceSpec as ResolvedSourceSpec, Tags};
 
     fn ctx() -> SourceBuildCtx {
         SourceBuildCtx::new(PathBuf::from("."))
@@ -131,7 +131,7 @@ mod tests {
         if std::net::UdpSocket::bind("127.0.0.1:0").is_err() {
             return;
         }
-        let tags = wp_model_core::model::TagSet::default();
+        let tags = Tags::default();
         // Use port 0 to get a random available port
         let result = udp_source::UdpSyslogSource::new(
             "test".to_string(),
@@ -147,7 +147,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_tcp_source_creation() {
-        let tags = wp_model_core::model::TagSet::default();
+        let tags = Tags::default();
         // Build a minimal inner tcp aggregator
         let pool = std::sync::Arc::new(std::sync::Mutex::new(HashSet::new()));
         let (_tx, rx) = tokio::sync::mpsc::channel(8);

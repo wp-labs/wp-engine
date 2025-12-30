@@ -10,7 +10,6 @@ use std::sync::Arc;
 use wp_connector_api::{
     DataSource, SourceBatch, SourceError, SourceEvent, SourceReason, SourceResult, Tags,
 };
-use wp_model_core::model::TagSet;
 use wp_parse_api::RawData;
 
 #[derive(Debug, Clone)]
@@ -40,7 +39,7 @@ impl FileSource {
         key: String,
         path: &str,
         encode: FileEncoding,
-        mut tags: TagSet,
+        mut tags: Tags,
         range_start: u64,
         range_end: Option<u64>,
     ) -> SourceResult<Self> {
@@ -59,11 +58,7 @@ impl FileSource {
         file.seek(SeekFrom::Start(range_start))
             .await
             .map_err(|e| SourceError::from(SourceReason::Disconnect(e.to_string())))?;
-        tags.set_tag("access_source", path.to_string());
-        let mut base_tags = Tags::new();
-        for (k, v) in tags.item.iter() {
-            base_tags.set(k.clone(), v.clone());
-        }
+        tags.set("access_source", path.to_string());
         let batch_lines = DEFAULT_BATCH_LINES;
         let batch_bytes_budget = DEFAULT_BATCH_BYTES;
         let chunk_bytes = DEFAULT_CHUNK_BYTES.clamp(MIN_CHUNK_BYTES, MAX_CHUNK_BYTES);
@@ -73,7 +68,7 @@ impl FileSource {
             key,
             reader,
             encode,
-            base_tags,
+            base_tags: tags,
             batch_lines,
             batch_bytes_budget,
         })

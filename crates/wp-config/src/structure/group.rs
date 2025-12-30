@@ -4,7 +4,8 @@ use orion_conf::{
     error::{ConfIOReason, OrionConfResult},
 };
 use orion_error::UvsValidationFrom;
-use wp_data_model::tags::validate_tags;
+use wp_conf_base::ConfParser;
+use wp_connector_api::Tags;
 use wp_model_core::model::fmt_def::TextFmt;
 
 use crate::structure::SinkInstanceConf;
@@ -244,7 +245,7 @@ impl crate::structure::Validate for FlexGroup {
             return ConfIOReason::from_validation("group.parallel must be <= 10").err_result();
         }
         // tags 校验：统一使用 wp_model_core::tags::validate_tags
-        if let Err(e) = validate_tags(&self.tags) {
+        if let Err(e) = Tags::validate(&self.tags) {
             return ConfIOReason::from_validation(e).err_result();
         }
         if let Some(g) = &self.expect

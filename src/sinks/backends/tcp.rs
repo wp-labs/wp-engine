@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope, ParamMap};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap, SinkDefProvider};
 use wp_connector_api::SinkResult;
 use wp_connector_api::{
     AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkFactory, SinkHandle,
@@ -262,7 +262,7 @@ impl SinkFactory for TcpFactory {
     }
 }
 
-impl ConnectorDefProvider for TcpFactory {
+impl SinkDefProvider for TcpFactory {
     fn sink_def(&self) -> ConnectorDef {
         let mut params = ParamMap::new();
         params.insert("addr".into(), json!("127.0.0.1"));

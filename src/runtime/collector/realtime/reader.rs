@@ -29,7 +29,7 @@ pub async fn read_data(
     // Convert TagSet to Tags
     let mut source_tags = Tags::new();
     for (key, value) in &tag_set.item {
-        source_tags.set_tag(key, value.clone());
+        source_tags.set(key, value.clone());
     }
 
     let source_tags = Arc::new(source_tags);

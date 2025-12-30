@@ -13,15 +13,14 @@ use serde_json::json;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope};
 use wp_conf::limits::tcp_reader_batch_channel_cap;
+use wp_conf_base::ConfParser;
 use wp_connector_api::{
-    AcceptorHandle, SourceBuildCtx, SourceFactory, SourceHandle, SourceMeta, SourceResult,
-    SourceSvcIns,
+    AcceptorHandle, SourceBuildCtx, SourceDefProvider, SourceFactory, SourceHandle, SourceMeta,
+    SourceResult, SourceSvcIns, Tags,
 };
 use wp_connector_api::{ParamMap, SourceReason};
-use wp_data_model::tags::parse_tags;
-use wp_model_core::model::TagSet;
 
 /// Syslog source factory that creates both UDP and TCP syslog sources
 pub struct SyslogSourceFactory {}
@@ -52,18 +51,14 @@ impl SourceFactory for SyslogSourceFactory {
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
             let config = SyslogSourceSpec::from_params(&spec.params)?;
-            let mut tags = TagSet::default();
-            tags.set_tag("access_source", "syslog".to_string());
-            tags.set_tag("syslog_protocol", format!("{:?}", config.protocol));
-            let parsed_tags = parse_tags(&spec.tags);
-            for (key, value) in parsed_tags.item {
-                tags.set_tag(&key, value);
-            }
+            let mut tags = Tags::from_parse(&spec.tags);
+            tags.set("access_source", "syslog".to_string());
+            tags.set("syslog_protocol", format!("{:?}", config.protocol));
 
-            let meta_builder = |tagset: &TagSet| -> SourceMeta {
+            let meta_builder = |tagset: &Tags| -> SourceMeta {
                 let mut meta = SourceMeta::new(spec.name.clone(), spec.kind.clone());
-                for (k, v) in tagset.item.iter() {
-                    meta.tags.set(k.clone(), v.clone());
+                for (k, v) in tagset.iter() {
+                    meta.tags.set(k, v);
                 }
                 meta
             };
@@ -130,7 +125,7 @@ impl SourceFactory for SyslogSourceFactory {
     }
 }
 
-impl ConnectorDefProvider for SyslogSourceFactory {
+impl SourceDefProvider for SyslogSourceFactory {
     fn source_def(&self) -> ConnectorDef {
         let mut params = ParamMap::new();
         params.insert("addr".into(), json!("0.0.0.0"));

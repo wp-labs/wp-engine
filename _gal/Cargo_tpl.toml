@@ -59,7 +59,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.5.2"
+version = "{{VERSION}}"
 edition = "2024"
 license = "Apache-2.0"
 
@@ -110,6 +110,7 @@ orion-error = { workspace = true }
 wp-error = { workspace = true }
 wp-log = { workspace = true }
 orion_conf = { workspace = true }
+wp_conf_base = {workspace = true }
 
 # --- Time & Date ---
 chrono = { workspace = true }

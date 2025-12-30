@@ -1,13 +1,13 @@
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;
 use serde_json::json;
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope, ParamMap};
-use wp_connector_api::SourceReason;
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap};
+use wp_conf_base::ConfParser;
 use wp_connector_api::{
     AcceptorHandle, SourceBuildCtx, SourceFactory, SourceHandle, SourceMeta, SourceResult,
-    SourceSpec as ResolvedSourceSpec, SourceSvcIns,
+    SourceSpec as ResolvedSourceSpec, SourceSvcIns, Tags,
 };
-use wp_data_model::tags::{parse_tags, validate_tags};
+use wp_connector_api::{SourceDefProvider, SourceReason};
 
 use super::TcpAcceptor;
 use super::config::TcpSourceSpec;
@@ -29,7 +29,7 @@ impl SourceFactory for TcpSourceFactory {
 
     fn validate_spec(&self, spec: &ResolvedSourceSpec) -> SourceResult<()> {
         let res: anyhow::Result<()> = (|| {
-            if let Err(e) = validate_tags(&spec.tags) {
+            if let Err(e) = Tags::validate(&spec.tags) {
                 anyhow::bail!("Invalid tags: {}", e);
             }
             TcpSourceSpec::from_params(&spec.params)?;
@@ -45,7 +45,7 @@ impl SourceFactory for TcpSourceFactory {
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
             let conf = TcpSourceSpec::from_params(&spec.params)?;
-            let tags = parse_tags(&spec.tags);
+            let tags = Tags::from_parse(&spec.tags);
 
             let connection_registry = Arc::new(Mutex::new(HashSet::<u64>::new()));
             let mut instance_reg_txs = Vec::with_capacity(conf.instances);
@@ -71,8 +71,8 @@ impl SourceFactory for TcpSourceFactory {
                 )?;
 
                 let mut meta = SourceMeta::new(key.clone(), spec.kind.clone());
-                for (k, v) in tags.item.iter() {
-                    meta.tags.set(k.clone(), v.clone());
+                for (k, v) in tags.iter() {
+                    meta.tags.set(k, v);
                 }
                 if conf.instances > 1 {
                     meta.tags.set("instance".to_string(), (idx + 1).to_string());
@@ -101,7 +101,7 @@ impl SourceFactory for TcpSourceFactory {
     }
 }
 
-impl ConnectorDefProvider for TcpSourceFactory {
+impl SourceDefProvider for TcpSourceFactory {
     fn source_def(&self) -> ConnectorDef {
         let mut params = ParamMap::new();
         params.insert("addr".into(), json!("0.0.0.0"));

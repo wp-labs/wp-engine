@@ -1,4 +1,5 @@
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider};
+use wp_conf::connectors::ConnectorDef;
+use wp_connector_api::SourceDefProvider;
 
 pub fn builtin_sink_defs() -> Vec<ConnectorDef> {
     crate::sinks::builtin_factories::builtin_sink_defs()

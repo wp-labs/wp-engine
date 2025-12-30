@@ -5,7 +5,6 @@ use std::collections::{HashMap, VecDeque};
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 use wp_connector_api::{CtrlRx, DataSource, SourceBatch, SourceReason, SourceResult, Tags};
-use wp_model_core::model::TagSet;
 
 use super::ConnectionRegistry;
 use super::conn::connection::{ReadOutcome, TcpConnection, batch_bytes};
@@ -227,7 +226,7 @@ pub struct TcpSource {
 impl TcpSource {
     pub fn new(
         key: String,
-        tags: TagSet,
+        tags: Tags,
         _address: String,
         tcp_recv_bytes: usize,
         framing: FramingMode,
@@ -235,8 +234,8 @@ impl TcpSource {
         connection_rx: mpsc::Receiver<ConnectionRegistration>,
     ) -> SourceResult<Self> {
         let mut base_tags = Tags::new();
-        for (k, v) in tags.item.iter() {
-            base_tags.set(k.clone(), v.clone());
+        for (k, v) in tags.iter() {
+            base_tags.set(k, v);
         }
         Ok(Self {
             key,
@@ -426,7 +425,7 @@ mod tests {
         let (_tx, rx) = mpsc::channel(8);
         let source = TcpSource::new(
             "test_tcp".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             8192,
             FramingMode::Line,
@@ -445,7 +444,7 @@ mod tests {
         let (reg_tx, reg_rx) = mpsc::channel(8);
         let mut source = TcpSource::new(
             "test_tcp".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             8192,
             FramingMode::Line,
@@ -492,7 +491,7 @@ mod tests {
         let (reg_tx, reg_rx) = mpsc::channel(8);
         let mut source = TcpSource::new(
             "test_tcp".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             8192,
             FramingMode::Line,

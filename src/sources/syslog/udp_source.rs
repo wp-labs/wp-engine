@@ -14,7 +14,6 @@ use tokio_util::codec::Decoder as TokioDecoder;
 use tokio_util::udp::UdpFramed;
 use wp_connector_api::{DataSource, EventPreHook, SourceBatch, SourceEvent, Tags};
 use wp_connector_api::{SourceError, SourceReason, SourceResult};
-use wp_model_core::model::TagSet;
 use wp_parse_api::RawData;
 
 use super::normalize;
@@ -46,7 +45,7 @@ impl TokioDecoder for DatagramDecoder {
 /// Receives syslog messages over UDP protocol
 pub struct UdpSyslogSource {
     key: String,
-    tags: TagSet,
+    tags: Tags,
     frame: UdpFramed<DatagramDecoder>,
     strip_header: bool,
     attach_meta_tags: bool,
@@ -65,7 +64,7 @@ impl UdpSyslogSource {
     pub async fn new(
         key: String,
         addr: String,
-        tags: TagSet,
+        tags: Tags,
         strip_header: bool,
         attach_meta_tags: bool,
         fast_strip: bool,
@@ -113,14 +112,8 @@ impl UdpSyslogSource {
                         self.first_seen_logged = true;
                     }
                     // 基础标签：克隆并附加 access_ip
-                    let mut base_tags = self.tags.clone();
-                    base_tags.set_tag("access_ip", addr.ip().to_string());
-
-                    // 转换为 Tags（轻量容器，避免 API 层耦合 wp-data-utils）
-                    let mut stags = Tags::new();
-                    for (k, v) in base_tags.item.iter() {
-                        stags.set(k.clone(), v.clone());
-                    }
+                    let mut stags = self.tags.clone();
+                    stags.set("access_ip", addr.ip().to_string());
 
                     // 预处理闭包：在 parse 侧决定是否 strip/注入 syslog 元信息
                     let strip = self.strip_header;
@@ -231,13 +224,8 @@ impl DataSource for UdpSyslogSource {
         let out = self.frame.next().now_or_never()?;
         match out {
             Some(Ok((event, addr))) => {
-                let mut base_tags = self.tags.clone();
-                base_tags.set_tag("access_ip", addr.ip().to_string());
-
-                let mut stags = Tags::new();
-                for (k, v) in base_tags.item.iter() {
-                    stags.set(k.clone(), v.clone());
-                }
+                let mut stags = self.tags.clone();
+                stags.set("access_ip", addr.ip().to_string());
 
                 let strip = self.strip_header;
                 let attach = self.attach_meta_tags;

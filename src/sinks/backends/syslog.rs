@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
 use std::str::FromStr;
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope, param_map_to_table};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider, param_map_to_table};
 use wp_conf::structure::Protocol as ConfProtocol;
 use wp_conf::structure::SyslogSinkConf;
 use wp_connector_api::SinkResult;
@@ -297,7 +297,7 @@ impl SinkFactory for SyslogFactory {
     }
 }
 
-impl ConnectorDefProvider for SyslogFactory {
+impl SinkDefProvider for SyslogFactory {
     fn sink_def(&self) -> ConnectorDef {
         let mut params = wp_connector_api::ParamMap::new();
         params.insert("addr".into(), json!("127.0.0.1"));

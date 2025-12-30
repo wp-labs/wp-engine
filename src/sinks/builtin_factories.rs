@@ -5,7 +5,7 @@ use crate::sinks::{ASinkTestProxy, BlackHoleSink, HealthController, SyslogFactor
 use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
-use wp_conf::connectors::{ConnectorDef, ConnectorDefProvider, ConnectorScope};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider};
 use wp_connector_api::{ParamMap, SinkFactory, SinkResult};
 //
 
@@ -34,7 +34,7 @@ impl wp_connector_api::SinkFactory for BlackHoleFactory {
     }
 }
 
-impl ConnectorDefProvider for BlackHoleFactory {
+impl SinkDefProvider for BlackHoleFactory {
     fn sink_def(&self) -> ConnectorDef {
         ConnectorDef {
             id: "blackhole_sink".into(),
@@ -73,7 +73,7 @@ impl wp_connector_api::SinkFactory for FileFactory {
     }
 }
 
-impl ConnectorDefProvider for FileFactory {
+impl SinkDefProvider for FileFactory {
     fn sink_def(&self) -> ConnectorDef {
         let mut params = ParamMap::new();
         params.insert("fmt".into(), json!("json"));
@@ -117,7 +117,7 @@ impl wp_connector_api::SinkFactory for TestRescueFactory {
     }
 }
 
-impl ConnectorDefProvider for TestRescueFactory {
+impl SinkDefProvider for TestRescueFactory {
     fn sink_def(&self) -> ConnectorDef {
         let mut params = ParamMap::new();
         params.insert("fmt".into(), json!("kv"));

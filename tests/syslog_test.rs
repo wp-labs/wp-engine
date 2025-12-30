@@ -8,11 +8,10 @@ use std::sync::{Arc, Mutex, Once};
 use tokio::sync::mpsc;
 use tokio::time::{Duration, timeout};
 use wp_connector_api::{
-    ControlEvent, DataSource, SourceBuildCtx, SourceSpec as ResolvedSourceSpec,
+    ControlEvent, DataSource, SourceBuildCtx, SourceSpec as ResolvedSourceSpec, Tags,
 };
 use wp_engine::connectors::registry as reg;
 use wp_engine::sources::syslog::{TcpSyslogSource, UdpSyslogSource};
-use wp_model_core::model::TagSet;
 
 // 轻量通用工具（与其它 tests 共享）
 mod common;
@@ -56,7 +55,7 @@ fn create_test_ctx() -> SourceBuildCtx {
 
 /// Helper to create a TCP source with lifecycle control
 async fn create_tcp_source(key: &str) -> (TcpSyslogSource, tokio::sync::broadcast::Sender<()>) {
-    let tags = TagSet::default();
+    let tags = Tags::default();
     // Build a minimal inner TCP aggregator
     let registry = Arc::new(Mutex::new(HashSet::new()));
     let (_tx, rx) = mpsc::channel(8);
@@ -87,7 +86,7 @@ async fn create_tcp_source(key: &str) -> (TcpSyslogSource, tokio::sync::broadcas
 
 #[tokio::test]
 async fn udp_source_builds_and_identifies() {
-    let tags = TagSet::default();
+    let tags = Tags::default();
     if !common::is_udp_available() {
         return;
     }
@@ -227,8 +226,8 @@ async fn tcp_source_lifecycle_enforces_single_start() {
 
 #[tokio::test]
 async fn multiple_udp_sources_bind_distinct_ports() {
-    let tags1 = TagSet::default();
-    let tags2 = TagSet::default();
+    let tags1 = Tags::default();
+    let tags2 = Tags::default();
 
     // Create two UDP sources on different ports (skip in restricted env)
     if common::is_udp_available() {
@@ -259,10 +258,10 @@ async fn multiple_udp_sources_bind_distinct_ports() {
 
 #[tokio::test]
 async fn udp_source_preserves_multiple_tags() {
-    let mut tags = TagSet::default();
-    tags.set_tag("env", "production".to_string());
-    tags.set_tag("service", "syslog".to_string());
-    tags.set_tag("region", "us-west".to_string());
+    let mut tags = Tags::default();
+    tags.set("env", "production".to_string());
+    tags.set("service", "syslog".to_string());
+    tags.set("region", "us-west".to_string());
 
     if common::is_udp_available() {
         let source = UdpSyslogSource::new(
@@ -287,7 +286,7 @@ async fn udp_source_fails_on_port_conflict() {
     // 先占用端口，再尝试在同端口创建 UdpSyslogSource，应报错
     let sock = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
     let addr = sock.local_addr().unwrap();
-    let tags = TagSet::default();
+    let tags = Tags::default();
     let res = UdpSyslogSource::new(
         "conflict".to_string(),
         addr.to_string(),

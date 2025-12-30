@@ -322,7 +322,7 @@ type = "dummy"
         }
     }
 
-    impl wp_connector_api::ConnectorDefProvider for DummyFactory {
+    impl wp_connector_api::SourceDefProvider for DummyFactory {
         fn source_def(&self) -> ConnectorDef {
             ConnectorDef {
                 id: "dummy".into(),
