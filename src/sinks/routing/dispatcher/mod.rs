@@ -16,6 +16,8 @@ use wp_data_model::cache::FieldQueryCache;
 
 mod io; // 直发/原始数据下发
 mod oml; // OML/条件路由
+#[cfg(any(test, feature = "perf-ci"))]
+pub mod perf; // 性能基准工具
 mod recovery; // 故障恢复与收尾
 type GroupedRecords = HashMap<String, Vec<SinkRecUnit>>;
 

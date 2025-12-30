@@ -24,6 +24,8 @@ pub use rescue::{RescueEntry, RescuePayload};
 pub use routing::agent::InfraSinkAgent; // used by apps/tests
 pub(crate) use routing::agent::SinkGroupAgent;
 pub(crate) use routing::dispatcher::SinkDispatcher;
+#[cfg(any(test, feature = "perf-ci"))]
+pub use routing::dispatcher::perf::OmlBatchPerfCase;
 pub use routing::registry::SinkRegistry; // used by apps/tests
 pub use routing::registry::SinkRouteAgent; // used by tests
 pub(crate) use runtime::manager::SinkRuntime;

@@ -227,6 +227,11 @@ dev-tools = []
 # ctor is used via attribute macros and may not be detected by cargo-udeps
 normal = ["ctor"]
 
+[[bench]]
+name = "oml_proc_batch_nginx"
+harness = false
+required-features = ["perf-ci"]
+
 [workspace.dependencies]
 # --- Async Runtime ---
 tokio = { version = "~1.48", features = ["full"] }

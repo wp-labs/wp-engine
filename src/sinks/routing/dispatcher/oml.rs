@@ -80,11 +80,11 @@ impl SinkDispatcher {
 
     fn run_oml_pipeline_vec(
         &self,
-        rule: &ProcMeta,
+        wpl_meta: &ProcMeta,
         input: Vec<SinkRecUnit>,
         cache: &mut FieldQueryCache,
     ) -> SinkResult<(Vec<SinkRecUnit>, Vec<SinkRecUnit>)> {
-        let Some(om_ins) = self.get_match_oml(rule) else {
+        let Some(om_ins) = self.get_match_oml(wpl_meta) else {
             return Ok((input, Vec::new()));
         };
 
@@ -100,7 +100,7 @@ impl SinkDispatcher {
                 Self::annotate_err(
                     &mut failed,
                     "oml_transform_empty",
-                    rule,
+                    wpl_meta,
                     self.conf.name(),
                     om_ins.name(),
                     original_len,
