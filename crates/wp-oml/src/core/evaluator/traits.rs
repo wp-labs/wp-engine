@@ -59,5 +59,8 @@ pub trait ConfADMExt {
 
 pub trait DataTransformer {
     fn transform(&self, data: DataRecord, cache: &mut FieldQueryCache) -> DataRecord;
+    fn transform_ref(&self, data: &DataRecord, cache: &mut FieldQueryCache) -> DataRecord {
+        self.transform(data.clone(), cache)
+    }
     fn append(&self, data: &mut DataRecord);
 }

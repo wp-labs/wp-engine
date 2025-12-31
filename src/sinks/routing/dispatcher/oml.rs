@@ -121,9 +121,8 @@ impl SinkDispatcher {
         let mut failures = Vec::new();
         for unit in input {
             let (pkg_id, meta, record_arc) = unit.into_parts();
-            let record = Arc::try_unwrap(record_arc).unwrap_or_else(|arc| arc.as_ref().clone());
-            let original_len = record.items.len();
-            let output = om_ins.transform(record, cache);
+            let original_len = record_arc.items.len();
+            let output = om_ins.transform_ref(record_arc.as_ref(), cache);
             if output.items.is_empty() {
                 let mut failed = output.clone();
                 Self::annotate_err(

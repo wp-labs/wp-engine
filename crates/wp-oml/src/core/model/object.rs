@@ -14,10 +14,13 @@ use wp_parser::comment::CommentParser;
 
 impl DataTransformer for ObjModel {
     fn transform(&self, data: DataRecord, cache: &mut FieldQueryCache) -> DataRecord {
-        // 每次转换前重置诊断缓冲（开启 oml-diag 时生效；否则为 no-op）
+        self.transform_ref(&data, cache)
+    }
+
+    fn transform_ref(&self, data: &DataRecord, cache: &mut FieldQueryCache) -> DataRecord {
         diagnostics::reset();
         let mut out = DataRecord::default();
-        let mut tdo_ref = DataRecordRef::from(&data);
+        let mut tdo_ref = DataRecordRef::from(data);
         for ado in &self.items {
             ado.eval_proc(&mut tdo_ref, &mut out, cache);
         }

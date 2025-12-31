@@ -7,6 +7,10 @@ impl DataTransformer for StubModel {
         data
     }
 
+    fn transform_ref(&self, data: &DataRecord, _cache: &mut FieldQueryCache) -> DataRecord {
+        data.clone()
+    }
+
     fn append(&self, _data: &mut DataRecord) {}
 }
 impl DataTransformer for DataModel {
@@ -14,6 +18,13 @@ impl DataTransformer for DataModel {
         match self {
             DataModel::Stub(null_model) => null_model.transform(data, cache),
             DataModel::Object(obj_model) => obj_model.transform(data, cache),
+        }
+    }
+
+    fn transform_ref(&self, data: &DataRecord, cache: &mut FieldQueryCache) -> DataRecord {
+        match self {
+            DataModel::Stub(null_model) => null_model.transform_ref(data, cache),
+            DataModel::Object(obj_model) => obj_model.transform_ref(data, cache),
         }
     }
 
