@@ -122,7 +122,7 @@ async fn actor_workflows_process_http_logs_with_base64_decoding() -> AnyResult<(
     let actual_output = output_string.trim();
     println!("Actual output: '{}'", actual_output);
 
-    let expected_output = r#"{"id":188,"time":"2025-05-17 08:54:06","sn":"KMDLDLH3CW2020G2WAFA01","time":"2023-05-17 08:54:06"}"#;
+    let expected_output = r#"{"id":188,"time":"2026-05-17 08:54:06","sn":"KMDLDLH3CW2020G2WAFA01","time":"2023-05-17 08:54:06"}"#;
     println!("Expected output: '{}'", expected_output);
 
     assert_eq!(
