@@ -241,7 +241,7 @@ fn wpl_field_impl(input: &mut &str) -> ModalResult<WplField> {
         }
     }
     let main_meta = take_datatype.parse_next(input)?;
-    conf.meta_name = main_meta.clone().to_string().into();
+    conf.meta_name = main_meta.static_name().into();
     conf.meta_type = main_meta;
     parse_symbol(input, &mut conf)?;
     parse_peek_symbol(input, &mut conf)?;
@@ -260,7 +260,7 @@ fn wpl_field_impl(input: &mut &str) -> ModalResult<WplField> {
         let f_name = take_var_name
             .context(ctx_desc("<meta>:<name>"))
             .parse_next(input)?;
-        conf.name = Some(f_name.to_string().into());
+        conf.name = Some(f_name.into());
     }
     if let Some(max_len) =
         opt(delimited("[", digit1.try_map(str::parse::<usize>), "]")).parse_next(input)?
@@ -317,7 +317,7 @@ fn parse_peek_symbol(input: &mut &str, conf: &mut WplField) -> ModalResult<()> {
         //if conf.meta_name == "peek_symbol" {
         let content = opt(take_parentheses).parse_next(input)?;
         conf.content = content.map(|x| x.to_string());
-        conf.meta_name = DataType::Symbol.to_string().into();
+        conf.meta_name = DataType::Symbol.static_name().into();
     }
     Ok(())
 }
@@ -430,11 +430,11 @@ mod tests {
     fn test_named_field() {
         let (key, conf) = wpl_id_field.parse("@src_ip:src-ip").assert();
         assert_eq!(key, "src_ip");
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
 
         let (key, conf) = wpl_id_field.parse("@src_ip:src-ip<[,]>").assert();
         assert_eq!(key, "src_ip");
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         assert_eq!(conf.fmt_conf.scope_beg, Some("[".to_string()));
         assert_eq!(conf.fmt_conf.scope_end, Some("]".to_string()));
 
@@ -447,7 +447,7 @@ mod tests {
         let (key, conf) = wpl_id_field.parse("@src_ip : src-ip").assert();
         assert_eq!(key, "src_ip");
         assert_eq!(conf.meta_name.as_str(), "chars");
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
 
         let (key, conf) = wpl_id_field.parse("digit@src_ip: src-ip").assert();
         assert_eq!(key, "src_ip");
@@ -457,19 +457,19 @@ mod tests {
         let (key, conf) = wpl_id_field.parse("digit@src_ip: src-ip ").assert();
         assert_eq!(key, "src_ip");
         assert_eq!(conf.meta_name, "digit".to_string());
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         assert!(!conf.is_opt);
 
         let (key, conf) = wpl_id_field.parse("opt(digit)@src_ip: src-ip ").assert();
         assert_eq!(key, "src_ip");
         assert_eq!(conf.meta_name, "digit".to_string());
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         assert!(conf.is_opt);
 
         let (key, conf) = wpl_id_field.parse("opt( digit )@src_ip: src-ip ").assert();
         assert_eq!(key, "src_ip");
         assert_eq!(conf.meta_name, "digit".to_string());
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         assert!(conf.is_opt);
 
         let (key, conf) = wpl_id_field.parse("@src_ip ").assert();
@@ -491,31 +491,31 @@ mod tests {
     fn test_ext_obj() {
         let set = wpl_field_subs.parse("(digit@src_ip: src-ip )").assert();
         let conf = set.get("src_ip").assert();
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
 
         let set = wpl_field_subs
             .parse("(@src_ip:src-ip ,@dst_ip:dst-ip )")
             .assert();
         let conf = set.get("src_ip").assert();
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         let conf = set.get("dst_ip").assert();
-        assert_eq!(conf.name, Some("dst-ip".to_string().into()));
+        assert_eq!(conf.name, Some("dst-ip".into()));
 
         let set = wpl_field_subs
             .parse("(digit@src_ip/beijing : src-ip/changsha ,digit@dst_ip : dst-ip )")
             .assert();
         let conf = set.get("src_ip/beijing").unwrap();
-        assert_eq!(conf.name, Some("src-ip/changsha".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip/changsha".into()));
         let conf = set.get("dst_ip").unwrap();
-        assert_eq!(conf.name, Some("dst-ip".to_string().into()));
+        assert_eq!(conf.name, Some("dst-ip".into()));
 
         let set = wpl_field_subs
             .parse("(digit@src_ip : src-ip ,digit@dst_ip : dst-ip )")
             .assert();
         let conf = set.get("src_ip").assert();
-        assert_eq!(conf.name, Some("src-ip".to_string().into()));
+        assert_eq!(conf.name, Some("src-ip".into()));
         let conf = set.get("dst_ip").unwrap();
-        assert_eq!(conf.name, Some("dst-ip".to_string().into()));
+        assert_eq!(conf.name, Some("dst-ip".into()));
     }
 
     #[test]
@@ -526,7 +526,7 @@ mod tests {
             wpl_field.parse("ip").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 fmt_conf: fmt.clone(),
                 ..Default::default()
             }
@@ -536,8 +536,8 @@ mod tests {
             wpl_field.parse("ip:ip_v4").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
-                name: Some("ip_v4".to_string().into()),
+                meta_name: "ip".into(),
+                name: Some("ip_v4".into()),
                 fmt_conf: fmt.clone(),
                 ..Default::default()
             }
@@ -548,7 +548,7 @@ mod tests {
             wpl_field.parse("*ip").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 fmt_conf: fmt.clone(),
                 ..Default::default()
@@ -560,7 +560,7 @@ mod tests {
             wpl_field.parse("*ip[10]").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 length: Some(10),
                 fmt_conf: fmt.clone(),
@@ -572,7 +572,7 @@ mod tests {
             wpl_field.parse("*ip[10]\\,").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 length: Some(10),
                 fmt_conf: WplFieldFmt {
@@ -589,10 +589,10 @@ mod tests {
             wpl_field.parse("*ip:src[10]\\,").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 length: Some(10),
-                name: Some("src".to_string().into()),
+                name: Some("src".into()),
                 fmt_conf: WplFieldFmt {
                     //separator: PrioSep::high(","),
                     //patten_first: Some(true),
@@ -608,7 +608,7 @@ mod tests {
             wpl_field.parse("ip\\;\\!").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 fmt_conf: WplFieldFmt {
                     //separator: PrioSep::high(";!"),
                     //patten_first: Some(true),
@@ -624,7 +624,7 @@ mod tests {
             wpl_field.parse("*ip\\;").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 fmt_conf: WplFieldFmt {
                     //separator: PrioSep::high(";"),
@@ -640,8 +640,8 @@ mod tests {
             wpl_field.parse_peek("ip:src;").assert().1,
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
-                name: Some("src".to_string().into()),
+                meta_name: "ip".into(),
+                name: Some("src".into()),
                 fmt_conf: fmt.clone(),
                 ..Default::default()
             }
@@ -650,8 +650,8 @@ mod tests {
 
         let field = WplField {
             meta_type: DataType::Chars,
-            meta_name: "chars".to_string().into(),
-            name: Some("src".to_string().into()),
+            meta_name: "chars".into(),
+            name: Some("src".into()),
             fmt_conf: WplFieldFmt {
                 scope_beg: Some("[".to_string()),
                 scope_end: Some("]".to_string()),
@@ -666,8 +666,8 @@ mod tests {
             wpl_field.parse("chars:src\"").assert(),
             WplField {
                 meta_type: DataType::Chars,
-                meta_name: "chars".to_string().into(),
-                name: Some("src".to_string().into()),
+                meta_name: "chars".into(),
+                name: Some("src".into()),
                 fmt_conf: WplFieldFmt {
                     scope_beg: Some("\"".to_string()),
                     scope_end: Some("\"".to_string()),
@@ -682,8 +682,8 @@ mod tests {
             wpl_field.parse("chars:src^3").assert(),
             WplField {
                 meta_type: DataType::Chars,
-                meta_name: "chars".to_string().into(),
-                name: Some("src".to_string().into()),
+                meta_name: "chars".into(),
+                name: Some("src".into()),
                 fmt_conf: WplFieldFmt {
                     field_cnt: Some(3),
                     ..Default::default()
@@ -697,7 +697,7 @@ mod tests {
             wpl_field.parse("3*ip[10]\\,").assert(),
             WplField {
                 meta_type: DataType::IP,
-                meta_name: "ip".to_string().into(),
+                meta_name: "ip".into(),
                 continuous: true,
                 continuous_cnt: Some(3),
                 length: Some(10),
@@ -714,7 +714,7 @@ mod tests {
 
         let next = WplField {
             meta_type: DataType::Time,
-            meta_name: "time".to_string().into(),
+            meta_name: "time".into(),
             desc: "time\"".to_string(),
             fmt_conf: WplFieldFmt {
                 scope_beg: Some("\"".to_string()),
@@ -729,7 +729,7 @@ mod tests {
         confs.add(DEFAULT_FIELD_KEY.to_string(), next);
         let mut conf = WplField {
             meta_type: DataType::KV,
-            meta_name: "kv".to_string().into(),
+            meta_name: "kv".into(),
             sub_fields: Some(confs),
             fmt_conf: WplFieldFmt {
                 //separator: PrioSep::infer_low(" "),
