@@ -1,4 +1,4 @@
-use crate::structure::{GetTagStr, Protocol};
+use crate::structure::Protocol;
 use educe::Educe;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
@@ -43,12 +43,6 @@ pub struct SyslogSourceConf {
     pub enable: bool,
     #[serde(default)]
     pub tags: Vec<String>,
-}
-
-impl GetTagStr for SyslogSourceConf {
-    fn tag_vec_str(&self) -> &Vec<String> {
-        &self.tags
-    }
 }
 
 impl Default for SyslogSourceConf {

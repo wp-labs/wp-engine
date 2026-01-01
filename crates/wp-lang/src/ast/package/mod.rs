@@ -3,7 +3,6 @@ use derive_getters::Getters;
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
-use wp_model_core::model::OrDefault;
 use wp_parser::Parser;
 
 use crate::ast::debug::{DebugFormat, DepIndent};
@@ -84,7 +83,7 @@ impl DebugFormat for WplPackage {
 
 impl Display for WplPackage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }
 

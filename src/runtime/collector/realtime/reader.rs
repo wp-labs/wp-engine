@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::sources::event_id::next_event_id;
 use tokio::fs::File;
 use tokio::io::AsyncBufReadExt;
-use wp_model_core::model::TagSet;
+use wp_connector_api::Tags;
 
 use crate::runtime::parser::workflow::ParseWorkerSender;
 
@@ -14,24 +14,20 @@ use crate::runtime::parser::workflow::ParseWorkerSender;
 pub async fn read_data(
     input: &mut File,
     source_key: String,
-    tag_set: TagSet,
+    tag_set: Tags,
     _command_sender: async_broadcast::Sender<crate::runtime::actor::command::ActorCtrlCmd>,
     subscription_channel: ParseWorkerSender,
     _line_max: Option<usize>,
 ) -> anyhow::Result<()> {
     use tokio::io::BufReader as AsyncBufReader;
-    use wp_connector_api::{SourceEvent, Tags};
+    use wp_connector_api::SourceEvent;
     use wp_parse_api::RawData;
 
     let mut reader = AsyncBufReader::new(input);
     let mut line = String::new();
 
     // Convert TagSet to Tags
-    let mut source_tags = Tags::new();
-    for (key, value) in &tag_set.item {
-        source_tags.set_tag(key, value.clone());
-    }
-
+    let source_tags = tag_set.clone();
     let source_tags = Arc::new(source_tags);
     let source_key = Arc::new(source_key);
 

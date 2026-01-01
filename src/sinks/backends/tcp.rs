@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
-use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap, SinkDefProvider};
 use wp_connector_api::SinkResult;
 use wp_connector_api::{
-    AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkDefProvider, SinkFactory,
-    SinkHandle, SinkSpec as ResolvedSinkSpec,
+    AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkFactory, SinkHandle,
+    SinkSpec as ResolvedSinkSpec,
 };
 use wp_data_fmt::DataFormat; // for format_record
 

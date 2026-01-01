@@ -5,12 +5,12 @@ use orion_error::ToStructError;
 use serde_json::json;
 use std::path::Path;
 use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap};
+use wp_conf_base::ConfParser;
+use wp_connector_api::Tags;
 use wp_connector_api::{
     SourceBuildCtx, SourceDefProvider, SourceFactory, SourceHandle, SourceMeta, SourceReason,
     SourceResult, SourceSpec as ResolvedSourceSpec, SourceSvcIns,
 };
-use wp_data_model::tags::parse_tags;
-use wp_data_model::tags::validate_tags;
 
 const FILE_SOURCE_MAX_INSTANCES: usize = 32;
 
@@ -74,7 +74,7 @@ impl SourceFactory for FileSourceFactory {
 
     fn validate_spec(&self, resolved: &ResolvedSourceSpec) -> SourceResult<()> {
         let res: anyhow::Result<()> = (|| {
-            if let Err(e) = validate_tags(&resolved.tags) {
+            if let Err(e) = Tags::validate(&resolved.tags) {
                 anyhow::bail!("Invalid tags: {}", e);
             }
             FileSourceSpec::from_resolved(resolved)?;
@@ -90,7 +90,7 @@ impl SourceFactory for FileSourceFactory {
     ) -> SourceResult<SourceSvcIns> {
         let fut = async {
             let spec = FileSourceSpec::from_resolved(resolved)?;
-            let tagset = parse_tags(&resolved.tags);
+            let tagset = Tags::from_parse(&resolved.tags);
             let ranges = compute_file_ranges(Path::new(&spec.path), spec.instances)
                 .map_err(|e| anyhow::anyhow!("Failed to compute file ranges: {}", e))?;
             let mut handles = Vec::with_capacity(ranges.len());
@@ -112,8 +112,8 @@ impl SourceFactory for FileSourceFactory {
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to create FileSource: {}", e))?;
                 let mut meta = SourceMeta::new(key, resolved.kind.clone());
-                for (k, v) in tagset.item.iter() {
-                    meta.tags.set(k.clone(), v.clone());
+                for (k, v) in tagset.iter() {
+                    meta.tags.set(k, v);
                 }
                 handles.push(SourceHandle::new(Box::new(source), meta));
             }

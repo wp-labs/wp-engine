@@ -374,8 +374,8 @@ mod tests {
 
     #[test]
     fn test_json_logs_unescape_rule() -> AnyResult<()> {
-        let rule = r#"rule nginx { (json(chars@logs) | json_unescape( )) }"#;
-        let data = r#"{"name": "warpparse", "logs": "[10]:\"sys\""}"#;
+        let rule = r#"rule nginx { (json( chars@logs | json_unescape() )) }"#;
+        let data = r#"{"age": 10, "logs": "[10]:\"sys\""}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         let (tdc, _) = pipe.proc(data, 0)?;
         if let Some(field) = tdc.field("logs") {
@@ -386,6 +386,33 @@ mod tests {
         } else {
             panic!("logs field missing");
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_json_pipe_auto_last_behavior() -> AnyResult<()> {
+        // 未显式 take 时，last() 行为仍应作用于末尾字段
+        let rule = r#"rule nginx { (json(chars@a, chars@b) | json_unescape()) }"#;
+        let data = r#"{"a":"noop","b":"line1\nline2"}"#;
+        let pipe = WplEvaluator::from_code(rule)?;
+        let (tdc, _) = pipe.proc(data, 0)?;
+        assert_eq!(
+            tdc.field("b"),
+            Some(&DataField::from_chars(
+                "b".to_string(),
+                "line1\nline2".to_string()
+            ))
+        );
+
+        // take + auto selector 组合：第一次 take(name) 之后调用 f_chars_has 仍能针对 name
+        let rule = r#"rule nginx { (json(chars@name, chars@code) | take(name) | chars_has( -99) | take(code) | chars_has( aaa)) }"#;
+        let data = r#"{"name": -99, "code": "aaa"}"#;
+        let pipe = WplEvaluator::from_code(rule)?;
+        assert!(pipe.proc(data, 0).is_ok());
+
+        let rule = r#"rule nginx { (json(chars@code) | take(code) | chars_has(aaa)) }"#;
+        let pipe = WplEvaluator::from_code(rule)?;
+        assert!(pipe.proc(data, 0).is_ok());
         Ok(())
     }
 
@@ -426,7 +453,9 @@ mod tests {
     fn test_json_str_mode_decoded_pipe() -> AnyResult<()> {
         let mut data = r#"{"path":"c:\\users\\fc\\file","txt":"line1\nline2"}"#;
         let conf = wpl_rule
-            .parse("rule test {(json(chars@path,chars@txt) | json_unescape())}")
+            .parse(
+                "rule test {(json(chars@path,chars@txt) | take(path) | json_unescape() | take(txt) | json_unescape())}"
+            )
             .assert();
         let f_conf = conf.statement.first_field().no_less("first field")?;
         let fpu = FieldEvalUnit::from_auto(f_conf.clone());

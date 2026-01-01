@@ -7,7 +7,6 @@ use std::{
 use contracts::debug_requires;
 use derive_getters::Getters;
 use orion_overload::new::New1;
-use wp_model_core::model::OrDefault;
 
 use crate::{
     ast::{
@@ -42,7 +41,7 @@ impl DebugFormat for WplStatementType {
 
 impl Display for WplStatementType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }
 
@@ -100,7 +99,7 @@ impl MergeTags for WplExpress {
 
 impl Display for WplExpress {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }
 
@@ -191,7 +190,7 @@ impl DebugFormat for WplRule {
 
 impl Display for WplRule {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }
 

@@ -1,21 +1,37 @@
 use derive_getters::Getters;
 
 use super::function::{
-    FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas, JsonUnescape,
+    CharsHas, CharsIn, CharsNotHas, DigitHas, DigitIn, Has, IpIn, JsonUnescape, SelectLast,
+    TakeField, TargetCharsHas, TargetCharsIn, TargetCharsNotHas, TargetDigitHas, TargetDigitIn,
+    TargetHas, TargetIpIn,
 };
 use crate::ast::{group::WplGroup, processor::Base64Decode};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WplFun {
-    FCharsExists(FCharsHas),
-    FCharsNotExists(FCharsNotHas),
-    FCharsIn(FCharsIn),
-    FDigitExists(FDigitHas),
-    FDigitIn(FDigitIn),
-    FIpAddrIn(FIpAddrIn),
-    FExists(FdHas),
-    CUnescape(JsonUnescape),
-    CBase64Decode(Base64Decode),
+    SelectTake(TakeField),
+    SelectLast(SelectLast),
+    // Character comparison functions
+    TargetCharsHas(TargetCharsHas),
+    CharsHas(CharsHas),
+    TargetCharsNotHas(TargetCharsNotHas),
+    CharsNotHas(CharsNotHas),
+    TargetCharsIn(TargetCharsIn),
+    CharsIn(CharsIn),
+    // Numeric comparison functions
+    TargetDigitHas(TargetDigitHas),
+    DigitHas(DigitHas),
+    TargetDigitIn(TargetDigitIn),
+    DigitIn(DigitIn),
+    // IP address comparison
+    TargetIpIn(TargetIpIn),
+    IpIn(IpIn),
+    // Field existence check
+    TargetHas(TargetHas),
+    Has(Has),
+    // Transformation functions
+    TransJsonUnescape(JsonUnescape),
+    TransBase64Decode(Base64Decode),
 }
 
 #[derive(Debug, Clone, PartialEq, Getters)]

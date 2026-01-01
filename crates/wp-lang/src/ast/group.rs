@@ -6,7 +6,6 @@ use std::str::FromStr;
 use crate::ast::debug::{DebugFormat, DepIndent};
 use crate::ast::syntax::wpl_sep::WplSep;
 use crate::ast::{WplField, WplFmt};
-use wp_model_core::model::OrDefault;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum WplGroupType {
@@ -141,6 +140,6 @@ impl DebugFormat for WplGroup {
 
 impl Display for WplGroup {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }

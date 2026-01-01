@@ -6,7 +6,8 @@ use orion_conf::{
 };
 use orion_error::UvsValidationFrom;
 use serde::{Deserialize, Serialize};
-use wp_data_model::tags::validate_tags;
+use wp_conf_base::ConfParser;
+use wp_connector_api::Tags;
 
 /// Source 实例级配置（最小实现）：
 /// - 扁平合入 CoreSourceSpec（name/type/params/tags）作为“单一事实来源”
@@ -73,7 +74,7 @@ impl Validate for SourceInstanceConf {
         if self.core.name.trim().is_empty() {
             return ConfIOReason::from_validation("source.name must not be empty").err_result();
         }
-        if let Err(e) = validate_tags(&self.core.tags) {
+        if let Err(e) = Tags::validate(&self.core.tags) {
             return ConfIOReason::from_validation(e).err_result();
         }
         Ok(())

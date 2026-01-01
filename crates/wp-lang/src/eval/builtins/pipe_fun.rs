@@ -1,249 +1,378 @@
 use crate::ast::WplFun;
 use crate::ast::processor::{
-    Base64Decode, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas, StubFun,
+    Base64Decode, CharsHas, CharsIn, CharsNotHas, DigitHas, DigitIn, Has, IpIn, JsonUnescape,
+    SelectLast, TakeField, TargetCharsHas, TargetCharsIn, TargetCharsNotHas, TargetDigitHas,
+    TargetDigitIn, TargetHas, TargetIpIn,
 };
-use crate::eval::runtime::field_pipe::{FieldIndex, FiledSetProcessor};
+use crate::eval::runtime::field_pipe::{FieldIndex, FieldPipe, FieldSelector, FieldSelectorSpec};
 use base64::Engine;
 use base64::engine::general_purpose;
 use winnow::combinator::fail;
 use wp_model_core::model::{DataField, Value};
-use wp_parser::Parser;
-use wp_parser::WResult;
 use wp_parser::symbol::ctx_desc;
+use wp_parser::{Parser, WResult};
 
-impl FiledSetProcessor for FCharsHas {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
+impl FieldSelector for TakeField {
+    fn select(
+        &self,
+        fields: &mut Vec<DataField>,
+        index: Option<&FieldIndex>,
+    ) -> WResult<Option<usize>> {
+        if let Some(idx) = index.and_then(|map| map.get(self.target.as_str()))
+            && idx < fields.len()
         {
-            if let Some(v) = value.get(i)
-                && let Value::Chars(s) = v.get_value()
-                && *s == self.value
-            {
-                return Ok(());
-            }
-            return fail
-                .context(ctx_desc("<pipe> | not exists"))
-                .parse_next(&mut "");
+            return Ok(Some(idx));
         }
-        for v in value.iter() {
-            if v.get_name() == target
-                && let Value::Chars(v) = v.get_value()
-                && *v == self.value
-            {
-                return Ok(());
-            }
+        if let Some(pos) = fields.iter().position(|f| f.get_name() == self.target) {
+            Ok(Some(pos))
+        } else {
+            fail.context(ctx_desc("take | not exists"))
+                .parse_next(&mut "")?;
+            Ok(None)
+        }
+    }
+
+    fn requires_index(&self) -> bool {
+        true
+    }
+}
+
+impl FieldSelector for SelectLast {
+    fn select(
+        &self,
+        fields: &mut Vec<DataField>,
+        _index: Option<&FieldIndex>,
+    ) -> WResult<Option<usize>> {
+        if fields.is_empty() {
+            fail.context(ctx_desc("last | not exists"))
+                .parse_next(&mut "")?;
+            Ok(None)
+        } else {
+            Ok(Some(fields.len() - 1))
+        }
+    }
+}
+
+impl FieldPipe for TargetCharsHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not exists"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for CharsHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not exists"))
             .parse_next(&mut "")
     }
 }
 
-impl FiledSetProcessor for FdHas {
+impl FieldPipe for TargetCharsNotHas {
     #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.found.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
-            && value.get(i).is_some()
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        match field {
+            None => Ok(()),
+            Some(item) => {
+                if let Value::Chars(value) = item.get_value()
+                    && value != &self.value
+                {
+                    return Ok(());
+                }
+                fail.context(ctx_desc("<pipe> | not exists"))
+                    .parse_next(&mut "")
+            }
+        }
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for CharsNotHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        match field {
+            None => Ok(()),
+            Some(item) => {
+                if let Value::Chars(value) = item.get_value()
+                    && value != &self.value
+                {
+                    return Ok(());
+                }
+                fail.context(ctx_desc("<pipe> | not exists"))
+                    .parse_next(&mut "")
+            }
+        }
+    }
+}
+
+impl FieldPipe for TargetCharsIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && self.value.contains(value)
         {
             return Ok(());
         }
-        for v in value.iter() {
-            if v.get_name() == target {
-                return Ok(());
-            }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for CharsIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetDigitHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not exists"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for DigitHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not exists"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetDigitIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for DigitIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetIpIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::IpAddr(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for IpIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::IpAddr(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if field.is_some() {
+            return Ok(());
+        }
+        fail.context(ctx_desc("json not exists sub item"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for Has {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if field.is_some() {
+            return Ok(());
         }
         fail.context(ctx_desc("json not exists sub item"))
             .parse_next(&mut "")
     }
 }
-impl FiledSetProcessor for FCharsNotHas {
+
+impl FieldPipe for JsonUnescape {
     #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        let mut is_exists = false;
-        if let Some(ix) = index {
-            if let Some(i) = ix.get(target)
-                && let Some(v) = value.get(i)
-            {
-                is_exists = true;
-                if let Value::Chars(s) = v.get_value()
-                    && *s != self.value
-                {
-                    return Ok(());
-                }
-            }
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        let Some(field) = field else {
+            return fail
+                .context(ctx_desc("json_unescape | no active field"))
+                .parse_next(&mut "");
+        };
+        let value = field.get_value_mut();
+        if value_json_unescape(value) {
+            Ok(())
         } else {
-            for v in value.iter() {
-                if v.get_name() == target {
-                    is_exists = true;
-                    if let Value::Chars(vs) = v.get_value()
-                        && *vs != self.value
-                    {
-                        return Ok(());
-                    }
-                }
-            }
+            fail.context(ctx_desc("json_unescape")).parse_next(&mut "")
         }
-        if !is_exists {
-            return Ok(());
-        }
-        fail.context(ctx_desc("<pipe> | not exists"))
-            .parse_next(&mut "")
     }
 }
 
-impl FiledSetProcessor for FDigitHas {
+impl FieldPipe for Base64Decode {
     #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
-        {
-            if let Some(v) = value.get(i)
-                && let Value::Digit(d) = v.get_value()
-                && *d == self.value
-            {
-                return Ok(());
-            }
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        let Some(field) = field else {
             return fail
-                .context(ctx_desc("<pipe> | not exists"))
+                .context(ctx_desc("base64_decode | no active field"))
                 .parse_next(&mut "");
+        };
+        let value = field.get_value_mut();
+        if value_base64_decode(value) {
+            Ok(())
+        } else {
+            fail.context(ctx_desc("base64_decode")).parse_next(&mut "")
         }
-        for v in value.iter() {
-            if v.get_name() == target
-                && let Value::Digit(d) = v.get_value()
-                && *d == self.value
-            {
-                return Ok(());
-            }
-        }
-        fail.context(ctx_desc("<pipe> | not exists"))
-            .parse_next(&mut "")
     }
 }
 
-impl FiledSetProcessor for FDigitIn {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
-        {
-            if let Some(v) = value.get(i)
-                && let Value::Digit(d) = v.get_value()
-                && self.value.contains(d)
-            {
-                return Ok(());
-            }
-            return fail
-                .context(ctx_desc("<pipe> | not in"))
-                .parse_next(&mut "");
-        }
-        for v in value.iter() {
-            if v.get_name() == target
-                && let Value::Digit(d) = v.get_value()
-                && self.value.contains(d)
-            {
-                return Ok(());
-            }
-        }
-        fail.context(ctx_desc("<pipe> | not in"))
-            .parse_next(&mut "")
-    }
-}
-
-impl FiledSetProcessor for FCharsIn {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
-        {
-            if let Some(v) = value.get(i)
-                && let Value::Chars(s) = v.get_value()
-                && self.value.contains(s)
-            {
-                return Ok(());
-            }
-            return fail
-                .context(ctx_desc("<pipe> | not in"))
-                .parse_next(&mut "");
-        }
-        for v in value.iter() {
-            if v.get_name() == target
-                && let Value::Chars(s) = v.get_value()
-                && self.value.contains(s)
-            {
-                return Ok(());
-            }
-        }
-        fail.context(ctx_desc("<pipe> | not in"))
-            .parse_next(&mut "")
-    }
-}
-
-impl FiledSetProcessor for FIpAddrIn {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
-        let target = self.target.as_str();
-        if let Some(ix) = index
-            && let Some(i) = ix.get(target)
-        {
-            if let Some(v) = value.get(i)
-                && let Value::IpAddr(a) = v.get_value()
-                && self.value.contains(a)
-            {
-                return Ok(());
-            }
-            return fail
-                .context(ctx_desc("<pipe> | not in"))
-                .parse_next(&mut "");
-        }
-        for v in value.iter() {
-            if v.get_name() == target
-                && let Value::IpAddr(a) = v.get_value()
-                && self.value.contains(a)
-            {
-                return Ok(());
-            }
-        }
-        fail.context(ctx_desc("<pipe> | not in"))
-            .parse_next(&mut "")
-    }
-}
-impl FiledSetProcessor for StubFun {
-    #[inline]
-    fn process(&self, _value: &mut Vec<DataField>, _index: Option<&FieldIndex>) -> WResult<()> {
-        Ok(())
-    }
-}
-impl FiledSetProcessor for WplFun {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, index: Option<&FieldIndex>) -> WResult<()> {
+impl WplFun {
+    pub fn as_field_pipe(&self) -> Option<&dyn FieldPipe> {
         match self {
-            WplFun::FCharsExists(f) => f.process(value, index),
-            WplFun::FCharsNotExists(f) => f.process(value, index),
-            WplFun::FCharsIn(f) => f.process(value, index),
-            WplFun::FDigitExists(f) => f.process(value, index),
-            WplFun::FDigitIn(f) => f.process(value, index),
-            WplFun::FIpAddrIn(f) => f.process(value, index),
-            WplFun::FExists(f) => f.process(value, index),
-            WplFun::CUnescape(f) => f.process(value, index),
-            WplFun::CBase64Decode(f) => f.process(value, index),
+            WplFun::SelectTake(_) | WplFun::SelectLast(_) => None,
+            WplFun::TargetCharsHas(fun) => Some(fun),
+            WplFun::CharsHas(fun) => Some(fun),
+            WplFun::TargetCharsNotHas(fun) => Some(fun),
+            WplFun::CharsNotHas(fun) => Some(fun),
+            WplFun::TargetCharsIn(fun) => Some(fun),
+            WplFun::CharsIn(fun) => Some(fun),
+            WplFun::TargetDigitHas(fun) => Some(fun),
+            WplFun::DigitHas(fun) => Some(fun),
+            WplFun::TargetDigitIn(fun) => Some(fun),
+            WplFun::DigitIn(fun) => Some(fun),
+            WplFun::TargetIpIn(fun) => Some(fun),
+            WplFun::IpIn(fun) => Some(fun),
+            WplFun::TargetHas(fun) => Some(fun),
+            WplFun::Has(fun) => Some(fun),
+            WplFun::TransJsonUnescape(fun) => Some(fun),
+            WplFun::TransBase64Decode(fun) => Some(fun),
         }
+    }
+
+    pub fn as_field_selector(&self) -> Option<&dyn FieldSelector> {
+        match self {
+            WplFun::SelectTake(selector) => Some(selector),
+            WplFun::SelectLast(selector) => Some(selector),
+            _ => None,
+        }
+    }
+
+    pub fn auto_selector_spec(&self) -> Option<FieldSelectorSpec<'_>> {
+        match self {
+            WplFun::TargetCharsHas(fun) => fun.auto_select(),
+            WplFun::TargetCharsNotHas(fun) => fun.auto_select(),
+            WplFun::TargetCharsIn(fun) => fun.auto_select(),
+            WplFun::TargetDigitHas(fun) => fun.auto_select(),
+            WplFun::TargetDigitIn(fun) => fun.auto_select(),
+            WplFun::TargetIpIn(fun) => fun.auto_select(),
+            WplFun::TargetHas(fun) => fun.auto_select(),
+            _ => None,
+        }
+    }
+
+    pub fn requires_index(&self) -> bool {
+        if let Some(selector) = self.as_field_selector()
+            && selector.requires_index()
+        {
+            return true;
+        }
+        if let Some(spec) = self.auto_selector_spec() {
+            return spec.requires_index();
+        }
+        false
     }
 }
 
 // ---------------- String Mode ----------------
-use crate::ast::processor::JsonUnescape;
-
 #[inline]
 fn decode_json_escapes(raw: &str) -> Option<String> {
-    // 通过 serde_json 反转义 JSON 字符串：重新包裹引号再解析
     let quoted = format!("\"{}\"", raw);
     serde_json::from_str::<String>(&quoted).ok()
 }
@@ -251,7 +380,6 @@ fn decode_json_escapes(raw: &str) -> Option<String> {
 #[inline]
 fn value_json_unescape(v: &mut Value) -> bool {
     if let Value::Chars(s) = v {
-        // fast path: 没有反斜杠则无需反转义
         if !s.as_bytes().contains(&b'\\') {
             return true;
         }
@@ -261,32 +389,6 @@ fn value_json_unescape(v: &mut Value) -> bool {
         }
     }
     false
-}
-
-impl FiledSetProcessor for JsonUnescape {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, _index: Option<&FieldIndex>) -> WResult<()> {
-        for f in value.iter_mut() {
-            let v = f.get_value_mut();
-            if !value_json_unescape(v) {
-                return fail.context(ctx_desc("json_unescape")).parse_next(&mut "");
-            }
-        }
-        Ok(())
-    }
-}
-
-impl FiledSetProcessor for Base64Decode {
-    #[inline]
-    fn process(&self, value: &mut Vec<DataField>, _index: Option<&FieldIndex>) -> WResult<()> {
-        for f in value.iter_mut() {
-            let v = f.get_value_mut();
-            if !value_base64_decode(v) {
-                return fail.context(ctx_desc("base64_decode")).parse_next(&mut "");
-            }
-        }
-        Ok(())
-    }
 }
 
 #[inline]
@@ -314,7 +416,7 @@ mod tests {
         let encoded = general_purpose::STANDARD.encode("hello world");
         let mut fields = vec![DataField::from_chars("payload".to_string(), encoded)];
         Base64Decode {}
-            .process(&mut fields, None)
+            .process(fields.get_mut(0))
             .expect("decode ok");
         if let Value::Chars(s) = fields[0].get_value() {
             assert_eq!(s, "hello world");
@@ -329,7 +431,7 @@ mod tests {
             "payload".to_string(),
             "***".to_string(),
         )];
-        assert!(Base64Decode {}.process(&mut fields, None).is_err());
+        assert!(Base64Decode {}.process(fields.get_mut(0)).is_err());
     }
 
     #[test]
@@ -339,7 +441,7 @@ mod tests {
             r"line1\nline2".to_string(),
         )];
         JsonUnescape {}
-            .process(&mut fields, None)
+            .process(fields.get_mut(0))
             .expect("decode ok");
         if let Value::Chars(s) = fields[0].get_value() {
             assert!(s.contains('\n'));
@@ -354,6 +456,6 @@ mod tests {
             "txt".to_string(),
             r"line1\qline2".to_string(),
         )];
-        assert!(JsonUnescape {}.process(&mut fields, None).is_err());
+        assert!(JsonUnescape {}.process(fields.get_mut(0)).is_err());
     }
 }

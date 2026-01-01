@@ -12,7 +12,6 @@ use wp_connector_api::{
     CtrlRx, DataSource, EventPreHook, SourceBatch, SourceError, SourceEvent, SourceReason,
     SourceResult, Tags,
 };
-use wp_model_core::model::TagSet;
 use wp_parse_api::RawData;
 
 use super::normalize;
@@ -27,7 +26,7 @@ use crate::sources::tcp::{TcpSource, ZcpMessage};
 /// Manages TCP connections, line framing, and message distribution
 pub struct TcpSyslogSource {
     key: String,
-    tags: TagSet,
+    tags: Tags,
     strip_header: bool,
     attach_meta_tags: bool,
     fast_strip: bool,
@@ -40,7 +39,7 @@ impl TcpSyslogSource {
     /// Create a new TCP syslog source with a pre-built TCP aggregator source
     pub async fn new(
         key: String,
-        tags: TagSet,
+        tags: Tags,
         strip_header: bool,
         attach_meta_tags: bool,
         fast_strip: bool,
@@ -62,8 +61,8 @@ impl TcpSyslogSource {
 
     fn base_source_tags(&self) -> Tags {
         let mut stags = Tags::new();
-        for (k, v) in self.tags.item.iter() {
-            stags.set(k.clone(), v.clone());
+        for (k, v) in self.tags.iter() {
+            stags.set(k, v);
         }
         stags
     }
@@ -379,7 +378,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test_syslog_zero_copy".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             65536,
             crate::sources::tcp::FramingMode::Line,
@@ -389,7 +388,7 @@ mod tests {
         .unwrap();
         let tcp_syslog = TcpSyslogSource::new(
             "test_syslog_zero_copy".to_string(),
-            TagSet::default(),
+            Tags::default(),
             false, // strip_header
             false, // attach_meta_tags
             false, // fast_strip
@@ -432,7 +431,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test_syslog_meta".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             65536,
             crate::sources::tcp::FramingMode::Line,
@@ -442,7 +441,7 @@ mod tests {
         .unwrap();
         let tcp_syslog = TcpSyslogSource::new(
             "test_syslog_meta".to_string(),
-            TagSet::default(),
+            Tags::default(),
             false, // strip_header
             true,  // attach_meta_tags
             false, // fast_strip
@@ -483,7 +482,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test_syslog_invalid_ip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             65536,
             crate::sources::tcp::FramingMode::Line,
@@ -493,7 +492,7 @@ mod tests {
         .unwrap();
         let tcp_syslog = TcpSyslogSource::new(
             "test_syslog_invalid_ip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             false,
             false,
             false,
@@ -521,7 +520,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test-strip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             4096,
             crate::sources::tcp::FramingMode::Line,
@@ -531,7 +530,7 @@ mod tests {
         .unwrap();
         let source = TcpSyslogSource::new(
             "test-strip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             true,
             true,
             false,
@@ -558,7 +557,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test-fast3164".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             4096,
             crate::sources::tcp::FramingMode::Line,
@@ -569,7 +568,7 @@ mod tests {
         // strip_header=true, attach_meta_tags=false, fast_strip=true → 触发快路径
         let source = TcpSyslogSource::new(
             "test-fast3164".to_string(),
-            TagSet::default(),
+            Tags::default(),
             true,
             false,
             true,
@@ -595,7 +594,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "roundtrip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             4096,
             crate::sources::tcp::FramingMode::Line,
@@ -605,7 +604,7 @@ mod tests {
         .unwrap();
         let source = TcpSyslogSource::new(
             "roundtrip".to_string(),
-            TagSet::default(),
+            Tags::default(),
             true,
             true,
             true,
@@ -652,7 +651,7 @@ mod tests {
         let (_tx, rx) = tokio::sync::mpsc::channel(8);
         let inner = TcpSource::new(
             "test-fast5424".to_string(),
-            TagSet::default(),
+            Tags::default(),
             "127.0.0.1:0".to_string(),
             4096,
             crate::sources::tcp::FramingMode::Line,
@@ -662,7 +661,7 @@ mod tests {
         .unwrap();
         let source = TcpSyslogSource::new(
             "test-fast5424".to_string(),
-            TagSet::default(),
+            Tags::default(),
             true,  // strip
             false, // !attach
             true,  // fast_strip

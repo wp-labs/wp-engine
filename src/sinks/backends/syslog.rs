@@ -2,14 +2,14 @@ use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
 use std::str::FromStr;
-use wp_conf::connectors::{ConnectorDef, ConnectorScope, param_map_to_table};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider, param_map_to_table};
 use wp_conf::structure::Protocol as ConfProtocol;
 use wp_conf::structure::SyslogSinkConf;
+use wp_connector_api::SinkResult;
 use wp_connector_api::{
     AsyncCtrl, AsyncRawDataSink, AsyncRecordSink, SinkBuildCtx, SinkFactory, SinkHandle,
     SinkSpec as ResolvedSinkSpec,
 };
-use wp_connector_api::{SinkDefProvider, SinkResult};
 use wp_data_fmt::DataFormat; // for format_record
 // no extra orion-error/conf helpers needed after route-builder removal
 

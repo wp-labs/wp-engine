@@ -3,7 +3,6 @@ use crate::ast::{DEFAULT_META_NAME, WplField};
 use derive_getters::Getters;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
-use wp_model_core::model::OrDefault;
 use wp_model_core::model::fmt_def::TextFmt;
 
 use super::WplSep;
@@ -70,7 +69,7 @@ impl WplFieldFmt {
 
 impl Display for WplFieldFmt {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", (self, &None).fmt_string().or_default())
+        write!(f, "{}", (self, &None).fmt_string().unwrap_or_default())
     }
 }
 

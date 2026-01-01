@@ -2,17 +2,12 @@ use crate::sources::event_id::next_event_id;
 use bytes::Bytes;
 use std::sync::Arc;
 use wp_connector_api::{SourceEvent, Tags};
-use wp_model_core::model::TagSet;
 use wp_parse_api::RawData;
 
 /// 基础事件构建（附加 access_ip、ups_ip、复制 tags 为 Tags）
-pub fn build_base_event(key: &str, tags: &TagSet, client_ip: &str, payload: Bytes) -> SourceEvent {
-    let mut base = tags.clone();
-    base.set_tag("access_ip", client_ip.to_string());
-    let mut stags = Tags::new();
-    for (k, v) in base.item.iter() {
-        stags.set(k.clone(), v.clone());
-    }
+pub fn build_base_event(key: &str, tags: &Tags, client_ip: &str, payload: Bytes) -> SourceEvent {
+    let mut stags = tags.clone();
+    stags.set("access_ip", client_ip.to_string());
     let mut ev = SourceEvent::new(
         next_event_id(),
         Arc::new(key.to_string()),

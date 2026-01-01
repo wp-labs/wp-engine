@@ -536,14 +536,14 @@ mod tests {
         // Test direct lookup after simplification
         // Register test processors with different naming schemes
         register_wpl_pipe!("direct-test", || Hold::new(TestMockStage));
-        register_wpl_pipe!("plg_pipe/with-prefix", || Hold::new(TestMockStage));
+        register_wpl_pipe!("plg_pipe/mock-prefix", || Hold::new(TestMockStage));
 
         // Test that direct naming works
         let processor = create_preorder_pipe_unit("direct-test");
         assert!(processor.is_some(), "Should find direct-test processor");
 
         // Test that prefixed registration also works (with full name)
-        let processor = create_preorder_pipe_unit("plg_pipe/with-prefix");
+        let processor = create_preorder_pipe_unit("plg_pipe/mock-prefix");
         assert!(
             processor.is_some(),
             "Should find plg_pipe/with-prefix processor"
@@ -557,7 +557,7 @@ mod tests {
             assert_eq!(raw_to_utf8_string(&result), "hello-mock");
         }
 
-        if let Some(processor) = create_preorder_pipe_unit("plg_pipe/with-prefix") {
+        if let Some(processor) = create_preorder_pipe_unit("plg_pipe/mock-prefix") {
             let result = processor.process(test_data)?;
             assert_eq!(raw_to_utf8_string(&result), "hello-mock");
         }
@@ -568,7 +568,7 @@ mod tests {
 
         // Verify both naming approaches work (names are converted to uppercase)
         assert!(processors.contains(&"DIRECT-TEST".to_string()));
-        assert!(processors.contains(&"PLG_PIPE/WITH-PREFIX".to_string()));
+        assert!(processors.contains(&"PLG_PIPE/MOCK-PREFIX".to_string()));
 
         Ok(())
     }
@@ -596,18 +596,18 @@ mod tests {
 
         // Register processors with both naming styles
         register_wpl_pipe!("simple-test", || Hold::new(SimplifiedTestStage));
-        register_wpl_pipe!("plg_pipe/with-prefix", || Hold::new(SimplifiedTestStage));
+        register_wpl_pipe!("plg_pipe/simple-prefix", || Hold::new(SimplifiedTestStage));
 
         // Test that both can be found directly
         let processor1 = create_preorder_pipe_unit("simple-test");
         assert!(processor1.is_some(), "Should find simple-test");
 
-        let processor2 = create_preorder_pipe_unit("plg_pipe/with-prefix");
+        let processor2 = create_preorder_pipe_unit("plg_pipe/simple-prefix");
         assert!(processor2.is_some(), "Should find plg_pipe/with-prefix");
 
         // Test that processors registered with plg_pipe/ prefix can be found without it
         // This would fail because registration is case-sensitive and stores full name
-        let processor3 = create_preorder_pipe_unit("with-prefix");
+        let processor3 = create_preorder_pipe_unit("simple-prefix");
         assert!(
             processor3.is_none(),
             "Should NOT find with-prefix (was registered as plg_pipe/with-prefix)"

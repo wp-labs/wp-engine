@@ -7,7 +7,6 @@ use std::fmt::{Display, Formatter};
 
 use educe::Educe;
 use serde_derive::{Deserialize, Serialize};
-use wp_conf::structure::GetTagStr;
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize, Default)]
 pub enum DataEncoding {
@@ -66,11 +65,6 @@ impl FileSourceConf {
             encode: DataEncoding::default(),
             tags: vec!["dev_src_ip : 10.0.0.1".to_string()],
         }
-    }
-}
-impl GetTagStr for FileSourceConf {
-    fn tag_vec_str(&self) -> &Vec<String> {
-        &self.tags
     }
 }
 

@@ -59,7 +59,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.5.2"
+version = "1.6.2"
 edition = "2024"
 license = "Apache-2.0"
 
@@ -83,6 +83,7 @@ libc =  {workspace = true}
 hostname = {workspace = true}
 socket2 =  {workspace = true}
 async-signal = {workspace = true}
+arcstr = {workspace = true}
 signal-hook-registry = {workspace = true}
 
 # --- Async Runtime & Concurrency ---
@@ -110,6 +111,7 @@ orion-error = { workspace = true }
 wp-error = { workspace = true }
 wp-log = { workspace = true }
 orion_conf = { workspace = true }
+wp_conf_base = {workspace = true }
 
 # --- Time & Date ---
 chrono = { workspace = true }
@@ -286,6 +288,7 @@ parse-display-derive = "~0.10"
 ctor = "~0.6"
 
 # --- System & Platform ---
+arcstr = "~1.2"
 walkdir = "~2.5"
 libc = "~0.2"
 hostname = "~0.4"
@@ -376,9 +379,3 @@ wp-error     = { package = "wp-error",     git = "https://github.com/wp-labs/wp-
 wp-specs     = { package = "wp-specs",     git = "https://github.com/wp-labs/wp-infras", branch = "develop/0.7" }
 wp_conf_base = { package = "wp-conf-base", git = "https://github.com/wp-labs/wp-infras", branch = "develop/0.7" }
 wp-data-fmt  = { package = "wp-data-fmt",  git = "https://github.com/wp-labs/wp-infras", branch = "develop/0.7" }
-arcstr = "~1.2"
-
-[[bench]]
-name = "oml_proc_batch_nginx"
-harness = false
-required-features = ["perf-ci"]

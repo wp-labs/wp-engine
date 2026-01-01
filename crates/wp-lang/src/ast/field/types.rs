@@ -7,7 +7,7 @@ use crate::types::WildMap;
 use derive_getters::Getters;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
-use wp_model_core::model::{DataType, MetaErr, OrDefault};
+use wp_model_core::model::{DataType, MetaErr};
 use wp_parser::Parser;
 use wp_parser::WResult;
 
@@ -211,7 +211,7 @@ impl WplFieldSet {
 
 impl Display for WplFieldSet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fmt_string().or_default())
+        write!(f, "{}", self.fmt_string().unwrap_or_default())
     }
 }
 

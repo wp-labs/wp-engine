@@ -8,8 +8,8 @@ use orion_error::{ContextRecord, OperationContext, UvsValidationFrom};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use wp_connector_api::ParamMap;
-use wp_data_model::tags::validate_tags;
+use wp_conf_base::ConfParser;
+use wp_connector_api::{ParamMap, Tags};
 use wp_log::{debug_data, info_data};
 use wp_model_core::model::fmt_def::TextFmt;
 
@@ -240,7 +240,7 @@ impl Validate for SinkInstanceConf {
         if let Some(exp) = &self.expect {
             exp.validate().owe_conf().want("sink.expect validate")?;
         }
-        validate_tags(&self.core.tags)
+        Tags::validate(&self.core.tags)
             .owe_conf()
             .want("tags validate")?;
 

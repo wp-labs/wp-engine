@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "orion_exp"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "arcstr",
  "chrono",
@@ -1966,7 +1966,7 @@ dependencies = [
 
 [[package]]
 name = "orion_overload"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "derive-getters",
@@ -3586,7 +3586,7 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 
 [[package]]
 name = "wp-cli-core"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "orion-error",
@@ -3600,7 +3600,7 @@ dependencies = [
 
 [[package]]
 name = "wp-cli-utils"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3617,7 +3617,7 @@ dependencies = [
 [[package]]
 name = "wp-conf-base"
 version = "0.6.1"
-source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#6f068ec07518b0cc9932537420353be7262a03f8"
+source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#31b429f3052d1c44c3b11a0347a569a34d6cbcac"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3632,7 +3632,7 @@ dependencies = [
 
 [[package]]
 name = "wp-config"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3698,7 +3698,7 @@ dependencies = [
 [[package]]
 name = "wp-data-fmt"
 version = "0.6.1"
-source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#6f068ec07518b0cc9932537420353be7262a03f8"
+source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#31b429f3052d1c44c3b11a0347a569a34d6cbcac"
 dependencies = [
  "chrono",
  "serde",
@@ -3708,7 +3708,7 @@ dependencies = [
 
 [[package]]
 name = "wp-data-utils"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -3727,9 +3727,10 @@ dependencies = [
 
 [[package]]
 name = "wp-engine"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
+ "arcstr",
  "async-broadcast",
  "async-signal",
  "async-trait",
@@ -3787,6 +3788,7 @@ dependencies = [
  "walkdir",
  "wildmatch",
  "winnow",
+ "wp-conf-base",
  "wp-config",
  "wp-connector-api",
  "wp-ctrl-api",
@@ -3816,7 +3818,7 @@ dependencies = [
 [[package]]
 name = "wp-error"
 version = "0.6.1"
-source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#6f068ec07518b0cc9932537420353be7262a03f8"
+source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#31b429f3052d1c44c3b11a0347a569a34d6cbcac"
 dependencies = [
  "chrono",
  "derive_more",
@@ -3832,7 +3834,7 @@ dependencies = [
 
 [[package]]
 name = "wp-knowledge"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3869,7 +3871,7 @@ dependencies = [
 
 [[package]]
 name = "wp-lang"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3923,7 +3925,7 @@ dependencies = [
 [[package]]
 name = "wp-log"
 version = "0.6.1"
-source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#6f068ec07518b0cc9932537420353be7262a03f8"
+source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#31b429f3052d1c44c3b11a0347a569a34d6cbcac"
 dependencies = [
  "anyhow",
  "getset",
@@ -3937,7 +3939,7 @@ dependencies = [
 [[package]]
 name = "wp-model-core"
 version = "0.5.1"
-source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.5.1-beta#2103cf372a8451a26c5f1c07584e0c5abb884250"
+source = "git+https://github.com/wp-labs/wp-open-api.git?tag=v0.5.1-beta#2103cf372a8451a26c5f1c07584e0c5abb884250"
 dependencies = [
  "chrono",
  "ipnet",
@@ -3967,7 +3969,7 @@ dependencies = [
 
 [[package]]
 name = "wp-oml"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4032,7 +4034,7 @@ dependencies = [
 
 [[package]]
 name = "wp-parser"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "criterion",
  "orion_exp",
@@ -4041,7 +4043,7 @@ dependencies = [
 
 [[package]]
 name = "wp-proj"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "comfy-table",
@@ -4070,7 +4072,7 @@ dependencies = [
 [[package]]
 name = "wp-specs"
 version = "0.6.1"
-source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#6f068ec07518b0cc9932537420353be7262a03f8"
+source = "git+https://github.com/wp-labs/wp-infras?branch=develop%2F0.7#31b429f3052d1c44c3b11a0347a569a34d6cbcac"
 dependencies = [
  "serde",
  "toml",
@@ -4080,7 +4082,7 @@ dependencies = [
 
 [[package]]
 name = "wp-stats"
-version = "1.5.2"
+version = "1.6.2"
 dependencies = [
  "anyhow",
  "chrono",

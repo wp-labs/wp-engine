@@ -5,8 +5,8 @@ use crate::sinks::{ASinkTestProxy, BlackHoleSink, HealthController, SyslogFactor
 use async_trait::async_trait;
 use orion_conf::ErrorOwe;
 use serde_json::json;
-use wp_conf::connectors::{ConnectorDef, ConnectorScope};
-use wp_connector_api::{ParamMap, SinkDefProvider, SinkFactory, SinkResult};
+use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider};
+use wp_connector_api::{ParamMap, SinkFactory, SinkResult};
 //
 
 // Built-in lightweight no-op sink implementing Async* traits
