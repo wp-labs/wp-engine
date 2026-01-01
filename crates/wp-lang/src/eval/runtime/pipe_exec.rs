@@ -119,7 +119,7 @@ impl FieldCursor {
 
     fn ensure_active_field<'a>(
         &mut self,
-        fields: &'a mut Vec<DataField>,
+        fields: &'a mut [DataField],
         hint: Option<FieldSelectorSpec<'_>>,
     ) -> ModalResult<Option<&'a mut DataField>> {
         let idx = self.ensure_active_index(fields, hint)?;
@@ -128,7 +128,7 @@ impl FieldCursor {
 
     fn ensure_active_index(
         &mut self,
-        fields: &mut Vec<DataField>,
+        fields: &mut [DataField],
         hint: Option<FieldSelectorSpec<'_>>,
     ) -> ModalResult<Option<usize>> {
         if fields.is_empty() {
@@ -146,10 +146,10 @@ impl FieldCursor {
             return Ok(self.active_idx);
         }
 
-        if let Some(idx) = self.active_idx {
-            if idx >= fields.len() {
-                self.active_idx = None;
-            }
+        if let Some(idx) = self.active_idx
+            && idx >= fields.len()
+        {
+            self.active_idx = None;
         }
 
         if self.active_idx.is_none() {
@@ -161,7 +161,7 @@ impl FieldCursor {
 
     fn select_with_spec(
         &mut self,
-        fields: &mut Vec<DataField>,
+        fields: &mut [DataField],
         spec: FieldSelectorSpec<'_>,
     ) -> ModalResult<Option<usize>> {
         match spec {
@@ -170,15 +170,11 @@ impl FieldCursor {
         }
     }
 
-    fn select_by_name(
-        &self,
-        fields: &mut Vec<DataField>,
-        name: &str,
-    ) -> ModalResult<Option<usize>> {
-        if let Some(idx) = self.index.as_ref().and_then(|map| map.get(name)) {
-            if idx < fields.len() {
-                return Ok(Some(idx));
-            }
+    fn select_by_name(&self, fields: &mut [DataField], name: &str) -> ModalResult<Option<usize>> {
+        if let Some(idx) = self.index.as_ref().and_then(|map| map.get(name))
+            && idx < fields.len()
+        {
+            return Ok(Some(idx));
         }
         if let Some(pos) = fields.iter().position(|f| f.get_name() == name) {
             Ok(Some(pos))
@@ -189,7 +185,7 @@ impl FieldCursor {
         }
     }
 
-    fn select_last(&self, fields: &mut Vec<DataField>) -> ModalResult<Option<usize>> {
+    fn select_last(&self, fields: &mut [DataField]) -> ModalResult<Option<usize>> {
         if fields.is_empty() {
             fail.context(ctx_desc("<pipe> | not exists"))
                 .parse_next(&mut "")?;
@@ -201,10 +197,8 @@ impl FieldCursor {
 
     fn after_mutation(&mut self, fields: &[DataField], mutated: bool) {
         self.active_idx = None;
-        if mutated {
-            if self.index.is_some() {
-                self.index = Some(FieldIndex::build(fields));
-            }
+        if mutated && self.index.is_some() {
+            self.index = Some(FieldIndex::build(fields));
         }
     }
 

@@ -405,12 +405,12 @@ mod tests {
         );
 
         // take + auto selector 组合：第一次 take(name) 之后调用 f_chars_has 仍能针对 name
-        let rule = r#"rule nginx { (json(chars@name, chars@code) | take(name) | f_chars_has(name, -99) | f_chars_has(code, aaa)) }"#;
+        let rule = r#"rule nginx { (json(chars@name, chars@code) | take(name) | chars_has( -99) | take(code) | chars_has( aaa)) }"#;
         let data = r#"{"name": -99, "code": "aaa"}"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
 
-        let rule = r#"rule nginx { (json(chars@code) | take(code) | f_chars_has(_, aaa)) }"#;
+        let rule = r#"rule nginx { (json(chars@code) | take(code) | chars_has(aaa)) }"#;
         let pipe = WplEvaluator::from_code(rule)?;
         assert!(pipe.proc(data, 0).is_ok());
         Ok(())

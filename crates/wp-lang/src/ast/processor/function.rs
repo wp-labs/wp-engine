@@ -51,7 +51,7 @@ impl FdHas {
 pub struct StubFun {}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct LastJsonUnescape {}
+pub struct JsonUnescape {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Base64Decode {}

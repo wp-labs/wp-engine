@@ -76,7 +76,7 @@ pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
         }),
         call_fun_args1::<FdHas>.map(WplFun::FExists),
         call_fun_args0::<HasAlias>.map(|_| WplFun::FExists(FdHas { found: None })),
-        call_fun_args0::<LastJsonUnescape>.map(WplFun::CUnescape),
+        call_fun_args0::<JsonUnescape>.map(WplFun::CUnescape),
         call_fun_args0::<Base64Decode>.map(WplFun::CBase64Decode),
     ))
     .parse_next(input)?;
@@ -374,15 +374,15 @@ impl Fun2Builder for FIpAddrIn {
 }
 
 // ---------------- String Mode ----------------
-use crate::ast::processor::LastJsonUnescape;
+use crate::ast::processor::JsonUnescape;
 
-impl Fun0Builder for LastJsonUnescape {
+impl Fun0Builder for JsonUnescape {
     fn fun_name() -> &'static str {
         "json_unescape"
     }
 
     fn build() -> Self {
-        LastJsonUnescape {}
+        JsonUnescape {}
     }
 }
 
@@ -468,7 +468,7 @@ mod tests {
 
     use orion_error::TestAssert;
 
-    use crate::ast::processor::{FdHas, LastJsonUnescape, SelectLast, TakeField};
+    use crate::ast::processor::{FdHas, JsonUnescape, SelectLast, TakeField};
 
     use super::*;
 
@@ -554,7 +554,7 @@ mod tests {
         );
 
         let fun = wpl_fun.parse("json_unescape()").assert();
-        assert_eq!(fun, WplFun::CUnescape(LastJsonUnescape {}));
+        assert_eq!(fun, WplFun::CUnescape(JsonUnescape {}));
 
         assert!(wpl_fun.parse("json_unescape(decoded)").is_err());
 

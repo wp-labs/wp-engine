@@ -1,7 +1,7 @@
 use crate::ast::WplFun;
 use crate::ast::processor::{
     Base64Decode, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas,
-    LastJsonUnescape, SelectLast, TakeField,
+    JsonUnescape, SelectLast, TakeField,
 };
 use crate::eval::runtime::field_pipe::{FieldIndex, FieldPipe, FieldSelector, FieldSelectorSpec};
 use base64::Engine;
@@ -17,10 +17,10 @@ impl FieldSelector for TakeField {
         fields: &mut Vec<DataField>,
         index: Option<&FieldIndex>,
     ) -> WResult<Option<usize>> {
-        if let Some(idx) = index.and_then(|map| map.get(self.target.as_str())) {
-            if idx < fields.len() {
-                return Ok(Some(idx));
-            }
+        if let Some(idx) = index.and_then(|map| map.get(self.target.as_str()))
+            && idx < fields.len()
+        {
+            return Ok(Some(idx));
         }
         if let Some(pos) = fields.iter().position(|f| f.get_name() == self.target) {
             Ok(Some(pos))
@@ -55,12 +55,11 @@ impl FieldSelector for SelectLast {
 impl FieldPipe for FCharsHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field {
-            if let Value::Chars(value) = item.get_value() {
-                if value == &self.value {
-                    return Ok(());
-                }
-            }
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not exists"))
             .parse_next(&mut "")
@@ -111,12 +110,11 @@ impl FieldPipe for FCharsNotHas {
 impl FieldPipe for FDigitHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field {
-            if let Value::Digit(value) = item.get_value() {
-                if value == &self.value {
-                    return Ok(());
-                }
-            }
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not exists"))
             .parse_next(&mut "")
@@ -130,12 +128,11 @@ impl FieldPipe for FDigitHas {
 impl FieldPipe for FDigitIn {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field {
-            if let Value::Digit(value) = item.get_value()
-                && self.value.contains(value)
-            {
-                return Ok(());
-            }
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not in"))
             .parse_next(&mut "")
@@ -149,12 +146,11 @@ impl FieldPipe for FDigitIn {
 impl FieldPipe for FCharsIn {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field {
-            if let Value::Chars(value) = item.get_value()
-                && self.value.contains(value)
-            {
-                return Ok(());
-            }
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not in"))
             .parse_next(&mut "")
@@ -168,12 +164,11 @@ impl FieldPipe for FCharsIn {
 impl FieldPipe for FIpAddrIn {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field {
-            if let Value::IpAddr(value) = item.get_value()
-                && self.value.contains(value)
-            {
-                return Ok(());
-            }
+        if let Some(item) = field
+            && let Value::IpAddr(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
         }
         fail.context(ctx_desc("<pipe> | not in"))
             .parse_next(&mut "")
@@ -184,7 +179,7 @@ impl FieldPipe for FIpAddrIn {
     }
 }
 
-impl FieldPipe for LastJsonUnescape {
+impl FieldPipe for JsonUnescape {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         let Some(field) = field else {
@@ -256,10 +251,10 @@ impl WplFun {
     }
 
     pub fn requires_index(&self) -> bool {
-        if let Some(selector) = self.as_field_selector() {
-            if selector.requires_index() {
-                return true;
-            }
+        if let Some(selector) = self.as_field_selector()
+            && selector.requires_index()
+        {
+            return true;
         }
         if let Some(spec) = self.auto_selector_spec() {
             return spec.requires_index();
@@ -338,7 +333,7 @@ mod tests {
             "txt".to_string(),
             r"line1\nline2".to_string(),
         )];
-        LastJsonUnescape {}
+        JsonUnescape {}
             .process(fields.get_mut(0))
             .expect("decode ok");
         if let Value::Chars(s) = fields[0].get_value() {
@@ -354,6 +349,6 @@ mod tests {
             "txt".to_string(),
             r"line1\qline2".to_string(),
         )];
-        assert!(LastJsonUnescape {}.process(fields.get_mut(0)).is_err());
+        assert!(JsonUnescape {}.process(fields.get_mut(0)).is_err());
     }
 }
