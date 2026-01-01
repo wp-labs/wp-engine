@@ -24,7 +24,7 @@ impl PatternParser for MethodP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         multispace0.parse_next(data)?;
@@ -47,7 +47,7 @@ impl PatternParser for MethodP {
         f_conf: &WplField,
         _g_conf: Option<&FieldGenConf>,
     ) -> AnyResult<DataField> {
-        Ok(DataField::from_chars(f_conf.safe_name(), "GET".to_string()))
+        Ok(DataField::from_chars(f_conf.safe_name(), "GET".into()))
     }
 }
 
@@ -57,7 +57,7 @@ impl PatternParser for RequestP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         // 方法扫描 + 校验
@@ -117,7 +117,7 @@ impl PatternParser for StatusP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let status = delimited(multispace0, digit1.try_map(str::parse::<u32>), multispace0)
@@ -168,7 +168,7 @@ impl PatternParser for AgentP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let mozilla = preceded(multispace0, literal("Mozilla/")).parse_next(data)?;

@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::super::prelude::*;
 use winnow::combinator::delimited;
 use winnow::token::{literal, take};
@@ -31,7 +32,7 @@ impl PatternParser for ProtoTextP {
         fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        _name: String,
+        _name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let key = delimited(multispace0, take_key, multispace0).parse_next(data)?;

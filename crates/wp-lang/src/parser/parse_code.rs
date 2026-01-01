@@ -294,8 +294,8 @@ mod tests {
         let conf = wpl_express.parse(data).assert();
         let map = conf.group[0].fields[0].sub_fields.as_ref().unwrap();
         let expect = WplField {
-            name: Some("x".to_string()),
-            meta_name: "base64".to_string(),
+            name: Some("x".to_string().into()),
+            meta_name: "base64".to_string().into(),
             meta_type: DataType::Base64,
             desc: "base64:x".to_string(),
             fmt_conf: WplFieldFmt {

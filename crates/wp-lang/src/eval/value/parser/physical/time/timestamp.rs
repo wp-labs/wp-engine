@@ -1,4 +1,5 @@
 use crate::eval::runtime::field::FieldEvalUnit;
+use arcstr::ArcStr;
 use crate::eval::value::parse_def::PatternParser;
 use crate::generator::{FieldGenConf, GenChannel};
 use crate::types::AnyResult;
@@ -18,7 +19,7 @@ impl PatternParser for TimeStampPSR {
         _: &FieldEvalUnit,
         _: &crate::ast::WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> WResult<()> {
         let dt = alt((parse_timestamp_us, parse_timestamp_ms, parse_timestamp)).parse_next(data)?;

@@ -8,6 +8,7 @@ use crate::generator::{FieldGenConf, GenScopeEnum};
 use crate::generator::{GenChannel, ParserValue};
 use crate::parser::utils::{quot_r_str, quot_str, take_to_end, window_path};
 use crate::types::AnyResult;
+use arcstr::ArcStr;
 use rand::Rng;
 use winnow::ascii::{digit1, multispace0};
 use winnow::combinator::{alt, preceded};
@@ -31,7 +32,7 @@ impl PatternParser for CharsP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         multispace0.parse_next(data)?;
@@ -71,7 +72,7 @@ impl PatternParser for CharsP {
                 vars.insert("val".to_string(), dat.clone());
                 match strfmt::strfmt(fmt, &vars) {
                     Ok(dat) => {
-                        return Ok(DataField::from_chars(name, dat));
+                        return Ok(DataField::from_chars(name.to_string(), dat));
                     }
                     Err(e) => {
                         error!("gen fmt error: {}", e);
@@ -79,7 +80,7 @@ impl PatternParser for CharsP {
                 }
             }
         }
-        Ok(DataField::from_chars(name, dat))
+        Ok(DataField::from_chars(name.to_string(), dat))
     }
 }
 

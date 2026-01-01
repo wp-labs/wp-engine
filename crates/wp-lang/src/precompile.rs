@@ -47,7 +47,7 @@ pub fn compile_rule(
             for group in &expr.group {
                 let sep = group.resolve_sep(&ups_sep);
                 for f_conf in &group.fields {
-                    let gconf = f_conf.name.as_ref().and_then(|n| fields.get(n)).cloned();
+                    let gconf = f_conf.name.as_ref().and_then(|n| fields.get(n.as_str())).cloned();
                     let f_conf_cloned = f_conf.clone();
                     let sep_cloned = sep.clone();
                     let field_fn: FieldGenFn = Box::new(move |ch: &mut GenChannel| {

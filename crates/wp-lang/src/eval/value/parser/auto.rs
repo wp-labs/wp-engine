@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::prelude::*;
 use crate::ast::WplSep;
 use crate::generator::FmtField;
@@ -27,7 +28,7 @@ impl FieldParser for CombinedParser {
         fpu: &FieldEvalUnit,
         ups_sep: &WplSep,
         data: &mut &str,
-        f_name: Option<String>,
+        f_name: Option<ArcStr>,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let mut last_e = None;

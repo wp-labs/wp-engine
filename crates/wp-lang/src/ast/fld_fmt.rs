@@ -81,8 +81,8 @@ pub mod for_test {
     pub fn fdc2(meta: &str, sep: &str) -> Result<WplField, MetaErr> {
         let mut conf = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
-            name: Some(meta.to_string()),
+            meta_name: meta.to_string().into(),
+            name: Some(meta.to_string().into()),
             fmt_conf: WplFieldFmt {
                 ..Default::default()
             },
@@ -96,8 +96,8 @@ pub mod for_test {
     pub fn fdc3_1(meta: &str, content: &str, sep: &str) -> Result<WplField, MetaErr> {
         let mut conf = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
-            name: Some(meta.to_string()),
+            meta_name: meta.to_string().into(),
+            name: Some(meta.to_string().into()),
             content: Some(content.to_string()),
             separator: Some(WplSep::field_sep(sep)),
             fmt_conf: WplFieldFmt {
@@ -112,7 +112,7 @@ pub mod for_test {
     pub fn fdc2_1(meta: &str, fmt: WplFieldFmt) -> Result<WplField, MetaErr> {
         let mut conf = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
+            meta_name: meta.to_string().into(),
             fmt_conf: fmt,
             ..Default::default()
         };
@@ -123,7 +123,7 @@ pub mod for_test {
     pub fn fdc3(meta: &str, sep: &str, continuous: bool) -> Result<WplField, MetaErr> {
         let mut conf = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
+            meta_name: meta.to_string().into(),
             //name: Some(meta.to_string()),
             fmt_conf: WplFieldFmt {
                 ..Default::default()
@@ -144,7 +144,7 @@ pub mod for_test {
     ) -> Result<WplField, MetaErr> {
         let mut conf = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
+            meta_name: meta.to_string().into(),
             fmt_conf: WplFieldFmt {
                 ..Default::default()
             },

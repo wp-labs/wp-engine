@@ -135,14 +135,14 @@ mod tests {
         let conf = wpl_rule::wpl_rule.parse(data).assert();
         assert_eq!(
             conf.statement.first_field().unwrap().name,
-            Some("first".to_string())
+            Some("first".to_string().into())
         );
 
         let data = r#"rule ip_addr  { (chars:first", _,chars:addr",_,_,chars:city_name",_,_,chars:country_cn",_,_,_,_,float:latitude,float:longitude,_,_,_,_,_,_,_,digit:ip_beg,digit:ip_end)\,}"#;
         let conf = wpl_rule::wpl_rule.parse(data).assert();
         assert_eq!(
             conf.statement.first_field().unwrap().name,
-            Some("first".to_string())
+            Some("first".to_string().into())
         );
 
         let data = r#"

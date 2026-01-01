@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::super::prelude::*;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::generator::ParserValue;
@@ -28,7 +29,7 @@ impl PatternParser for ArrayP {
         fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let mut tdo_arr: Vec<DataField> = Vec::with_capacity(10);
@@ -39,7 +40,7 @@ impl PatternParser for ArrayP {
             let mut idx_local = 0usize;
             let sub_parser = |input: &mut &str| {
                 let idx_str = format!("{}/[{}]", name, idx_local);
-                match next_fpu.parse(&cur_sep, input, Some(idx_str), &mut tdo_arr) {
+                match next_fpu.parse(&cur_sep, input, Some(idx_str.into()), &mut tdo_arr) {
                     Ok(_) => {
                         idx_local += 1;
                         Ok(())

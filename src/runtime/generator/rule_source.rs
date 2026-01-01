@@ -57,6 +57,7 @@ impl RuleGenSource {
 mod tests {
     use super::*;
     use crate::core::generator::rules::GenRuleUnit;
+    use arcstr::ArcStr;
     use std::collections::HashMap;
     use wp_parse_api::RawData;
     use wpl::generator::{FieldGenBuilder, FieldGenConf};
@@ -71,7 +72,7 @@ mod tests {
     /// compile from package code + field confs, then generate `n` rows
     fn gen_rows(
         rule_pkg_code: &str,
-        fields: HashMap<String, FieldGenConf>,
+        fields: HashMap<ArcStr, FieldGenConf>,
         n: usize,
     ) -> Vec<wpl::generator::FmtFieldVec> {
         let pkg = build_pkg(rule_pkg_code);

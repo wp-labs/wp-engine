@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::super::prelude::*;
 use crate::derive_base_prs;
 use crate::eval::runtime::field::FieldEvalUnit;
@@ -13,7 +14,7 @@ impl PatternParser for UrlP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let start = data.checkpoint();

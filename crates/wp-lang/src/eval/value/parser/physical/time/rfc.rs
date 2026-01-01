@@ -1,4 +1,5 @@
 use super::common::parse_fixed;
+use arcstr::ArcStr;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::PatternParser;
 use crate::eval::value::parser::physical::time::gen_time;
@@ -165,7 +166,7 @@ impl PatternParser for TimeP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &crate::ast::WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> WResult<()> {
         let time = alt((
@@ -195,7 +196,7 @@ impl PatternParser for TimeISOP {
         _fpu: &FieldEvalUnit,
         _: &crate::ast::WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> WResult<()> {
         let time = parse_rfc3339.parse_next(data)?;
@@ -217,7 +218,7 @@ impl PatternParser for TimeRFC3339 {
         fpu: &FieldEvalUnit,
         s: &crate::ast::WplSep,
         d: &mut &str,
-        n: String,
+        n: ArcStr,
         o: &mut Vec<DataField>,
     ) -> WResult<()> {
         TimeISOP {}.pattern_parse(fpu, s, d, n, o)
@@ -237,7 +238,7 @@ impl PatternParser for TimeRFC2822 {
         _: &FieldEvalUnit,
         _: &crate::ast::WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> WResult<()> {
         let time = parse_rfc2822.parse_next(data)?;

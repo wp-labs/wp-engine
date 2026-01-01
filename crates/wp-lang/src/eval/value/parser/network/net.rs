@@ -1,4 +1,5 @@
 use super::super::prelude::*;
+use arcstr::ArcStr;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -27,7 +28,7 @@ impl PatternParser for IpPSR {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let ip = IpPSR::parse_value(data)?;
@@ -56,7 +57,7 @@ impl PatternParser for IpPSR {
             vals.insert("val".to_string(), ip.to_string());
             match strfmt::strfmt(fmt, &vals) {
                 Ok(dat) => {
-                    return Ok(DataField::from_chars(f_conf.safe_name(), dat));
+                    return Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from(dat)));
                 }
                 Err(e) => {
                     error!("gen fmt error: {}", e);
@@ -83,7 +84,7 @@ impl PatternParser for IpNetP {
         _fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let ipnet = IpNetP::parse_value(data)?;

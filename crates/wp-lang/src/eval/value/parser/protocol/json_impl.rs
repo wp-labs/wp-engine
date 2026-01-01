@@ -1,6 +1,7 @@
 use super::super::prelude::*;
 use crate::ast::WplSep;
 use crate::eval::runtime::field::FieldEvalUnit;
+use arcstr::ArcStr;
 // 使用 String 动态拼接路径，避免固定容量 ArrayString 在深层或长 key 时 panic
 use serde_json::{Map, Value};
 use wp_model_core::model::types::value::ObjectValue;
@@ -183,7 +184,7 @@ impl JsonProc {
         let run_key = if let Some(sub_conf) = sub_conf_opt {
             sub_conf.run_key_str(j_path.as_str())
         } else {
-            j_path.clone()
+            ArcStr::from(j_path.clone())
         };
         match v {
             Value::Null => {
@@ -229,12 +230,18 @@ impl JsonProc {
                             out.push(DataField::from_digit(run_key, u as i64));
                         } else {
                             // 超范围：保留精确性，降级为字符串
-                            out.push(DataField::from_chars(run_key, num.to_string()));
+                            out.push(DataField::from_chars(
+                                run_key,
+                                ArcStr::from(num.to_string()),
+                            ));
                         }
                     }
                 } else {
                     // 兜底：未知数值类型，按字符串保留
-                    out.push(DataField::from_chars(run_key, num.to_string()));
+                    out.push(DataField::from_chars(
+                        run_key,
+                        ArcStr::from(num.to_string()),
+                    ));
                 }
             }
             Value::String(_) => {
@@ -255,14 +262,14 @@ impl JsonProc {
                     fpu.parse(&ups_sep, &mut raw_ref, Some(run_key), out)?;
                     return Ok(());
                 }
-                out.push(DataField::from_chars(run_key, raw));
+                out.push(DataField::from_chars(run_key, raw.into()));
                 return Ok(());
             }
             Value::Array(arr) => {
                 if exact {
                     Self::exact_check(fpu, true, sub_conf_opt.is_some(), j_path.as_str())?;
                 }
-                let mut arr_name = name.to_string();
+                let mut arr_name = ArcStr::from(name);
                 if let Some(cnf) = sub_conf_opt {
                     arr_name = cnf.name.clone().unwrap_or(arr_name);
                     if let DataType::Array(_) = *cnf.meta_type() {

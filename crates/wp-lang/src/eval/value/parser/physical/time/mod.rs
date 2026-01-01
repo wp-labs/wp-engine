@@ -41,12 +41,12 @@ pub fn gen_time(
         );
         match strfmt::strfmt(fmt, &my_vars) {
             Ok(dat) => {
-                return Ok(DataField::from_chars(f_conf.safe_name(), dat));
+                return Ok(DataField::from_chars(f_conf.safe_name().to_string(), dat));
             }
             Err(e) => {
                 log::error!("gen fmt error: {}", e);
             }
         }
     }
-    Ok(DataField::from_time(f_conf.safe_name(), time.naive_local()))
+    Ok(DataField::from_time(f_conf.safe_name().to_string(), time.naive_local()))
 }

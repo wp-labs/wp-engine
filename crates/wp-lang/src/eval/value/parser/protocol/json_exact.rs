@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::super::prelude::*;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::PatternParser;
@@ -15,7 +16,7 @@ impl PatternParser for ExactJsonP {
         fpu: &FieldEvalUnit,
         ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         multispace0.parse_next(data)?;

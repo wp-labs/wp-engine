@@ -1,3 +1,4 @@
+use arcstr::ArcStr;
 use super::super::prelude::*;
 use crate::ast::group::WplGroupType;
 use crate::derive_base_prs;
@@ -18,7 +19,7 @@ impl PatternParser for KeyValP {
         fpu: &FieldEvalUnit,
         ups_sep: &WplSep,
         data: &mut &str,
-        _name: String,
+        _name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let _ = multispace0.parse_next(data)?;

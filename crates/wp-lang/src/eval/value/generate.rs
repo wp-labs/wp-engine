@@ -24,7 +24,7 @@ mod test {
         let WplStatementType::Express(rule) = &log_line.statement;
         for group in &rule.group {
             for field in &group.fields {
-                let rule = field.name.clone().and_then(|name| rules.get(&name));
+                let rule = field.name.clone().and_then(|name| rules.get(name.as_str()));
                 let mut ch = GenChannel::new();
                 let meta = DataType::from(field.meta_name.as_str())?;
                 let parser = ParserFactory::create(&meta)?;

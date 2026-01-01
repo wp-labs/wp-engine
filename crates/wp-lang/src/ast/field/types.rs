@@ -4,6 +4,7 @@ use crate::ast::fld_fmt::WplFieldFmt;
 use crate::ast::syntax::wpl_sep::WplSep;
 use crate::parser::wpl_field::wpl_field;
 use crate::types::WildMap;
+use arcstr::ArcStr;
 use derive_getters::Getters;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
@@ -15,8 +16,8 @@ pub const DEFAULT_FIELD_KEY: &str = "*";
 #[derive(Debug, Clone, PartialEq, Getters)]
 pub struct WplField {
     pub meta_type: DataType,
-    pub meta_name: String,
-    pub name: Option<String>,
+    pub meta_name: ArcStr,
+    pub name: Option<ArcStr>,
     pub content: Option<String>,
     pub fmt_conf: WplFieldFmt,
     pub continuous: bool,
@@ -34,8 +35,8 @@ impl WplField {
     pub fn scope_conf(&self) -> (&Option<String>, &Option<String>) {
         (&self.fmt_conf.scope_beg, &self.fmt_conf.scope_end)
     }
-    pub fn safe_name(&self) -> String {
-        self.name.clone().unwrap_or(self.meta_name.clone())
+    pub fn safe_name(&self) -> ArcStr {
+        self.name.clone().unwrap_or_else(|| self.meta_name.clone())
     }
     pub fn field_cnt(&self) -> Option<usize> {
         self.fmt_conf.field_cnt
@@ -43,11 +44,11 @@ impl WplField {
     pub fn have_scope(&self) -> bool {
         self.fmt_conf.scope_beg.is_some() && self.fmt_conf.scope_end.is_some()
     }
-    pub fn run_key(&self, key: &str) -> Option<String> {
-        self.name().clone().or(Some(key.to_string()))
+    pub fn run_key(&self, key: &str) -> Option<ArcStr> {
+        self.name().clone().or(Some(ArcStr::from(key)))
     }
-    pub fn run_key_str(&self, key: &str) -> String {
-        self.name().clone().unwrap_or(key.to_string())
+    pub fn run_key_str(&self, key: &str) -> ArcStr {
+        self.name().clone().unwrap_or_else(|| ArcStr::from(key))
     }
     /*
     pub fn use_sep(&mut self, sep: PrioSep) {
@@ -98,7 +99,7 @@ impl Default for WplField {
     fn default() -> Self {
         WplField {
             meta_type: DataType::Auto,
-            meta_name: DEFAULT_META_NAME.to_string(),
+            meta_name: DEFAULT_META_NAME.into(),
             fmt_conf: WplFieldFmt::default(),
             name: None,
             content: None,
@@ -131,7 +132,7 @@ impl WplField {
     pub fn new(meta: &str) -> Result<Self, MetaErr> {
         let ins = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
+            meta_name: meta.into(),
             ..Default::default()
         };
         ins.validate();
@@ -141,7 +142,7 @@ impl WplField {
     pub fn sub_for_arr(meta: &str) -> Result<Self, MetaErr> {
         let ins = WplField {
             meta_type: DataType::from(meta)?,
-            meta_name: meta.to_string(),
+            meta_name: meta.into(),
             fmt_conf: WplFieldFmt::default(),
             take_sep: false,
             ..Default::default()
@@ -151,7 +152,7 @@ impl WplField {
     }
     pub fn name_default(name: &str) -> Self {
         Self {
-            name: Some(name.to_string()),
+            name: Some(name.into()),
             ..Default::default()
         }
     }

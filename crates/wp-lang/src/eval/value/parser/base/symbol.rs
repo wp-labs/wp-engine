@@ -1,4 +1,5 @@
 use super::super::prelude::*;
+use arcstr::ArcStr;
 use std::collections::HashMap;
 
 use crate::eval::runtime::field::FieldEvalUnit;
@@ -23,7 +24,7 @@ impl PatternParser for SymbolP {
         fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         multispace0.parse_next(data)?;
@@ -36,7 +37,7 @@ impl PatternParser for SymbolP {
             "".parse_next(data)?
         };
 
-        out.push(DataField::from_symbol(name, buffer.to_string()));
+        out.push(DataField::from_symbol(name, ArcStr::from(buffer)));
         Ok(())
     }
 
@@ -77,7 +78,7 @@ impl PatternParser for PeekSymbolP {
         fpu: &FieldEvalUnit,
         _ups_sep: &WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let data_1: &str = data;
@@ -88,7 +89,7 @@ impl PatternParser for PeekSymbolP {
             "".parse_peek(input)?
         };
 
-        out.push(DataField::from_symbol(name, buffer.to_string()));
+        out.push(DataField::from_symbol(name, ArcStr::from(buffer)));
         Ok(())
     }
 

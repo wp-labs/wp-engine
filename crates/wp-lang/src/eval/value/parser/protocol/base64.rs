@@ -19,7 +19,7 @@ impl FieldParser for Base64P {
         fpu: &FieldEvalUnit,
         ups_sep: &WplSep,
         data: &mut &str,
-        f_name: Option<String>,
+        f_name: Option<ArcStr>,
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let sep = fpu.conf().resolve_sep(ups_sep);

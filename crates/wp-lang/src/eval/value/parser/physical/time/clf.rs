@@ -1,4 +1,5 @@
 use super::common::fast_apache_dt;
+use arcstr::ArcStr;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::PatternParser;
 use crate::generator::{FieldGenConf, GenChannel};
@@ -15,7 +16,7 @@ impl PatternParser for TimeCLF {
         _: &FieldEvalUnit,
         _: &crate::ast::WplSep,
         data: &mut &str,
-        name: String,
+        name: ArcStr,
         out: &mut Vec<DataField>,
     ) -> wp_parser::WResult<()> {
         // Avoid explicit deref; pass through and let auto-deref handle coercions

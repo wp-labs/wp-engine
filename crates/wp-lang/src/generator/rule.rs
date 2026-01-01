@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::net::Ipv4Addr;
 
+use arcstr::ArcStr;
 use orion_error::{ContextRecord, ErrorOwe, ErrorWith, WithContext};
 
 use crate::parser::error::WplCodeResult;
@@ -26,7 +27,7 @@ impl FieldsGenRule {
         }
     }
     pub fn add(&mut self, key: &str, value: FieldGenConf) {
-        self.items.insert(key.to_string(), value);
+        self.items.insert(key.into(), value);
     }
 }
 
@@ -169,7 +170,7 @@ impl Display for GenScopeEnum {
     }
 }
 
-pub type NamedFieldGF = HashMap<String, FieldGenConf>;
+pub type NamedFieldGF = HashMap<ArcStr, FieldGenConf>;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum GenScopeEnum {
@@ -198,28 +199,28 @@ impl FieldGenBuilder {
     }
 
     /// Insert a raw config for `name`.
-    pub fn insert_conf(mut self, name: impl Into<String>, conf: FieldGenConf) -> Self {
+    pub fn insert_conf(mut self, name: impl Into<ArcStr>, conf: FieldGenConf) -> Self {
         self.items.insert(name.into(), conf);
         self
     }
 
     /// Add a digit field in range [beg, end).
-    pub fn digit(self, name: impl Into<String>, beg: i64, end: i64) -> Self {
+    pub fn digit(self, name: impl Into<ArcStr>, beg: i64, end: i64) -> Self {
         self.insert_conf(name, FieldGenConf::digit_of(beg, end))
     }
 
     /// Add a float field in range [beg, end).
-    pub fn float(self, name: impl Into<String>, beg: f64, end: f64) -> Self {
+    pub fn float(self, name: impl Into<ArcStr>, beg: f64, end: f64) -> Self {
         self.insert_conf(name, FieldGenConf::float_of(beg, end))
     }
 
     /// Add an IPv4 field with [beg, end) range.
-    pub fn ip(self, name: impl Into<String>, beg: Ipv4Addr, end: Ipv4Addr) -> Self {
+    pub fn ip(self, name: impl Into<ArcStr>, beg: Ipv4Addr, end: Ipv4Addr) -> Self {
         self.insert_conf(name, FieldGenConf::ip_of(beg, end))
     }
 
     /// Add a chars field with no predefined scope (free text generator).
-    pub fn chars(self, name: impl Into<String>) -> Self {
+    pub fn chars(self, name: impl Into<ArcStr>) -> Self {
         self.insert_conf(
             name,
             FieldGenConf {
@@ -231,7 +232,7 @@ impl FieldGenBuilder {
     }
 
     /// Add a chars field that randomly picks from the provided set.
-    pub fn chars_from(self, name: impl Into<String>, values: &[&str]) -> Self {
+    pub fn chars_from(self, name: impl Into<ArcStr>, values: &[&str]) -> Self {
         self.insert_conf(name, FieldGenConf::chars_from(values))
     }
 
