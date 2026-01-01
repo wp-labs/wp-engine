@@ -50,10 +50,9 @@ impl PatternParser for SymbolP {
         let name = "".to_string();
         //let _ = self.base().field_conf.length;
 
-        let mut dat = String::new();
-        if let Some(content) = f_conf.content.clone() {
-            dat = content.clone();
-        }
+        // 优化: 避免不必要的 double clone
+        let dat = f_conf.content.as_ref().map(|s| s.to_string()).unwrap_or_default();
+
         if let Some(conf) = g_conf
             && let Some(fmt) = &conf.gen_fmt
         {

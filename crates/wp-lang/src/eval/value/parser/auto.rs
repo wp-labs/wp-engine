@@ -33,10 +33,13 @@ impl FieldParser for CombinedParser {
     ) -> ModalResult<()> {
         let mut last_e = None;
 
+        // 优化: 在循环外计算默认名称，避免每次迭代都 clone
+        let default_name = f_name.or_else(|| Some(fpu.conf().meta_name.clone()));
+
         let start = data.checkpoint();
         for p in &self.ps {
-            let f_name = f_name.clone().or(Some(fpu.conf().meta_name.clone()));
-            match p.parse(fpu, ups_sep, data, f_name, out) {
+            // 每次迭代只需要 clone 一次（如果需要的话）
+            match p.parse(fpu, ups_sep, data, default_name.clone(), out) {
                 Ok(o) => {
                     return Ok(o);
                 }
