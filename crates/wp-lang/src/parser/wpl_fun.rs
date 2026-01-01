@@ -20,8 +20,10 @@ use wp_parser::{
 use crate::ast::{
     WplFun,
     processor::{
-        CharsValue, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas,
-        SelectLast, TakeField,
+        CharsHas, CharsIn, CharsInArg, CharsNotHas, CharsNotHasArg, CharsValue, DigitHas,
+        DigitHasArg, DigitIn, DigitInArg, Has, HasArg, IpIn, IpInArg, SelectLast, TakeField,
+        TargetCharsHas, TargetCharsIn, TargetCharsNotHas, TargetDigitHas, TargetDigitIn,
+        TargetHas, TargetIpIn, normalize_target,
     },
 };
 
@@ -32,50 +34,28 @@ pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
     let fun = alt((
         call_fun_args1::<TakeField>.map(WplFun::SelectTake),
         call_fun_args0::<SelectLast>.map(WplFun::SelectLast),
-        call_fun_args2::<FCharsHas>.map(WplFun::FCharsExists),
-        call_fun_args1::<CharsHasAlias>.map(|alias| {
-            WplFun::FCharsExists(FCharsHas {
-                target: None,
-                value: alias.value,
-            })
+        call_fun_args2::<TargetCharsHas>.map(WplFun::TargetCharsHas),
+        call_fun_args1::<CharsHas>.map(WplFun::CharsHas),
+        call_fun_args2::<TargetCharsNotHas>.map(WplFun::TargetCharsNotHas),
+        call_fun_args1::<CharsNotHasArg>.map(|arg| {
+            WplFun::CharsNotHas(CharsNotHas { value: arg.value })
         }),
-        call_fun_args2::<FCharsNotHas>.map(WplFun::FCharsNotExists),
-        call_fun_args1::<CharsNotHasAlias>.map(|alias| {
-            WplFun::FCharsNotExists(FCharsNotHas {
-                target: None,
-                value: alias.value,
-            })
+        call_fun_args2::<TargetCharsIn>.map(WplFun::TargetCharsIn),
+        call_fun_args1::<CharsInArg>.map(|arg| {
+            WplFun::CharsIn(CharsIn { value: arg.value })
         }),
-        call_fun_args2::<FCharsIn>.map(WplFun::FCharsIn),
-        call_fun_args1::<CharsInAlias>.map(|alias| {
-            WplFun::FCharsIn(FCharsIn {
-                target: None,
-                value: alias.value,
-            })
+        call_fun_args2::<TargetDigitHas>.map(WplFun::TargetDigitHas),
+        call_fun_args1::<DigitHasArg>.map(|arg| {
+            WplFun::DigitHas(DigitHas { value: arg.value })
         }),
-        call_fun_args2::<FDigitHas>.map(WplFun::FDigitExists),
-        call_fun_args1::<DigitHasAlias>.map(|alias| {
-            WplFun::FDigitExists(FDigitHas {
-                target: None,
-                value: alias.value,
-            })
+        call_fun_args2::<TargetDigitIn>.map(WplFun::TargetDigitIn),
+        call_fun_args1::<DigitInArg>.map(|arg| {
+            WplFun::DigitIn(DigitIn { value: arg.value })
         }),
-        call_fun_args2::<FDigitIn>.map(WplFun::FDigitIn),
-        call_fun_args1::<DigitInAlias>.map(|alias| {
-            WplFun::FDigitIn(FDigitIn {
-                target: None,
-                value: alias.value,
-            })
-        }),
-        call_fun_args2::<FIpAddrIn>.map(WplFun::FIpAddrIn),
-        call_fun_args1::<IpInAlias>.map(|alias| {
-            WplFun::FIpAddrIn(FIpAddrIn {
-                target: None,
-                value: alias.value,
-            })
-        }),
-        call_fun_args1::<FdHas>.map(WplFun::FExists),
-        call_fun_args0::<HasAlias>.map(|_| WplFun::FExists(FdHas { target: None })),
+        call_fun_args2::<TargetIpIn>.map(WplFun::TargetIpIn),
+        call_fun_args1::<IpInArg>.map(|arg| WplFun::IpIn(IpIn { value: arg.value })),
+        call_fun_args1::<TargetHas>.map(WplFun::TargetHas),
+        call_fun_args0::<HasArg>.map(|_| WplFun::Has(Has)),
         call_fun_args0::<JsonUnescape>.map(WplFun::TransJsonUnescape),
         call_fun_args0::<Base64Decode>.map(WplFun::TransBase64Decode),
     ))
@@ -83,7 +63,7 @@ pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
     Ok(fun)
 }
 
-impl Fun2Builder for FDigitHas {
+impl Fun2Builder for TargetDigitHas {
     type ARG1 = String;
     type ARG2 = i64;
 
@@ -110,7 +90,7 @@ impl Fun2Builder for FDigitHas {
     }
 }
 
-impl Fun1Builder for CharsHasAlias {
+impl Fun1Builder for CharsHas {
     type ARG1 = String;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -128,7 +108,7 @@ impl Fun1Builder for CharsHasAlias {
     }
 }
 
-impl Fun1Builder for CharsNotHasAlias {
+impl Fun1Builder for CharsNotHasArg {
     type ARG1 = String;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -146,7 +126,7 @@ impl Fun1Builder for CharsNotHasAlias {
     }
 }
 
-impl Fun1Builder for CharsInAlias {
+impl Fun1Builder for CharsInArg {
     type ARG1 = Vec<CharsValue>;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -163,7 +143,7 @@ impl Fun1Builder for CharsInAlias {
     }
 }
 
-impl Fun1Builder for DigitHasAlias {
+impl Fun1Builder for DigitHasArg {
     type ARG1 = i64;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -181,7 +161,7 @@ impl Fun1Builder for DigitHasAlias {
     }
 }
 
-impl Fun1Builder for DigitInAlias {
+impl Fun1Builder for DigitInArg {
     type ARG1 = Vec<i64>;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -197,7 +177,7 @@ impl Fun1Builder for DigitInAlias {
     }
 }
 
-impl Fun1Builder for IpInAlias {
+impl Fun1Builder for IpInArg {
     type ARG1 = Vec<IpAddr>;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -213,16 +193,16 @@ impl Fun1Builder for IpInAlias {
     }
 }
 
-impl Fun0Builder for HasAlias {
+impl Fun0Builder for HasArg {
     fn fun_name() -> &'static str {
         "has"
     }
 
     fn build() -> Self {
-        HasAlias
+        HasArg
     }
 }
-impl Fun2Builder for FCharsHas {
+impl Fun2Builder for TargetCharsHas {
     type ARG1 = String;
     type ARG2 = String;
 
@@ -248,7 +228,7 @@ impl Fun2Builder for FCharsHas {
     }
 }
 
-impl Fun2Builder for FCharsNotHas {
+impl Fun2Builder for TargetCharsNotHas {
     type ARG1 = String;
     type ARG2 = String;
 
@@ -280,7 +260,7 @@ impl ParseNext<CharsValue> for CharsValue {
         Ok(CharsValue(val.to_string()))
     }
 }
-impl Fun2Builder for FCharsIn {
+impl Fun2Builder for TargetCharsIn {
     type ARG1 = String;
     type ARG2 = Vec<CharsValue>;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -306,7 +286,7 @@ impl Fun2Builder for FCharsIn {
     }
 }
 
-impl Fun2Builder for FDigitIn {
+impl Fun2Builder for TargetDigitIn {
     type ARG1 = String;
     type ARG2 = Vec<i64>;
 
@@ -329,7 +309,7 @@ impl Fun2Builder for FDigitIn {
         }
     }
 }
-impl Fun1Builder for FdHas {
+impl Fun1Builder for TargetHas {
     type ARG1 = String;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -349,7 +329,7 @@ impl Fun1Builder for FdHas {
     }
 }
 
-impl Fun2Builder for FIpAddrIn {
+impl Fun2Builder for TargetIpIn {
     type ARG1 = String;
     type ARG2 = Vec<IpAddr>;
 
@@ -397,43 +377,6 @@ impl Fun0Builder for Base64Decode {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct CharsHasAlias {
-    value: String,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct CharsNotHasAlias {
-    value: String,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct CharsInAlias {
-    value: Vec<String>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct DigitHasAlias {
-    value: i64,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct DigitInAlias {
-    value: Vec<i64>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct IpInAlias {
-    value: Vec<IpAddr>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct HasAlias;
-
-fn normalize_target(target: String) -> Option<String> {
-    if target == "_" { None } else { Some(target) }
-}
-
 impl Fun1Builder for TakeField {
     type ARG1 = String;
 
@@ -468,7 +411,7 @@ mod tests {
 
     use orion_error::TestAssert;
 
-    use crate::ast::processor::{FdHas, JsonUnescape, SelectLast, TakeField};
+    use crate::ast::processor::{Has, JsonUnescape, SelectLast, TakeField};
 
     use super::*;
 
@@ -477,18 +420,18 @@ mod tests {
         let fun = wpl_fun.parse(r#"f_has(src)"#).assert();
         assert_eq!(
             fun,
-            WplFun::FExists(FdHas {
+            WplFun::TargetHas(TargetHas {
                 target: Some("src".to_string())
             })
         );
 
         let fun = wpl_fun.parse("has()").assert();
-        assert_eq!(fun, WplFun::FExists(FdHas { target: None }));
+        assert_eq!(fun, WplFun::Has(Has));
 
         let fun = wpl_fun.parse(r#"f_digit_in(src, [1,2,3])"#).assert();
         assert_eq!(
             fun,
-            WplFun::FDigitIn(FDigitIn {
+            WplFun::TargetDigitIn(TargetDigitIn {
                 target: Some("src".to_string()),
                 value: vec![1, 2, 3]
             })
@@ -497,17 +440,13 @@ mod tests {
         let fun = wpl_fun.parse("digit_has(42)").assert();
         assert_eq!(
             fun,
-            WplFun::FDigitExists(FDigitHas {
-                target: None,
-                value: 42,
-            })
+            WplFun::DigitHas(DigitHas { value: 42 })
         );
 
         let fun = wpl_fun.parse("digit_in([4,5])").assert();
         assert_eq!(
             fun,
-            WplFun::FDigitIn(FDigitIn {
-                target: None,
+            WplFun::DigitIn(DigitIn {
                 value: vec![4, 5],
             })
         );
@@ -517,7 +456,7 @@ mod tests {
             .assert();
         assert_eq!(
             fun,
-            WplFun::FIpAddrIn(FIpAddrIn {
+            WplFun::TargetIpIn(TargetIpIn {
                 target: Some("src".to_string()),
                 value: vec![
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
@@ -529,8 +468,7 @@ mod tests {
         let fun = wpl_fun.parse(r#"ip_in([127.0.0.1,::1])"#).assert();
         assert_eq!(
             fun,
-            WplFun::FIpAddrIn(FIpAddrIn {
-                target: None,
+            WplFun::IpIn(IpIn {
                 value: vec![
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                     IpAddr::V6(Ipv6Addr::LOCALHOST),
@@ -544,7 +482,7 @@ mod tests {
             .assert();
         assert_eq!(
             fun,
-            WplFun::FIpAddrIn(FIpAddrIn {
+            WplFun::TargetIpIn(TargetIpIn {
                 target: Some("src".to_string()),
                 value: vec![
                     IpAddr::V6(Ipv6Addr::LOCALHOST),
@@ -572,7 +510,7 @@ mod tests {
         let fun = wpl_fun.parse("f_chars_has(_, foo)").assert();
         assert_eq!(
             fun,
-            WplFun::FCharsExists(FCharsHas {
+            WplFun::TargetCharsHas(TargetCharsHas {
                 target: None,
                 value: "foo".to_string(),
             })
@@ -581,8 +519,7 @@ mod tests {
         let fun = wpl_fun.parse("chars_has(bar)").assert();
         assert_eq!(
             fun,
-            WplFun::FCharsExists(FCharsHas {
-                target: None,
+            WplFun::CharsHas(CharsHas {
                 value: "bar".to_string(),
             })
         );
@@ -590,8 +527,7 @@ mod tests {
         let fun = wpl_fun.parse("chars_not_has(baz)").assert();
         assert_eq!(
             fun,
-            WplFun::FCharsNotExists(FCharsNotHas {
-                target: None,
+            WplFun::CharsNotHas(CharsNotHas {
                 value: "baz".to_string(),
             })
         );
@@ -599,8 +535,7 @@ mod tests {
         let fun = wpl_fun.parse("chars_in([foo,bar])").assert();
         assert_eq!(
             fun,
-            WplFun::FCharsIn(FCharsIn {
-                target: None,
+            WplFun::CharsIn(CharsIn {
                 value: vec!["foo".to_string(), "bar".to_string()],
             })
         );

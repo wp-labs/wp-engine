@@ -1,7 +1,8 @@
 use crate::ast::WplFun;
 use crate::ast::processor::{
-    Base64Decode, FCharsHas, FCharsIn, FCharsNotHas, FDigitHas, FDigitIn, FIpAddrIn, FdHas,
-    JsonUnescape, SelectLast, TakeField,
+    Base64Decode, CharsHas, CharsIn, CharsNotHas, DigitHas, DigitIn, Has, IpIn, JsonUnescape,
+    SelectLast, TakeField, TargetCharsHas, TargetCharsIn, TargetCharsNotHas, TargetDigitHas,
+    TargetDigitIn, TargetHas, TargetIpIn,
 };
 use crate::eval::runtime::field_pipe::{FieldIndex, FieldPipe, FieldSelector, FieldSelectorSpec};
 use base64::Engine;
@@ -52,7 +53,7 @@ impl FieldSelector for SelectLast {
     }
 }
 
-impl FieldPipe for FCharsHas {
+impl FieldPipe for TargetCharsHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
@@ -70,22 +71,21 @@ impl FieldPipe for FCharsHas {
     }
 }
 
-impl FieldPipe for FdHas {
+impl FieldPipe for CharsHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if field.is_some() {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && value == &self.value
+        {
             return Ok(());
         }
-        fail.context(ctx_desc("json not exists sub item"))
+        fail.context(ctx_desc("<pipe> | not exists"))
             .parse_next(&mut "")
-    }
-
-    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
-        self.target.as_deref().map(FieldSelectorSpec::Take)
     }
 }
 
-impl FieldPipe for FCharsNotHas {
+impl FieldPipe for TargetCharsNotHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         match field {
@@ -107,43 +107,25 @@ impl FieldPipe for FCharsNotHas {
     }
 }
 
-impl FieldPipe for FDigitHas {
+impl FieldPipe for CharsNotHas {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field
-            && let Value::Digit(value) = item.get_value()
-            && value == &self.value
-        {
-            return Ok(());
+        match field {
+            None => Ok(()),
+            Some(item) => {
+                if let Value::Chars(value) = item.get_value()
+                    && value != &self.value
+                {
+                    return Ok(());
+                }
+                fail.context(ctx_desc("<pipe> | not exists"))
+                    .parse_next(&mut "")
+            }
         }
-        fail.context(ctx_desc("<pipe> | not exists"))
-            .parse_next(&mut "")
-    }
-
-    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
-        self.target.as_deref().map(FieldSelectorSpec::Take)
     }
 }
 
-impl FieldPipe for FDigitIn {
-    #[inline]
-    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
-        if let Some(item) = field
-            && let Value::Digit(value) = item.get_value()
-            && self.value.contains(value)
-        {
-            return Ok(());
-        }
-        fail.context(ctx_desc("<pipe> | not in"))
-            .parse_next(&mut "")
-    }
-
-    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
-        self.target.as_deref().map(FieldSelectorSpec::Take)
-    }
-}
-
-impl FieldPipe for FCharsIn {
+impl FieldPipe for TargetCharsIn {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
@@ -161,7 +143,85 @@ impl FieldPipe for FCharsIn {
     }
 }
 
-impl FieldPipe for FIpAddrIn {
+impl FieldPipe for CharsIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Chars(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetDigitHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not exists"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for DigitHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && value == &self.value
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not exists"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetDigitIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for DigitIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::Digit(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetIpIn {
     #[inline]
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
@@ -176,6 +236,46 @@ impl FieldPipe for FIpAddrIn {
 
     fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
         self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for IpIn {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if let Some(item) = field
+            && let Value::IpAddr(value) = item.get_value()
+            && self.value.contains(value)
+        {
+            return Ok(());
+        }
+        fail.context(ctx_desc("<pipe> | not in"))
+            .parse_next(&mut "")
+    }
+}
+
+impl FieldPipe for TargetHas {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if field.is_some() {
+            return Ok(());
+        }
+        fail.context(ctx_desc("json not exists sub item"))
+            .parse_next(&mut "")
+    }
+
+    fn auto_select<'a>(&'a self) -> Option<FieldSelectorSpec<'a>> {
+        self.target.as_deref().map(FieldSelectorSpec::Take)
+    }
+}
+
+impl FieldPipe for Has {
+    #[inline]
+    fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
+        if field.is_some() {
+            return Ok(());
+        }
+        fail.context(ctx_desc("json not exists sub item"))
+            .parse_next(&mut "")
     }
 }
 
@@ -217,13 +317,20 @@ impl WplFun {
     pub fn as_field_pipe(&self) -> Option<&dyn FieldPipe> {
         match self {
             WplFun::SelectTake(_) | WplFun::SelectLast(_) => None,
-            WplFun::FCharsExists(fun) => Some(fun),
-            WplFun::FCharsNotExists(fun) => Some(fun),
-            WplFun::FCharsIn(fun) => Some(fun),
-            WplFun::FDigitExists(fun) => Some(fun),
-            WplFun::FDigitIn(fun) => Some(fun),
-            WplFun::FIpAddrIn(fun) => Some(fun),
-            WplFun::FExists(fun) => Some(fun),
+            WplFun::TargetCharsHas(fun) => Some(fun),
+            WplFun::CharsHas(fun) => Some(fun),
+            WplFun::TargetCharsNotHas(fun) => Some(fun),
+            WplFun::CharsNotHas(fun) => Some(fun),
+            WplFun::TargetCharsIn(fun) => Some(fun),
+            WplFun::CharsIn(fun) => Some(fun),
+            WplFun::TargetDigitHas(fun) => Some(fun),
+            WplFun::DigitHas(fun) => Some(fun),
+            WplFun::TargetDigitIn(fun) => Some(fun),
+            WplFun::DigitIn(fun) => Some(fun),
+            WplFun::TargetIpIn(fun) => Some(fun),
+            WplFun::IpIn(fun) => Some(fun),
+            WplFun::TargetHas(fun) => Some(fun),
+            WplFun::Has(fun) => Some(fun),
             WplFun::TransJsonUnescape(fun) => Some(fun),
             WplFun::TransBase64Decode(fun) => Some(fun),
         }
@@ -239,13 +346,13 @@ impl WplFun {
 
     pub fn auto_selector_spec(&self) -> Option<FieldSelectorSpec<'_>> {
         match self {
-            WplFun::FCharsExists(fun) => fun.auto_select(),
-            WplFun::FCharsNotExists(fun) => fun.auto_select(),
-            WplFun::FCharsIn(fun) => fun.auto_select(),
-            WplFun::FDigitExists(fun) => fun.auto_select(),
-            WplFun::FDigitIn(fun) => fun.auto_select(),
-            WplFun::FIpAddrIn(fun) => fun.auto_select(),
-            WplFun::FExists(fun) => fun.auto_select(),
+            WplFun::TargetCharsHas(fun) => fun.auto_select(),
+            WplFun::TargetCharsNotHas(fun) => fun.auto_select(),
+            WplFun::TargetCharsIn(fun) => fun.auto_select(),
+            WplFun::TargetDigitHas(fun) => fun.auto_select(),
+            WplFun::TargetDigitIn(fun) => fun.auto_select(),
+            WplFun::TargetIpIn(fun) => fun.auto_select(),
+            WplFun::TargetHas(fun) => fun.auto_select(),
             _ => None,
         }
     }
