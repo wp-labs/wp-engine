@@ -143,7 +143,7 @@ impl ValueProcessor for UrlGet {
                         UrlType::HttpReqUri => url[Position::BeforePath..].to_string(),
                         UrlType::HttpReqPath => url.path().to_string(),
                         UrlType::HttpReqParams => url.query().unwrap_or("").to_string(),
-                        UrlType::Default => origin_url,
+                        UrlType::Default => origin_url.to_string(),
                     },
                     Err(_) => origin_url.to_string(),
                 };

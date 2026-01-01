@@ -107,7 +107,7 @@ where
 fn extract_formatted(record: &DataRecord) -> String {
     if let Some(field) = record.field("formatted") {
         if let Value::Chars(val) = field.get_value() {
-            return val.clone();
+            return val.to_string();
         }
         return field.get_value().to_string();
     }

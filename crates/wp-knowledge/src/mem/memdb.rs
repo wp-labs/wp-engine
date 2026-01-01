@@ -80,7 +80,6 @@ impl ToSql for SqlNamedParam {
             model::Value::Bool(v) => Ok(ToSqlOutput::Owned(Value::Integer(if *v { 1 } else { 0 }))),
             model::Value::Null => Ok(ToSqlOutput::Owned(Value::Null)),
             model::Value::Chars(v) => Ok(ToSqlOutput::Owned(Value::Text(v.to_string()))),
-            model::Value::SChars(v) => Ok(ToSqlOutput::Owned(Value::Text(v.to_string()))),
             model::Value::Symbol(v) => Ok(ToSqlOutput::Owned(Value::Text(v.to_string()))),
             model::Value::Time(v) => Ok(ToSqlOutput::Owned(Value::Text(v.to_string()))),
             model::Value::Digit(v) => Ok(ToSqlOutput::Owned(Value::Integer(*v))),

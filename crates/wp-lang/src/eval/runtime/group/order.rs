@@ -239,8 +239,8 @@ mod tests {
             Value::Chars(s) => Some(s.clone()),
             _ => None,
         });
-        assert_eq!(a, Some("foo".to_string()));
-        assert_eq!(b, Some("bar".to_string()));
+        assert_eq!(a, Some("foo".into()));
+        assert_eq!(b, Some("bar".into()));
 
         // 字段分隔符（high）优先级高于组分隔符（mid）
         let express = wpl_express.parse(r#"(chars:a, chars:b\|)\,"#).assert();
@@ -256,8 +256,8 @@ mod tests {
             Value::Chars(s) => Some(s.clone()),
             _ => None,
         });
-        assert_eq!(a, Some("x".to_string()));
-        assert_eq!(b, Some("y".to_string()));
+        assert_eq!(a, Some("x".into()));
+        assert_eq!(b, Some("y".into()));
         Ok(())
     }
 }

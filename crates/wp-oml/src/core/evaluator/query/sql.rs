@@ -257,7 +257,7 @@ mod tests {
 
         assert_eq!(result.len(), 3);
         assert_eq!(result[1].get_name(), "name");
-        assert_eq!(result[1].get_value(), &Value::Chars("test1".to_string()));
+        assert_eq!(result[1].get_value(), &Value::Chars("test1".into()));
     }
 
     #[test]

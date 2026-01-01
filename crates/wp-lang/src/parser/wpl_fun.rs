@@ -1,5 +1,6 @@
 use std::net::IpAddr;
 
+use arcstr::ArcStr;
 use winnow::{
     Parser,
     ascii::{digit1, multispace0},
@@ -57,13 +58,13 @@ pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
 }
 
 impl Fun2Builder for TargetDigitHas {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
     type ARG2 = i64;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
         multispace0.parse_next(data)?;
@@ -84,12 +85,12 @@ impl Fun2Builder for TargetDigitHas {
 }
 
 impl Fun1Builder for CharsHas {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_path.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -102,12 +103,12 @@ impl Fun1Builder for CharsHas {
 }
 
 impl Fun1Builder for CharsNotHasArg {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_path.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -196,18 +197,18 @@ impl Fun0Builder for HasArg {
     }
 }
 impl Fun2Builder for TargetCharsHas {
-    type ARG1 = String;
-    type ARG2 = String;
+    type ARG1 = ArcStr;
+    type ARG2 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
         multispace0.parse_next(data)?;
         let val = take_path.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -222,18 +223,18 @@ impl Fun2Builder for TargetCharsHas {
 }
 
 impl Fun2Builder for TargetCharsNotHas {
-    type ARG1 = String;
-    type ARG2 = String;
+    type ARG1 = ArcStr;
+    type ARG2 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
         multispace0.parse_next(data)?;
         let val = take_path.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -250,16 +251,16 @@ impl Fun2Builder for TargetCharsNotHas {
 impl ParseNext<CharsValue> for CharsValue {
     fn parse_next(input: &mut &str) -> WResult<CharsValue> {
         let val = take_path.parse_next(input)?;
-        Ok(CharsValue(val.to_string()))
+        Ok(CharsValue(val.into()))
     }
 }
 impl Fun2Builder for TargetCharsIn {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
     type ARG2 = Vec<CharsValue>;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
@@ -271,7 +272,7 @@ impl Fun2Builder for TargetCharsIn {
     }
 
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
-        let value: Vec<String> = args.1.iter().map(|i| i.0.clone()).collect();
+        let value: Vec<ArcStr> = args.1.iter().map(|i| i.0.clone()).collect();
         Self {
             target: normalize_target(args.0),
             value,
@@ -280,7 +281,7 @@ impl Fun2Builder for TargetCharsIn {
 }
 
 impl Fun2Builder for TargetDigitIn {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
     type ARG2 = Vec<i64>;
 
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
@@ -289,7 +290,7 @@ impl Fun2Builder for TargetDigitIn {
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -303,12 +304,12 @@ impl Fun2Builder for TargetDigitIn {
     }
 }
 impl Fun1Builder for TargetHas {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -323,7 +324,7 @@ impl Fun1Builder for TargetHas {
 }
 
 impl Fun2Builder for TargetIpIn {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
     type ARG2 = Vec<IpAddr>;
 
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
@@ -332,7 +333,7 @@ impl Fun2Builder for TargetIpIn {
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -371,12 +372,12 @@ impl Fun0Builder for Base64Decode {
 }
 
 impl Fun1Builder for TakeField {
-    type ARG1 = String;
+    type ARG1 = ArcStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
         let val = take_key.parse_next(data)?;
-        Ok(val.to_string())
+        Ok(val.into())
     }
 
     fn fun_name() -> &'static str {
@@ -414,7 +415,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::TargetHas(TargetHas {
-                target: Some("src".to_string())
+                target: Some("src".into())
             })
         );
 
@@ -425,7 +426,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::TargetDigitIn(TargetDigitIn {
-                target: Some("src".to_string()),
+                target: Some("src".into()),
                 value: vec![1, 2, 3]
             })
         );
@@ -442,7 +443,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::TargetIpIn(TargetIpIn {
-                target: Some("src".to_string()),
+                target: Some("src".into()),
                 value: vec![
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 2))
@@ -468,7 +469,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::TargetIpIn(TargetIpIn {
-                target: Some("src".to_string()),
+                target: Some("src".into()),
                 value: vec![
                     IpAddr::V6(Ipv6Addr::LOCALHOST),
                     IpAddr::V6("2001:db8::1".parse().unwrap()),
@@ -485,7 +486,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::SelectTake(TakeField {
-                target: "src".to_string(),
+                target: "src".into(),
             })
         );
 
@@ -497,7 +498,7 @@ mod tests {
             fun,
             WplFun::TargetCharsHas(TargetCharsHas {
                 target: None,
-                value: "foo".to_string(),
+                value: "foo".into(),
             })
         );
 
@@ -505,7 +506,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::CharsHas(CharsHas {
-                value: "bar".to_string(),
+                value: "bar".into(),
             })
         );
 
@@ -513,7 +514,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::CharsNotHas(CharsNotHas {
-                value: "baz".to_string(),
+                value: "baz".into(),
             })
         );
 
@@ -521,7 +522,7 @@ mod tests {
         assert_eq!(
             fun,
             WplFun::CharsIn(CharsIn {
-                value: vec!["foo".to_string(), "bar".to_string()],
+                value: vec!["foo".into(), "bar".into()],
             })
         );
 

@@ -85,7 +85,7 @@ impl ValueProcessor for ToJson {
         let meta = DataType::Json;
         let json_fmt = Json;
         let json_str = json_fmt.fmt_value(in_val.get_value()).to_string();
-        DataField::new(meta, in_val.clone_name(), json_str)
+        DataField::new(meta, in_val.clone_name(), Value::Chars(json_str.into()))
     }
 }
 

@@ -1,7 +1,9 @@
 use std::net::IpAddr;
 
+use arcstr::ArcStr;
+
 #[derive(Clone, Debug, PartialEq)]
-pub struct CharsValue(pub(crate) String);
+pub struct CharsValue(pub(crate) ArcStr);
 
 // ============ Field Existence Check ============
 
@@ -12,11 +14,11 @@ pub struct Has;
 /// Checks if a specified target field exists
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetHas {
-    pub(crate) target: Option<String>,
+    pub(crate) target: Option<ArcStr>,
 }
 
 impl TargetHas {
-    pub fn new<S: Into<String>>(target: S) -> Self {
+    pub fn new<S: Into<ArcStr>>(target: S) -> Self {
         Self {
             target: Some(target.into()),
         }
@@ -32,40 +34,40 @@ impl TargetHas {
 /// Checks if active field's character value equals a specific string
 #[derive(Clone, Debug, PartialEq)]
 pub struct CharsHas {
-    pub(crate) value: String,
+    pub(crate) value: ArcStr,
 }
 
 /// Checks if specified field's character value equals a specific string
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetCharsHas {
-    pub(crate) target: Option<String>,
-    pub(crate) value: String,
+    pub(crate) target: Option<ArcStr>,
+    pub(crate) value: ArcStr,
 }
 
 /// Checks if active field's character value does NOT equal a specific string
 #[derive(Clone, Debug, PartialEq)]
 pub struct CharsNotHas {
-    pub(crate) value: String,
+    pub(crate) value: ArcStr,
 }
 
 /// Checks if specified field's character value does NOT equal a specific string
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetCharsNotHas {
-    pub(crate) target: Option<String>,
-    pub(crate) value: String,
+    pub(crate) target: Option<ArcStr>,
+    pub(crate) value: ArcStr,
 }
 
 /// Checks if active field's character value is in a list
 #[derive(Clone, Debug, PartialEq)]
 pub struct CharsIn {
-    pub(crate) value: Vec<String>,
+    pub(crate) value: Vec<ArcStr>,
 }
 
 /// Checks if specified field's character value is in a list
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetCharsIn {
-    pub(crate) target: Option<String>,
-    pub(crate) value: Vec<String>,
+    pub(crate) target: Option<ArcStr>,
+    pub(crate) value: Vec<ArcStr>,
 }
 
 // ============ Numeric Operations ============
@@ -79,7 +81,7 @@ pub struct DigitHas {
 /// Checks if specified field's numeric value equals a specific number
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetDigitHas {
-    pub(crate) target: Option<String>,
+    pub(crate) target: Option<ArcStr>,
     pub(crate) value: i64,
 }
 
@@ -92,7 +94,7 @@ pub struct DigitIn {
 /// Checks if specified field's numeric value is in a list
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetDigitIn {
-    pub(crate) target: Option<String>,
+    pub(crate) target: Option<ArcStr>,
     pub(crate) value: Vec<i64>,
 }
 
@@ -107,7 +109,7 @@ pub struct IpIn {
 /// Checks if specified field's IP address is in a list
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetIpIn {
-    pub(crate) target: Option<String>,
+    pub(crate) target: Option<ArcStr>,
     pub(crate) value: Vec<IpAddr>,
 }
 
@@ -129,7 +131,7 @@ pub struct Base64Decode {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TakeField {
-    pub(crate) target: String,
+    pub(crate) target: ArcStr,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -141,13 +143,13 @@ pub struct SelectLast {}
 /// Parser argument for `chars_not_has(value)` - converted to CharsNotHas
 #[derive(Clone, Debug, PartialEq)]
 pub struct CharsNotHasArg {
-    pub(crate) value: String,
+    pub(crate) value: ArcStr,
 }
 
 /// Parser argument for `chars_in([...])` - converted to CharsIn
 #[derive(Clone, Debug, PartialEq)]
 pub struct CharsInArg {
-    pub(crate) value: Vec<String>,
+    pub(crate) value: Vec<ArcStr>,
 }
 
 /// Parser argument for `digit_has(num)` - converted to DigitHas
@@ -173,6 +175,6 @@ pub struct IpInArg {
 pub struct HasArg;
 
 /// Normalizes the target field name: converts "_" to None
-pub(crate) fn normalize_target(target: String) -> Option<String> {
+pub(crate) fn normalize_target(target: ArcStr) -> Option<ArcStr> {
     if target == "_" { None } else { Some(target) }
 }

@@ -121,7 +121,7 @@ fn test_take_conv() {
     assert_eq!(target.get_value("B2"), Some(&Value::Digit(100)));
     assert_eq!(
         target.get_value("D4"),
-        Some(&Value::Chars("192.168.1.1".to_string()))
+        Some(&Value::Chars("192.168.1.1".into()))
     );
 }
 #[test]

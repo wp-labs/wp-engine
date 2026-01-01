@@ -1,8 +1,10 @@
 use super::super::prelude::*;
 use crate::ast::WplSep;
 use crate::generator::FmtField;
+use arcstr::ArcStr;
 use base64::Engine;
 use base64::engine::general_purpose;
+use wp_model_core::model::Value;
 
 use crate::ast::WplField;
 use crate::derive_base_prs;
@@ -26,7 +28,11 @@ impl FieldParser for Base64P {
         match general_purpose::STANDARD.decode(take) {
             Ok(output) => {
                 let value = String::from_utf8_lossy(&output).to_string();
-                out.push(DataField::new_opt(DataType::Base64, f_name, value.into()));
+                out.push(DataField::new_opt(
+                    DataType::Base64,
+                    f_name,
+                    Value::Chars(ArcStr::from(value)),
+                ));
                 Ok(())
             }
             Err(_e) => fail

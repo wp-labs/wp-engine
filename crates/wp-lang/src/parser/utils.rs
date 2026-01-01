@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn test_take_val() -> ModalResult<()> {
         assert_eq!(
-            Value::Chars("key".to_string()),
+            Value::Chars("key".into()),
             take_sql_tval.parse_next(&mut "'key'")?
         );
         assert_eq!(Value::Digit(100), take_sql_tval.parse_next(&mut "100")?);

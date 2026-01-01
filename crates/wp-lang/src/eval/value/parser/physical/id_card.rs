@@ -3,8 +3,10 @@ use crate::derive_base_prs;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::PatternParser;
 use crate::generator::FieldGenConf;
+use arcstr::ArcStr;
 use idcard::fake::new;
 use idcard::{Gender, Identity};
+use wp_model_core::model::Value;
 
 derive_base_prs!(IdCardP);
 
@@ -40,7 +42,11 @@ impl PatternParser for IdCardP {
         _g_conf: Option<&FieldGenConf>,
     ) -> AnyResult<DataField> {
         let id = new("310104", 2020, 2, 29, Gender::Male)?;
-        Ok(DataField::new(DataType::IdCard, "id_card", id))
+        Ok(DataField::new(
+            DataType::IdCard,
+            "id_card",
+            Value::Chars(ArcStr::from(id)),
+        ))
     }
 }
 

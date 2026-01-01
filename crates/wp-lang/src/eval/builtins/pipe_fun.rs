@@ -384,7 +384,7 @@ fn value_json_unescape(v: &mut Value) -> bool {
             return true;
         }
         if let Some(decoded) = decode_json_escapes(s) {
-            *s = decoded;
+            *s = decoded.into();
             return true;
         }
     }
@@ -398,7 +398,7 @@ fn value_base64_decode(v: &mut Value) -> bool {
             if let Ok(decoded) = general_purpose::STANDARD.decode(s.as_bytes())
                 && let Ok(vstring) = String::from_utf8(decoded)
             {
-                *s = vstring;
+                *s = vstring.into();
                 return true;
             }
             false
