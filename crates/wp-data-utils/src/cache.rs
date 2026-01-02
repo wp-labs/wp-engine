@@ -1,13 +1,12 @@
 use std::{collections::HashMap, net::IpAddr, num::NonZeroUsize};
 
-use arcstr::ArcStr;
 use derive_builder::Builder;
 
-use wp_model_core::model::{DataField, Value};
+use wp_model_core::model::{DataField, FValueStr, Value};
 
 #[derive(Builder, Debug, Clone)]
 pub struct FieldQueryCache {
-    str_idx: HashMap<ArcStr, usize>,
+    str_idx: HashMap<FValueStr, usize>,
     i64_idx: HashMap<i64, usize>,
     ip_idx: HashMap<IpAddr, usize>,
     cache_data: lru::LruCache<EnumSizeIndex, Vec<DataField>>,

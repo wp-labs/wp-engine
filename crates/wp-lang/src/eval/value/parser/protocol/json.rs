@@ -47,7 +47,7 @@ impl PatternParser for JsonP {
 
 #[cfg(test)]
 mod tests {
-    use arcstr::ArcStr;
+    use smol_str::SmolStr;
     use wp_data_fmt::{DataFormat, KeyValue, Raw};
     use wp_model_core::model::types::value::ObjectValue;
     use wp_parser::Parser;
@@ -630,50 +630,50 @@ mod tests {
 
         let mut expected = ObjectValue::default();
         expected.insert(
-            ArcStr::from("relation"),
+            SmolStr::from("relation"),
             DataField::from_digit("relation".to_string(), 1),
         );
         expected.insert(
-            ArcStr::from("alert_id"),
+            SmolStr::from("alert_id"),
             DataField::from_chars(
                 "alert_id".to_string(),
                 r#"94882787-9505-49d4-9024-20DC93AF579B"#.to_string(),
             ),
         );
         expected.insert(
-            ArcStr::from("action_time"),
+            SmolStr::from("action_time"),
             DataField::from_digit("action_time".to_string(), 1676304603062),
         );
         expected.insert(
-            ArcStr::from("rule_name"),
+            SmolStr::from("rule_name"),
             DataField::from_chars(
                 "rule_name".to_string(),
                 r#"访问 lemonduck 挖矿的通信域名"#.to_string(),
             ),
         );
         expected.insert(
-            ArcStr::from("rule_desc"),
+            SmolStr::from("rule_desc"),
             DataField::from_chars(
                 "rule_desc".to_string(),
                 r#"进程 powershell.exe 访问 lemonduck 挖矿的通信域名"#.to_string(),
             ),
         );
         expected.insert(
-            ArcStr::from("attck_id"),
+            SmolStr::from("attck_id"),
             DataField::from_chars("attck_id".to_string(), r#"TA0011.T1071.004"#.to_string()),
         );
         expected.insert(
-            ArcStr::from("process_mame"),
+            SmolStr::from("process_mame"),
             DataField::from_chars("process_mame".to_string(), r#"powershell.exe"#.to_string()),
         );
         expected.insert(
-            ArcStr::from("process_path"),
+            SmolStr::from("process_path"),
             DataField::from_chars(
                 "process_path".to_string(),
                 r#"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"#.to_string(),
             ),
         );
-        expected.insert(ArcStr::from("command"),
+        expected.insert(SmolStr::from("command"),
                         DataField::from_chars( "command".to_string(),
                                              r#"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.EXE -ep bypass -eSQuAGIAZQA="#.to_string()));
         if let Some(i) = tdc.field("event_detail") {

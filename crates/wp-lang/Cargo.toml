@@ -9,7 +9,7 @@ license.workspace = true
 
 [dependencies]
 arcstr = { workspace = true }
-smol_str = { version = "0.2", features = ["serde"] }
+smol_str = { workspace = true }
 derive_more = { workspace = true }
 ordered-float = { workspace = true }                       # 可哈希浮点
 orion_overload = { path = "../orion_overload" }

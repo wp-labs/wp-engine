@@ -2,7 +2,7 @@ use wp_model_core::model::FNameStr;
 use super::super::prelude::*;
 use crate::ast::WplSep;
 use crate::generator::FmtField;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use base64::Engine;
 use base64::engine::general_purpose;
 use wp_model_core::model::Value;
@@ -32,7 +32,7 @@ impl FieldParser for Base64P {
                 out.push(DataField::new_opt(
                     DataType::Base64,
                     f_name,
-                    Value::Chars(ArcStr::from(value)),
+                    Value::Chars(SmolStr::from(value)),
                 ));
                 Ok(())
             }

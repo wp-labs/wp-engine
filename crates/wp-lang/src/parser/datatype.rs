@@ -1,6 +1,6 @@
 use crate::DataTypeParser;
 use crate::parser::utils::take_meta_name;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use wp_model_core::model::FNameStr;
 use std::fmt::Display;
 use winnow::ascii::multispace0;
@@ -31,7 +31,7 @@ pub fn take_datatype_impl(data: &mut &str) -> WResult<DataType> {
     }
 }
 
-pub fn field_ins<N: Into<FNameStr>, V: Into<ArcStr> + Display>(meta: DataType, name: N, val: V) -> WResult<DataField> {
+pub fn field_ins<N: Into<FNameStr>, V: Into<SmolStr> + Display>(meta: DataType, name: N, val: V) -> WResult<DataField> {
     if let Ok(tdo) = DataField::from_str(meta, name, val) {
         Ok(tdo)
     } else {

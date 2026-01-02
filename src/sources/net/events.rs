@@ -10,7 +10,7 @@ pub fn build_base_event(key: &str, tags: &Tags, client_ip: &str, payload: Bytes)
     stags.set("access_ip", client_ip.to_string());
     let mut ev = SourceEvent::new(
         next_event_id(),
-        Arc::new(key.to_string()),
+        key,
         RawData::Bytes(payload),
         Arc::new(stags),
     );
@@ -32,7 +32,7 @@ pub fn build_event_from_stags(
 
     SourceEvent::new(
         next_event_id(),
-        Arc::new(key.to_string()),
+        key,
         RawData::Bytes(payload),
         Arc::new(stags),
     )

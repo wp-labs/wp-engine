@@ -1,6 +1,6 @@
 use wp_model_core::model::FNameStr;
 use super::super::prelude::*;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -58,7 +58,7 @@ impl PatternParser for IpPSR {
             vals.insert("val".to_string(), ip.to_string());
             match strfmt::strfmt(fmt, &vals) {
                 Ok(dat) => {
-                    return Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from(dat)));
+                    return Ok(DataField::from_chars(f_conf.safe_name(), SmolStr::from(dat)));
                 }
                 Err(e) => {
                     error!("gen fmt error: {}", e);

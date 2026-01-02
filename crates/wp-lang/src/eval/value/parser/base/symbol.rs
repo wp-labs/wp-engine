@@ -1,6 +1,5 @@
 use wp_model_core::model::FNameStr;
 use super::super::prelude::*;
-use arcstr::ArcStr;
 use std::collections::HashMap;
 
 use crate::eval::runtime::field::FieldEvalUnit;
@@ -38,7 +37,7 @@ impl PatternParser for SymbolP {
             "".parse_next(data)?
         };
 
-        out.push(DataField::from_symbol(name, ArcStr::from(buffer)));
+        out.push(DataField::from_symbol(name, buffer));
         Ok(())
     }
 
@@ -89,7 +88,7 @@ impl PatternParser for PeekSymbolP {
             "".parse_peek(input)?
         };
 
-        out.push(DataField::from_symbol(name, ArcStr::from(buffer)));
+        out.push(DataField::from_symbol(name, buffer));
         Ok(())
     }
 

@@ -137,7 +137,7 @@ mod tests {
         let field = ParserTUnit::from_auto(conf).verify_parse_suc_meta(&mut data, DataType::Chars);
         assert_eq!(
             field[0],
-            DataField::from_chars("destination-zone".to_string(), arcstr::ArcStr::from(r#"tr\"ust"#))
+            DataField::from_chars("destination-zone".to_string(), r#"tr\"ust"#)
         );
 
         let mut data = r#"time="2023-05-15 09:22:44" "#;

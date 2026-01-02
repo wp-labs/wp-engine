@@ -50,7 +50,7 @@ pub fn engine_check(
         // 统一改为异步解析；在同步入口内通过 tokio runtime block_on 执行
         let event = SourceEvent::new(
             gen_pkg_id(), // 生成 event_id
-            Arc::clone(&source_key),
+            source_key.as_str(),
             RawData::String(line_data),
             Arc::clone(&source_tags),
         );
@@ -96,7 +96,7 @@ pub fn engine_proc_file<T: AsRef<Path>>(
         let setting = ParseOption::default();
         let event = SourceEvent::new(
             gen_pkg_id(), // 生成 event_id
-            Arc::clone(&source_key),
+            source_key.as_str(),
             RawData::String(line_data),
             Arc::clone(&source_tags),
         );
@@ -141,7 +141,7 @@ pub fn wpl_workshop_parse(
         let setting = ParseOption::default();
         let event = SourceEvent::new(
             gen_pkg_id(), // 生成 event_id
-            Arc::clone(&source_key),
+            source_key.as_str(),
             RawData::String(line_data),
             Arc::clone(&source_tags),
         );

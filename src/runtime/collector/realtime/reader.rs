@@ -44,7 +44,7 @@ pub async fn read_data(
             // Create SourceEvent
             let event = SourceEvent::new(
                 next_event_id(),
-                Arc::clone(&source_key),
+                source_key.as_str(),
                 RawData::String(trimmed.to_string()),
                 Arc::clone(&source_tags),
             );

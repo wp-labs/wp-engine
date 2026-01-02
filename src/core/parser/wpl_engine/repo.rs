@@ -27,7 +27,7 @@ impl From<&WplRepository> for SpaceIndex {
         let mut pkg_path_vec = HashSet::new();
         let mut rule_path_vec = HashSet::new();
         for pkg in &value.packages {
-            pkg_path_vec.insert(pkg.name().clone());
+            pkg_path_vec.insert(pkg.name().to_string());
             for rule in &pkg.rules {
                 rule_path_vec.insert(format!("{}/{}", pkg.name(), rule.name()));
             }

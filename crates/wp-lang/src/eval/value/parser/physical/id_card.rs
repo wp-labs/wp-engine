@@ -4,7 +4,7 @@ use crate::derive_base_prs;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::PatternParser;
 use crate::generator::FieldGenConf;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use idcard::fake::new;
 use idcard::{Gender, Identity};
 use wp_model_core::model::Value;
@@ -46,7 +46,7 @@ impl PatternParser for IdCardP {
         Ok(DataField::new(
             DataType::IdCard,
             "id_card",
-            Value::Chars(ArcStr::from(id)),
+            Value::Chars(SmolStr::from(id)),
         ))
     }
 }

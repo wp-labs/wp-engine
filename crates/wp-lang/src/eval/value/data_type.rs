@@ -3,15 +3,15 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::str::FromStr;
 
 use crate::eval::value::parser::physical::time::parse_time;
-use arcstr::ArcStr;
 use wp_model_core::model::FNameStr;
+use wp_model_core::model::FValueStr;
 use wp_model_core::model::DataType;
 use wp_model_core::model::data::Field;
 use wp_model_core::model::error::ModelError;
 use wp_model_core::model::{DateTimeValue, Maker, Value};
 
 pub trait DataTypeParser {
-    fn from_str<N: Into<FNameStr>, V: Into<ArcStr> + Display>(
+    fn from_str<N: Into<FNameStr>, V: Into<FValueStr> + Display>(
         meta: DataType,
         name: N,
         value: V,
@@ -22,7 +22,7 @@ pub trait DataTypeParser {
 
 impl<T> DataTypeParser for Field<T>
 where
-    T: Maker<ArcStr>,
+    T: Maker<FValueStr>,
     T: Maker<i64>,
     T: Maker<f64>,
     T: Maker<IpAddr>,
@@ -30,7 +30,7 @@ where
     T: Maker<DateTimeValue>,
     T: Maker<Value>,
 {
-    fn from_str<N: Into<FNameStr>, V: Into<ArcStr> + Display>(
+    fn from_str<N: Into<FNameStr>, V: Into<FValueStr> + Display>(
         meta: DataType,
         name: N,
         value: V,
@@ -63,7 +63,7 @@ where
                 Ok(Field::<T>::from_bool(name.into(), value))
             }
             DataType::Time => {
-                let code: ArcStr = value.into().clone();
+                let code: FValueStr = value.into().clone();
                 Ok(Field::<T>::from_time(
                     name.into(),
                     parse_time(&mut code.as_str())

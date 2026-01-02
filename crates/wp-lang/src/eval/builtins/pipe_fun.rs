@@ -58,7 +58,7 @@ impl FieldPipe for TargetCharsHas {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Chars(value) = item.get_value()
-            && value == &self.value
+            && value.as_str() == self.value.as_str()
         {
             return Ok(());
         }
@@ -76,7 +76,7 @@ impl FieldPipe for CharsHas {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Chars(value) = item.get_value()
-            && value == &self.value
+            && value.as_str() == self.value.as_str()
         {
             return Ok(());
         }
@@ -92,7 +92,7 @@ impl FieldPipe for TargetCharsNotHas {
             None => Ok(()),
             Some(item) => {
                 if let Value::Chars(value) = item.get_value()
-                    && value != &self.value
+                    && value.as_str() != self.value.as_str()
                 {
                     return Ok(());
                 }
@@ -114,7 +114,7 @@ impl FieldPipe for CharsNotHas {
             None => Ok(()),
             Some(item) => {
                 if let Value::Chars(value) = item.get_value()
-                    && value != &self.value
+                    && value.as_str() != self.value.as_str()
                 {
                     return Ok(());
                 }
@@ -130,7 +130,7 @@ impl FieldPipe for TargetCharsIn {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Chars(value) = item.get_value()
-            && self.value.contains(value)
+            && self.value.iter().any(|v| v.as_str() == value.as_str())
         {
             return Ok(());
         }
@@ -148,7 +148,7 @@ impl FieldPipe for CharsIn {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Chars(value) = item.get_value()
-            && self.value.contains(value)
+            && self.value.iter().any(|v| v.as_str() == value.as_str())
         {
             return Ok(());
         }
@@ -162,7 +162,7 @@ impl FieldPipe for TargetDigitHas {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Digit(value) = item.get_value()
-            && value == &self.value
+            && *value == self.value
         {
             return Ok(());
         }
@@ -180,7 +180,7 @@ impl FieldPipe for DigitHas {
     fn process(&self, field: Option<&mut DataField>) -> WResult<()> {
         if let Some(item) = field
             && let Value::Digit(value) = item.get_value()
-            && value == &self.value
+            && *value == self.value
         {
             return Ok(());
         }

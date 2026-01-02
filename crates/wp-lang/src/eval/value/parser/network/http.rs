@@ -5,7 +5,7 @@ use crate::derive_base_prs;
 use crate::eval::runtime::field::FieldEvalUnit;
 use crate::eval::value::parse_def::*;
 use crate::parser::utils::take_to_end;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use winnow::ascii::multispace1;
 use winnow::combinator::terminated;
 use winnow::error::ErrMode;
@@ -48,8 +48,8 @@ impl PatternParser for MethodP {
         f_conf: &WplField,
         _g_conf: Option<&FieldGenConf>,
     ) -> AnyResult<DataField> {
-        use arcstr::ArcStr;
-        Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from("GET")))
+        use smol_str::SmolStr;
+        Ok(DataField::from_chars(f_conf.safe_name(), SmolStr::from("GET")))
     }
 }
 
@@ -97,7 +97,7 @@ impl PatternParser for RequestP {
         out.push(DataField::new_opt(
             DataType::HttpRequest,
             Some(name),
-            Value::Chars(ArcStr::from(req)),
+            Value::Chars(SmolStr::from(req)),
         ));
         Ok(())
     }
@@ -108,9 +108,9 @@ impl PatternParser for RequestP {
         f_conf: &WplField,
         _g_conf: Option<&FieldGenConf>,
     ) -> AnyResult<DataField> {
-        use arcstr::ArcStr;
+        use smol_str::SmolStr;
         let data = "GET /index  HTTP/1.1 ";
-        Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from(data)))
+        Ok(DataField::from_chars(f_conf.safe_name(), SmolStr::from(data)))
     }
 }
 
@@ -188,7 +188,7 @@ impl PatternParser for AgentP {
         out.push(DataField::new_opt(
             DataType::HttpAgent,
             Some(name),
-            Value::Chars(ArcStr::from(agent)),
+            Value::Chars(SmolStr::from(agent)),
         ));
         Ok(())
     }
@@ -199,9 +199,9 @@ impl PatternParser for AgentP {
         f_conf: &WplField,
         _g_conf: Option<&FieldGenConf>,
     ) -> AnyResult<DataField> {
-        use arcstr::ArcStr;
+        use smol_str::SmolStr;
         let agent = r#"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"#;
-        Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from(agent)))
+        Ok(DataField::from_chars(f_conf.safe_name(), SmolStr::from(agent)))
     }
 }
 

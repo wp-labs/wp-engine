@@ -10,6 +10,7 @@ wildmatch = { workspace = true }
 ipnet = { workspace = true }
 chrono = { workspace = true }
 arcstr = { workspace = true }
+smol_str = { workspace = true }
 
 
 [features]

@@ -377,7 +377,7 @@ impl ConnectionManager {
         // Build source event with zero-copy payload
         let mut event = SourceEvent::new(
             next_event_id(),
-            Arc::new(key.to_string()),
+            key,
             wp_parse_api::RawData::from_arc_bytes(payload_arc),
             Arc::new(base_stags),
         );

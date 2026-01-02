@@ -2,7 +2,7 @@ use wp_model_core::model::FNameStr;
 use super::super::prelude::*;
 use crate::ast::WplSep;
 use crate::eval::runtime::field::FieldEvalUnit;
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 // 使用 String 动态拼接路径，避免固定容量 ArrayString 在深层或长 key 时 panic
 use serde_json::{Map, Value};
 use wp_model_core::model::types::value::ObjectValue;
@@ -233,7 +233,7 @@ impl JsonProc {
                             // 超范围：保留精确性，降级为字符串
                             out.push(DataField::from_chars(
                                 run_key,
-                                ArcStr::from(num.to_string()),
+                                SmolStr::from(num.to_string()),
                             ));
                         }
                     }
@@ -241,7 +241,7 @@ impl JsonProc {
                     // 兜底：未知数值类型，按字符串保留
                     out.push(DataField::from_chars(
                         run_key,
-                        ArcStr::from(num.to_string()),
+                        SmolStr::from(num.to_string()),
                     ));
                 }
             }

@@ -2,7 +2,6 @@ use wp_model_core::model::FNameStr;
 use super::super::prelude::*;
 use std::fmt::Write;
 
-use arcstr::ArcStr;
 use winnow::stream::AsChar;
 use winnow::token::take_while;
 use wp_model_core::model::DataField;
@@ -30,7 +29,7 @@ impl PatternParser for SnP {
         out: &mut Vec<DataField>,
     ) -> ModalResult<()> {
         let sn = take_while(1.., (AsChar::is_alpha, AsChar::is_dec_digit, '-')).parse_next(data)?;
-        out.push(DataField::new(DataType::SN, name, ArcStr::from(sn)));
+        out.push(DataField::new(DataType::SN, name, sn));
         Ok(())
     }
 
@@ -46,7 +45,7 @@ impl PatternParser for SnP {
         let fro = gen_chars(gnc, 4, true);
         let mut buf = String::new();
         write!(buf, "{}-{}-{}-{}", one, two, thr, fro,).expect("write sn error");
-        Ok(DataField::from_chars(f_conf.safe_name(), ArcStr::from(buf)))
+        Ok(DataField::from_chars(f_conf.safe_name(), buf))
     }
 }
 

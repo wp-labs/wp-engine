@@ -301,7 +301,7 @@ impl TcpSyslogSource {
 
         let mut event = SourceEvent::new(
             next_event_id(),
-            Arc::new(self.key.clone()),
+            &self.key,
             payload,
             Arc::new(stags),
         );
@@ -541,7 +541,7 @@ mod tests {
 
         let mut pre_event = SourceEvent::new(
             next_event_id(),
-            Arc::new("syslog".to_string()),
+            "syslog",
             RawData::String("<13>Oct 11 22:14:15 host app: body".into()),
             Arc::new(Tags::new()),
         );
@@ -579,7 +579,7 @@ mod tests {
 
         let mut pre_event = SourceEvent::new(
             next_event_id(),
-            Arc::new("syslog".to_string()),
+            "syslog",
             RawData::String("<34>Oct 11 22:14:15 mymachine app: hello world".into()),
             Arc::new(Tags::new()),
         );
@@ -624,7 +624,7 @@ mod tests {
 
         let mut pre_event = SourceEvent::new(
             next_event_id(),
-            Arc::new("syslog".to_string()),
+            "syslog",
             RawData::String(String::from_utf8(encoded.to_vec()).unwrap()),
             Arc::new(Tags::new()),
         );
@@ -672,7 +672,7 @@ mod tests {
 
         let mut pre_event = SourceEvent::new(
             next_event_id(),
-            Arc::new("syslog".to_string()),
+            "syslog",
             RawData::String("<14>1 2024-10-05T12:34:56Z host app 123 - - hello world".into()),
             Arc::new(Tags::new()),
         );

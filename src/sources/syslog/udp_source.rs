@@ -194,7 +194,7 @@ impl UdpSyslogSource {
 
                     let mut frame = SourceEvent::new(
                         next_event_id(),
-                        Arc::new(self.key.clone()),
+                        &self.key,
                         RawData::Bytes(Bytes::copy_from_slice(event.message_bytes())),
                         Arc::new(stags),
                     );
@@ -298,7 +298,7 @@ impl DataSource for UdpSyslogSource {
 
                 let mut frame = SourceEvent::new(
                     next_event_id(),
-                    Arc::new(self.key.clone()),
+                    &self.key,
                     RawData::Bytes(Bytes::copy_from_slice(event.message_bytes())),
                     Arc::new(stags),
                 );

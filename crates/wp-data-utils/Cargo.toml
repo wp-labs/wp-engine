@@ -11,6 +11,7 @@ orion-error = { workspace = true }
 orion_exp = { path = "../orion_exp" }
 serde = { workspace = true }
 arcstr = { workspace = true }
+smol_str = { workspace = true }
 serde_json = { workspace = true }
 serde_derive = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }

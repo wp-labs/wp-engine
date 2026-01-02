@@ -107,7 +107,7 @@ impl FileSource {
     fn make_event(&self, payload: RawData) -> SourceEvent {
         SourceEvent::new(
             next_event_id(),
-            Arc::new(self.key.clone()),
+            &self.key,
             payload,
             Arc::new(self.base_tags.clone()),
         )

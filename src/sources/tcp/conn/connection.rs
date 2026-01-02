@@ -340,7 +340,7 @@ impl BatchBuilder {
     fn build_event(&self, payload: Bytes, peer_ip: IpAddr) -> SourceEvent {
         let mut event = SourceEvent::new(
             next_event_id(),
-            Arc::new(self.source_key.clone()),
+            &self.source_key,
             RawData::Bytes(payload),
             Arc::new(self.base_tags.clone()),
         );
@@ -606,13 +606,13 @@ mod tests {
     #[test]
     fn test_event_payload_len() {
         let id = next_event_id();
-        let source_key = Arc::new("test".to_string());
+        let source_key = "test";
         let tags = Arc::new(Tags::new());
 
         // Test String payload
         let event_str = SourceEvent::new(
             id,
-            source_key.clone(),
+            source_key,
             RawData::String("hello world".to_string()),
             tags.clone(),
         );
@@ -621,7 +621,7 @@ mod tests {
         // Test Bytes payload
         let event_bytes = SourceEvent::new(
             id,
-            source_key.clone(),
+            source_key,
             RawData::Bytes(vec![0u8; 42].into()),
             tags.clone(),
         );

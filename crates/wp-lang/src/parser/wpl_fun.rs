@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 
-use arcstr::ArcStr;
+use smol_str::SmolStr;
 use winnow::{
     Parser,
     ascii::{digit1, multispace0},
@@ -58,7 +58,7 @@ pub fn wpl_fun(input: &mut &str) -> WResult<WplFun> {
 }
 
 impl Fun2Builder for TargetDigitHas {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
     type ARG2 = i64;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -85,7 +85,7 @@ impl Fun2Builder for TargetDigitHas {
 }
 
 impl Fun1Builder for CharsHas {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -103,7 +103,7 @@ impl Fun1Builder for CharsHas {
 }
 
 impl Fun1Builder for CharsNotHasArg {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -197,8 +197,8 @@ impl Fun0Builder for HasArg {
     }
 }
 impl Fun2Builder for TargetCharsHas {
-    type ARG1 = ArcStr;
-    type ARG2 = ArcStr;
+    type ARG1 = SmolStr;
+    type ARG2 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -223,8 +223,8 @@ impl Fun2Builder for TargetCharsHas {
 }
 
 impl Fun2Builder for TargetCharsNotHas {
-    type ARG1 = ArcStr;
-    type ARG2 = ArcStr;
+    type ARG1 = SmolStr;
+    type ARG2 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -255,7 +255,7 @@ impl ParseNext<CharsValue> for CharsValue {
     }
 }
 impl Fun2Builder for TargetCharsIn {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
     type ARG2 = Vec<CharsValue>;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -272,7 +272,7 @@ impl Fun2Builder for TargetCharsIn {
     }
 
     fn build(args: (Self::ARG1, Self::ARG2)) -> Self {
-        let value: Vec<ArcStr> = args.1.iter().map(|i| i.0.clone()).collect();
+        let value: Vec<SmolStr> = args.1.iter().map(|i| i.0.clone()).collect();
         Self {
             target: normalize_target(args.0),
             value,
@@ -281,7 +281,7 @@ impl Fun2Builder for TargetCharsIn {
 }
 
 impl Fun2Builder for TargetDigitIn {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
     type ARG2 = Vec<i64>;
 
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
@@ -304,7 +304,7 @@ impl Fun2Builder for TargetDigitIn {
     }
 }
 impl Fun1Builder for TargetHas {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;
@@ -324,7 +324,7 @@ impl Fun1Builder for TargetHas {
 }
 
 impl Fun2Builder for TargetIpIn {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
     type ARG2 = Vec<IpAddr>;
 
     fn args2(data: &mut &str) -> WResult<Self::ARG2> {
@@ -372,7 +372,7 @@ impl Fun0Builder for Base64Decode {
 }
 
 impl Fun1Builder for TakeField {
-    type ARG1 = ArcStr;
+    type ARG1 = SmolStr;
 
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
         multispace0.parse_next(data)?;

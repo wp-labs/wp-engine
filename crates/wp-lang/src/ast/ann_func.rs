@@ -134,7 +134,7 @@ mod tests {
         let mut data = DataRecord::test_value();
         let src = SourceEvent::new(
             1,
-            DEFAULT_KEY.to_string().into(),
+            DEFAULT_KEY.to_string(),
             RawData::String("test".to_string()),
             Tags::new().into(),
         );
@@ -155,7 +155,7 @@ mod tests {
         let mut data = DataRecord::test_value();
         let src = SourceEvent::new(
             1,
-            DEFAULT_KEY.to_string().into(),
+            DEFAULT_KEY.to_string(),
             RawData::String("test".to_string()),
             Tags::new().into(),
         );
