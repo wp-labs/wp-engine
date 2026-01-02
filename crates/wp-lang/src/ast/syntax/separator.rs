@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
+use smol_str::SmolStr;
+
 use crate::parser::utils::take_to_end;
 use winnow::ascii::multispace0;
 use winnow::combinator::preceded;
@@ -13,7 +15,7 @@ use wp_parser::Parser;
 #[derive(Debug)]
 pub struct CharSep {
     sep_char: char,
-    sep_str: String,
+    sep_str: SmolStr,
 }
 
 impl CharSep {
@@ -21,7 +23,7 @@ impl CharSep {
     pub fn new(sep_char: char) -> Self {
         Self {
             sep_char,
-            sep_str: sep_char.to_string(),
+            sep_str: SmolStr::from(sep_char.to_string()),
         }
     }
 }
@@ -49,12 +51,12 @@ impl Separator for CharSep {
 
 #[derive(Debug)]
 pub struct StrSep {
-    sep_str: String,
+    sep_str: SmolStr,
 }
 
 impl StrSep {
     #[allow(dead_code)]
-    pub fn new<S: Into<String>>(sep_str: S) -> Self {
+    pub fn new<S: Into<SmolStr>>(sep_str: S) -> Self {
         let sep_str = sep_str.into();
         assert!(!sep_str.is_empty());
         Self { sep_str }

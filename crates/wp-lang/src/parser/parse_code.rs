@@ -64,6 +64,7 @@ fn wpl_codes(input: &mut &str) -> ModalResult<Vec<WPLPackage>> {
 
 #[cfg(test)]
 mod tests {
+    use smol_str::SmolStr;
     use winnow::LocatingSlice;
 
     use super::*;
@@ -234,33 +235,33 @@ mod tests {
     fn test_pip_proc() {
         assert_eq!(
             pip_proc.parse_peek("|decode/base64|"),
-            Ok(("", vec!["decode/base64".to_string()]))
+            Ok(("", vec![SmolStr::from("decode/base64")]))
         );
 
         assert_eq!(
             pip_proc.parse_peek("|decode/hex|"),
-            Ok(("", vec!["decode/hex".to_string()]))
+            Ok(("", vec![SmolStr::from("decode/hex")]))
         );
 
         assert_eq!(
             pip_proc.parse_peek("|unquote/unescape|"),
-            Ok(("", vec!["unquote/unescape".to_string()]))
+            Ok(("", vec![SmolStr::from("unquote/unescape")]))
         );
         assert_eq!(
             pip_proc.parse_peek("|decode/base64|zip|"),
-            Ok(("", vec!["decode/base64".to_string(), "zip".to_string()]))
+            Ok(("", vec![SmolStr::from("decode/base64"), SmolStr::from("zip")]))
         );
         assert_eq!(
             pip_proc.parse_peek("|decode/base64|zip |"),
-            Ok(("", vec!["decode/base64".to_string(), "zip".to_string()]))
+            Ok(("", vec![SmolStr::from("decode/base64"), SmolStr::from("zip")]))
         );
         assert_eq!(
             pip_proc.parse_peek("|   base64  |zip |"),
-            Ok(("", vec!["base64".to_string(), "zip".to_string()]))
+            Ok(("", vec![SmolStr::from("base64"), SmolStr::from("zip")]))
         );
         assert_eq!(
             pip_proc.parse_peek("|   base      |"),
-            Ok(("", vec!["base".to_string()]))
+            Ok(("", vec![SmolStr::from("base")]))
         );
         assert_eq!(
             pip_proc

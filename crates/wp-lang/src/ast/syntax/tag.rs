@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 
+use smol_str::SmolStr;
 use winnow::stream::Accumulate;
 
 use crate::ast::WplTag;
@@ -41,7 +42,7 @@ impl AnnFun {
     pub fn export_tags(&self) -> Vec<WplTag> {
         let mut tags = Vec::new();
         for (k, v) in &self.tags {
-            tags.push(WplTag::new(k.clone(), v.clone()))
+            tags.push(WplTag::new(SmolStr::from(k.as_str()), SmolStr::from(v.as_str())))
         }
         tags
     }

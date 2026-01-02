@@ -1,6 +1,7 @@
 use super::wpl_anno::ann_fun;
 use crate::ast::{WplPackage, WplRule};
 use crate::parser::{MergeTags, utils, wpl_rule};
+use smol_str::SmolStr;
 use winnow::ascii::{multispace0, multispace1};
 use winnow::combinator::{alt, cut_err, delimited, opt, repeat};
 use winnow::error::{ContextError, StrContext};
@@ -59,7 +60,7 @@ pub fn wpl_package(input: &mut &str) -> WResult<WplPackage> {
         .context(ctx_label("wpl keyword"))
         .context(ctx_literal("package <name> "))
         .context(ctx_desc("<<< package <pkg_name> {...}"))
-        .map(|x| x.3.to_string())
+        .map(|x| SmolStr::from(x.3))
         .parse_next(input)?;
 
     let rules = delimited(

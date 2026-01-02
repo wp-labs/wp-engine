@@ -7,6 +7,7 @@ use std::{
 use contracts::debug_requires;
 use derive_getters::Getters;
 use orion_overload::new::New1;
+use smol_str::SmolStr;
 
 use crate::{
     ast::{
@@ -19,7 +20,7 @@ use crate::{
 
 #[derive(Default, Clone, Getters, Debug)]
 pub struct WplRule {
-    pub name: String,
+    pub name: SmolStr,
     pub statement: WplStatementType,
 }
 
@@ -82,7 +83,7 @@ impl WplStatementType {
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct WplExpress {
     // 管道预处理
-    pub pipe_process: Vec<String>,
+    pub pipe_process: Vec<SmolStr>,
     pub group: Vec<WplGroup>,
     pub tags: Option<AnnFun>,
 }
@@ -204,12 +205,12 @@ impl WplRule {
     #[debug_requires(! name.is_empty(), "lang rule name is empty")]
     pub fn new(name: String, rule: WplStatementType) -> Self {
         WplRule {
-            name,
+            name: SmolStr::from(name),
             statement: rule,
         }
     }
 
-    pub fn get_name(&self) -> &String {
+    pub fn get_name(&self) -> &SmolStr {
         &self.name
     }
     pub fn path(&self, pkg_name: &str) -> String {
@@ -237,11 +238,11 @@ impl MergeTags for VecDeque<WplRule> {
 fn test_lang_rule() {
     let rule = WplRule {
         statement: WplStatementType::Express(WplExpress {
-            pipe_process: vec!["decode/base64".to_string(), "zip".to_string()],
+            pipe_process: vec![SmolStr::from("decode/base64"), SmolStr::from("zip")],
             group: vec![],
             tags: None,
         }),
-        name: "hello".to_string(),
+        name: SmolStr::from("hello"),
     };
     assert_eq!(
         rule.to_string(),

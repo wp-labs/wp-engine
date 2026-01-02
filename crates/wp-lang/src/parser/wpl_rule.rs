@@ -2,6 +2,7 @@ use super::wpl_anno::ann_fun;
 use crate::ast::{WplField, WplRule, WplStatementType};
 use crate::parser::wpl_field::wpl_field;
 use crate::parser::{parse_code, utils};
+use smol_str::SmolStr;
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, opt, repeat};
 use winnow::error::StrContext;
@@ -15,12 +16,12 @@ use wp_parser::symbol::{ctx_desc, ctx_label, ctx_literal};
 /// | base64|
 /// |base64|quote|
 /// | hex |
-fn take_plg_pipe_step(input: &mut &str) -> wp_parser::WResult<String> {
+fn take_plg_pipe_step(input: &mut &str) -> wp_parser::WResult<SmolStr> {
     (
         literal("plg_pipe"),
         multispace0,
         alt((
-            (literal('/'), multispace0, utils::take_key).map(|x| format!("plg_pipe/{}", x.2)),
+            (literal('/'), multispace0, utils::take_key).map(|x| SmolStr::from(format!("plg_pipe/{}", x.2))),
             (
                 literal('('),
                 multispace0,
@@ -28,14 +29,14 @@ fn take_plg_pipe_step(input: &mut &str) -> wp_parser::WResult<String> {
                 multispace0,
                 literal(')'),
             )
-                .map(|x| format!("plg_pipe/{}", x.2)),
+                .map(|x| SmolStr::from(format!("plg_pipe/{}", x.2))),
         )),
     )
         .map(|x| x.2)
         .parse_next(input)
 }
 
-pub fn pip_proc(input: &mut &str) -> wp_parser::WResult<Vec<String>> {
+pub fn pip_proc(input: &mut &str) -> wp_parser::WResult<Vec<SmolStr>> {
     let x: Vec<_> = repeat(
         1..,
         (
@@ -45,7 +46,7 @@ pub fn pip_proc(input: &mut &str) -> wp_parser::WResult<Vec<String>> {
                 take_plg_pipe_step.context(StrContext::Label("expect plg_pipe/<name>")),
                 utils::take_key
                     .context(StrContext::Label("expect [a-z],[A-Z],[/],[_]"))
-                    .map(|s| s.to_string()),
+                    .map(|s| SmolStr::from(s)),
             )),
             multispace0,
         )

@@ -1,5 +1,6 @@
 use crate::parser::error::{WPLCodeErrorTrait, WplCodeError};
 use derive_getters::Getters;
+use smol_str::SmolStr;
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
@@ -14,7 +15,7 @@ use super::AnnFun;
 
 #[derive(Default, Clone, Getters, Debug)]
 pub struct WplPackage {
-    pub name: String,
+    pub name: SmolStr,
     pub rules: VecDeque<WplRule>,
     pub tags: Option<AnnFun>,
 }
@@ -35,7 +36,7 @@ impl WplPackage {
 
 #[derive(Serialize, Deserialize)]
 pub struct WplPkgMeta {
-    pub name: String,
+    pub name: SmolStr,
     pub rules: Vec<WplRuleMeta>,
 }
 
@@ -94,7 +95,7 @@ impl MergeTags for WplPackage {
 }
 
 impl WplPackage {
-    pub fn new<S: Into<String>>(name: S, rules: Vec<WplRule>) -> Self {
+    pub fn new<S: Into<SmolStr>>(name: S, rules: Vec<WplRule>) -> Self {
         let name = name.into();
         debug_assert!(!name.is_empty());
 

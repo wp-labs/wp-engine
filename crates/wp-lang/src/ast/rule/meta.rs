@@ -1,10 +1,11 @@
 use crate::{WplRule, WplStatementType, ast::AnnFun};
 use derive_getters::Getters;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use smol_str::SmolStr;
 
 #[derive(Serialize, Deserialize)]
 pub struct WplRuleMeta {
-    pub name: String,
+    pub name: SmolStr,
     pub tags: Vec<WplTag>,
 }
 
@@ -27,7 +28,7 @@ impl WplRuleMeta {
     fn export_tags(tags: &mut Vec<WplTag>, x: &Option<AnnFun>) {
         if let Some(tag_obj) = x {
             for (k, v) in &tag_obj.tags {
-                tags.push(WplTag::new(k.clone(), v.clone()))
+                tags.push(WplTag::new(SmolStr::from(k.as_str()), SmolStr::from(v.as_str())))
             }
         }
     }
@@ -35,11 +36,11 @@ impl WplRuleMeta {
 
 #[derive(Default, Getters, Debug, Clone)]
 pub struct WplTag {
-    pub key: String,
-    pub val: String,
+    pub key: SmolStr,
+    pub val: SmolStr,
 }
 impl WplTag {
-    pub fn new(key: String, val: String) -> Self {
+    pub fn new(key: SmolStr, val: SmolStr) -> Self {
         Self { key, val }
     }
 }
@@ -62,8 +63,8 @@ impl<'de> Deserialize<'de> for WplTag {
         let parts: Vec<&str> = s.split(':').collect();
         if parts.len() == 2 {
             Ok(WplTag {
-                key: parts[0].to_string(),
-                val: parts[1].to_string(),
+                key: SmolStr::from(parts[0]),
+                val: SmolStr::from(parts[1]),
             })
         } else {
             Err(serde::de::Error::custom("Invalid format"))

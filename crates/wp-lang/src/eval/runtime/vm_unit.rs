@@ -274,6 +274,7 @@ impl StopWatch {
 
 #[cfg(test)]
 mod tests {
+    use smol_str::SmolStr;
     use crate::ast::fld_fmt::for_test::{fdc2, fdc2_1, fdc3, fdc4_1};
     use crate::ast::{WplField, WplFieldFmt};
     use crate::eval::builtins::raw_to_utf8_string;
@@ -467,7 +468,7 @@ mod tests {
         register_wpl_pipe!("plg_pipe/MOCK-STAGE", || Hold::new(MockStage));
 
         let mut expr = WplExpress::new(vec![fdc3("auto", " ", true)?]);
-        expr.pipe_process = vec!["plg_pipe/MOCK-STAGE".to_string()];
+        expr.pipe_process = vec![SmolStr::from("plg_pipe/MOCK-STAGE")];
 
         let evaluator = WplEvaluator::from(&expr, None)?;
         let results = evaluator.preorder_proc(RawData::from_string("data".to_string()))?;
