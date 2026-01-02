@@ -122,7 +122,7 @@ mod tests {
     fn build_event(payload: &str) -> SourceEvent {
         SourceEvent::new(
             gen_pkg_id(),
-            Arc::new("test-src".to_string()),
+            "test-src",
             RawData::String(payload.to_string()),
             Arc::new(Tags::new()),
         )
@@ -135,7 +135,7 @@ mod tests {
         }
         SourceEvent::new(
             gen_pkg_id(),
-            Arc::new("test-src".to_string()),
+            "test-src",
             RawData::String(payload.to_string()),
             Arc::new(tags),
         )

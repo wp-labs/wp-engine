@@ -112,7 +112,7 @@ mod tests {
         tags.set("tag", tag.to_string());
         SourceEvent::new(
             next_event_id(),
-            Arc::new(tag.to_string()),
+            tag,
             RawData::from_string(tag.to_string()),
             Arc::new(tags),
         )

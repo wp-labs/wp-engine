@@ -21,7 +21,7 @@ impl DataSource for MockDataSource {
             let st = Tags::new();
             Ok(vec![SourceEvent::new(
                 next_event_id(),
-                Arc::new(self.id.clone()),
+                &self.id,
                 RawData::from_string(format!("test data {}", self.data_count)),
                 Arc::new(st),
             )])

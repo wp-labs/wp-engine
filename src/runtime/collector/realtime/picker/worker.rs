@@ -321,7 +321,7 @@ mod tests {
     fn make_event(label: &str) -> SourceEvent {
         SourceEvent::new(
             next_event_id(),
-            std::sync::Arc::new(label.to_string()),
+            label,
             RawData::from_string(label.to_string()),
             std::sync::Arc::new(Tags::new()),
         )
