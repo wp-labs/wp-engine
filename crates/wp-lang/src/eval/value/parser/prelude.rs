@@ -7,7 +7,7 @@ pub use winnow::ascii::alphanumeric1;
 pub use winnow::ascii::multispace0;
 pub use winnow::combinator::fail;
 pub use winnow::combinator::{alt, delimited, opt, preceded};
-pub use winnow::error::{ErrMode, ParserError};
+pub use winnow::error::ErrMode;
 pub use winnow::stream::Stream;
 pub use winnow::token::literal;
 pub use wp_parser::WResult;
