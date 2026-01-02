@@ -105,6 +105,37 @@ fn realistic_scenario(c: &mut Criterion) {
             black_box(all_fields);
         });
     });
+
+    // SmolStr 实际场景测试
+    let field_names_smol: Vec<SmolStr> = vec![
+        "ip".into(), "time".into(), "method".into(), "path".into(),
+        "status".into(), "size".into(), "referrer".into(), "user_agent".into(),
+    ];
+
+    c.bench_function("实际场景 - SmolStr 预创建", |b| {
+        b.iter(|| {
+            let mut all_fields = Vec::new();
+            for _log in 0..1000 {
+                for name in &field_names_smol {
+                    all_fields.push(name.clone());  // 栈拷贝（≤22字节）
+                }
+            }
+            black_box(all_fields);
+        });
+    });
+
+    c.bench_function("实际场景 - SmolStr 每次创建", |b| {
+        b.iter(|| {
+            let mut all_fields = Vec::new();
+            for _log in 0..1000 {
+                for _ in 0..8 {
+                    let name: SmolStr = "ip".into();
+                    all_fields.push(name);
+                }
+            }
+            black_box(all_fields);
+        });
+    });
 }
 
 criterion_group!(
