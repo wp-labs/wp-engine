@@ -75,10 +75,6 @@ name = "nginx_10k"
 harness = false
 
 [[bench]]
-name = "string_comparison"
-harness = false
-
-[[bench]]
 name = "wpl_bench"
 harness = false
 
