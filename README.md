@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![CI](https://github.com/wp-labs/wp-engine/workflows/CI/badge.svg)
+[![CI](https://github.com/wp-labs/wp-engine/workflows/CI/badge.svg)](https://github.com/wp-labs/wp-engine/actions)
 [![codecov](https://codecov.io/gh/wp-labs/wp-engine/graph/badge.svg?token=6SVCXBHB6B)](https://codecov.io/gh/wp-labs/wp-engine)
 [![License](https://img.shields.io/badge/license-Elastic%20License%202.0-blue.svg)](LICENSE)
 
