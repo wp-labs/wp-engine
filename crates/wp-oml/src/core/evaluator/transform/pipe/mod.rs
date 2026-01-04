@@ -31,6 +31,7 @@ impl ValueProcessor for PipeFun {
             PipeFun::SxfGet(o) => o.value_cacu(in_val),
             PipeFun::PathGet(o) => o.value_cacu(in_val),
             PipeFun::UrlGet(o) => o.value_cacu(in_val),
+            PipeFun::KvGet(o) => o.value_cacu(in_val),
             PipeFun::Ip4ToInt(o) => o.value_cacu(in_val),
         }
     }
