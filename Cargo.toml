@@ -327,7 +327,7 @@ r2d2 = "~0.8"
 r2d2_sqlite = "0.25.0"
 
 # --- Web & Network ---
-url = "2.5.4"
+url = "2.5.8"
 mailchecker = "6.0.15"
 idcard = "0.3.0"
 phone = "0.1.2"
