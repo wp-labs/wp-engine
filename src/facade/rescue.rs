@@ -31,6 +31,8 @@ pub struct WpRescueApp {
 impl WpRescueApp {
     /// 从 CLI 参数构建应用上下文
     pub fn try_from(args: ParseArgs) -> Result<Self, wp_error::RunError> {
+        let mut args = args;
+        args.ensure_work_root_absolute()?;
         let (conf_manager, main_conf) = load_warp_engine_confs(args.work_root.as_str())?;
         let run_args = args.completion_from(&main_conf)?;
         let stat_reqs = stat_reqs_from(main_conf.stat_conf());

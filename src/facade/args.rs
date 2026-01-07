@@ -1,8 +1,11 @@
 use clap::{Args, Parser, Subcommand};
+use orion_conf::ToStructError;
+use orion_conf::UvsConfFrom;
+use std::{env, path::Path};
 use wpl::check_level_or_stop;
 
 //use crate::build::CLAP_LONG_VERSION;
-use wp_error::run_error::RunResult;
+use wp_error::run_error::{RunReason, RunResult};
 
 use orion_overload::conv::val_or;
 use wp_conf::RunArgs;
@@ -40,8 +43,8 @@ pub enum DvChk {
 pub struct DataArgs {
     #[clap(long, default_value = "true")]
     pub local: bool,
-    /// Work root directory (contains conf/ etc.)/工作根目录（包含 conf/ 等）；例如：--work_root=/app，conf=/app/conf
-    #[clap(short, long, default_value = ".")]
+    /// Work root directory (absolute); leave empty to use current dir/工作根目录（需使用绝对路径）；不传时默认当前目录
+    #[clap(short, long, default_value = "", hide_default_value = true)]
     pub work_root: String,
 }
 
@@ -57,8 +60,8 @@ pub enum DataCmd {
 #[derive(Parser, Debug, Default)]
 #[command(name = "parse")]
 pub struct ParseArgs {
-    /// Work root directory (contains conf/ etc.)/工作根目录（包含 conf/ 等）；例如：--work_root=/app，conf=/app/conf
-    #[clap(long, default_value = ".")]
+    /// Work root directory (absolute path); omit to use current dir/工作根目录（绝对路径）；省略则使用当前目录
+    #[clap(long, default_value = "", hide_default_value = true)]
     pub work_root: String,
     /// Execution mode: p=precise, else=automated/执行模式：p=精确，否则=自动
     #[clap(short, long, default_value = "p")]
@@ -95,6 +98,11 @@ pub struct ParseArgs {
 }
 
 impl ParseArgs {
+    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
+        self.work_root = resolve_cli_work_root(&self.work_root)?;
+        Ok(())
+    }
+
     pub fn completion_from(&self, conf: &EngineConfig) -> RunResult<RunArgs> {
         let (lev, stop) = check_level_or_stop(self.check_continue, self.check_stop);
         let robust = self.robust.clone().unwrap_or(conf.robust().clone());
@@ -141,8 +149,8 @@ impl Default for ConfCmd {
 
 #[derive(Args, Debug, Default)]
 pub struct ConfCmdArgs {
-    /// Work root directory (contains conf/ etc.)/工作根目录（包含 conf/ 等）；例如：--work_root=/app，conf=/app/conf
-    #[clap(short, long, default_value = ".")]
+    /// Work root directory (absolute path); omit to use current dir/工作根目录（绝对路径）；省略则使用当前目录
+    #[clap(short, long, default_value = "", hide_default_value = true)]
     pub work_root: String,
     /// Output logs to console (default false)/输出日志到控制台（默认否；false 时仅写文件）
     #[clap(long, default_value_t = false)]
@@ -153,4 +161,36 @@ pub struct ConfCmdArgs {
     /// wpgen: preset conf/wpgen.toml output.connect (generator-only)/wpgen：预置 conf/wpgen.toml 的 output.connect（仅生成器 CLI 使用）
     #[clap(long = "gen-connect")]
     pub gen_connect: Option<String>,
+}
+
+impl DataArgs {
+    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
+        self.work_root = resolve_cli_work_root(&self.work_root)?;
+        Ok(())
+    }
+}
+
+impl ConfCmdArgs {
+    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
+        self.work_root = resolve_cli_work_root(&self.work_root)?;
+        Ok(())
+    }
+}
+
+fn resolve_cli_work_root(raw: &str) -> RunResult<String> {
+    if raw.trim().is_empty() {
+        let cwd = env::current_dir().map_err(|err| {
+            RunReason::from_conf(format!("获取当前工作目录失败: {}", err)).to_err()
+        })?;
+        return Ok(cwd.to_string_lossy().to_string());
+    }
+    let path = Path::new(raw);
+    if !path.is_absolute() {
+        return RunReason::from_conf(format!(
+            "--work_root 必须为绝对路径（传入: '{}'）。可去掉该参数以默认当前目录",
+            raw
+        ))
+        .err_result();
+    }
+    Ok(path.to_string_lossy().to_string())
 }

@@ -14,7 +14,7 @@ impl WarpConf {
 
         let wp_conf = EngineConfig::load_or_init(self.work_root())
             .owe_conf()?
-            .conf_absolutize(self.work_root(), self.original_hint());
+            .conf_absolutize(self.work_root());
         let path = PathBuf::from(wp_conf.src_conf_of(WPSRC_TOML));
         let content = std::fs::read_to_string(&path).owe_conf().with(&path)?;
 

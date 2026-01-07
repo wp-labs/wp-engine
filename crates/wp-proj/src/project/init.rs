@@ -180,7 +180,7 @@ impl WarpProject {
         use std::fs;
 
         let work_root = work_root.as_ref();
-        let (abs_root, hint) = normalize_work_root(work_root);
+        let abs_root = normalize_work_root(work_root);
         let conf_dir = abs_root.join(CONF_DIR);
         if let Err(_) = fs::create_dir_all(&conf_dir) {
             eprintln!("Warning: Failed to create conf directory");
@@ -195,13 +195,13 @@ impl WarpProject {
         }
         let conf = EngineConfig::load_toml(&engine_config_path)
             .owe_conf()?
-            .conf_absolutize(&abs_root, hint.as_deref());
+            .conf_absolutize(&abs_root);
         Ok(conf)
     }
 
     fn load_engine_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<EngineConfig> {
         let work_root = work_root.as_ref();
-        let (abs_root, hint) = normalize_work_root(work_root);
+        let abs_root = normalize_work_root(work_root);
         let engine_config_path = abs_root.join(CONF_WPARSE_FILE);
         if !engine_config_path.exists() {
             return RunReason::from_conf(format!(
@@ -212,13 +212,13 @@ impl WarpProject {
         }
         let conf = EngineConfig::load_toml(&engine_config_path)
             .owe_conf()?
-            .conf_absolutize(&abs_root, hint.as_deref());
+            .conf_absolutize(&abs_root);
         Ok(conf)
     }
 
     fn load_wpgen_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
         let work_root = work_root.as_ref();
-        let (abs_root, _) = normalize_work_root(work_root);
+        let abs_root = normalize_work_root(work_root);
         let wpgen_config_path = abs_root.join(CONF_WPGEN_FILE);
         if !wpgen_config_path.exists() {
             return RunReason::from_conf(format!(

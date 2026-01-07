@@ -77,7 +77,7 @@ impl WarpConf {
         let wp_conf = EngineConfig::load_or_init(self.work_root())
             .owe_res()
             .with("load_or_init")?
-            .conf_absolutize(self.work_root(), self.original_hint());
+            .conf_absolutize(self.work_root());
         let configured_root = wp_conf.sinks_root().to_string();
         let configured_path = Path::new(&configured_root);
         let resolved_root = if configured_path.is_absolute() {

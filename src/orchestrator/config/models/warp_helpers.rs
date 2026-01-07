@@ -23,7 +23,7 @@ pub fn load_warp_engine_confs(work_root: &str) -> RunResult<(WarpConf, EngineCon
     };
     let main_conf = EngineConfig::load(&abs_root)
         .err_conv()?
-        .conf_absolutize(&abs_root, conf_manager.original_hint());
+        .conf_absolutize(&abs_root);
     Ok((conf_manager, main_conf))
 }
 

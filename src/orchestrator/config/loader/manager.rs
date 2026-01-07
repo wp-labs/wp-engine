@@ -49,14 +49,6 @@ impl WarpConf {
         self.work_root().join("conf")
     }
 
-    pub(crate) fn original_hint(&self) -> Option<&Path> {
-        if self.original_root.is_relative() {
-            Some(self.original_root.as_path())
-        } else {
-            None
-        }
-    }
-
     /// 清理工作目录及其所有配置文件
     pub fn clear_work_directory(&self) {
         let work_root = self.work_root();
@@ -111,14 +103,14 @@ impl WarpConf {
         let conf = EngineConfig::load_toml(&path)
             .owe_res()
             .with(&path)?
-            .conf_absolutize(self.work_root(), self.original_hint());
+            .conf_absolutize(self.work_root());
         Ok(conf)
     }
 
     /// 清理工作目录中的配置文件
     pub fn cleanup_work_directory(&self) -> AnyResult<()> {
-        let wp_conf = EngineConfig::load_or_init(self.work_root())?
-            .conf_absolutize(self.work_root(), self.original_hint());
+        let wp_conf =
+            EngineConfig::load_or_init(self.work_root())?.conf_absolutize(self.work_root());
         backup_clean(self.config_path_string(ENGINE_CONF_FILE))?;
         backup_clean(wp_conf.src_conf_of(WPSRC_TOML))?;
         // PUBLIC_ADM 废弃：不再清理 public.oml

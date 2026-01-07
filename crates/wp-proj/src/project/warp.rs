@@ -47,12 +47,12 @@ pub struct WarpProject {
 
 impl WarpProject {
     fn build(work_root: &Path) -> Self {
-        let (abs_root, hint) = normalize_work_root(work_root);
+        let abs_root = normalize_work_root(work_root);
         let paths = ProjectPaths::from_root(&abs_root);
         let eng_conf = Arc::new(
             EngineConfig::load_or_init(&abs_root)
                 .expect("load engine config")
-                .conf_absolutize(&abs_root, hint.as_deref()),
+                .conf_absolutize(&abs_root),
         );
         let connectors = Connectors::new(paths.connectors.clone());
         let sinks_c = Sinks::new(&abs_root, eng_conf.clone());
@@ -172,12 +172,12 @@ impl WarpProject {
     }
 }
 
-pub(crate) fn normalize_work_root(work_root: &Path) -> (PathBuf, Option<PathBuf>) {
+pub(crate) fn normalize_work_root(work_root: &Path) -> PathBuf {
     if work_root.is_absolute() {
-        (work_root.to_path_buf(), None)
+        work_root.to_path_buf()
     } else {
         let rel = work_root.to_path_buf();
         let base = env::current_dir().unwrap_or_else(|err| panic!("获取当前工作目录失败: {}", err));
-        (base.join(&rel), Some(rel))
+        base.join(&rel)
     }
 }
