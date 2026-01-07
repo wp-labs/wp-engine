@@ -5,4 +5,4 @@ name = "default"
 [[sink_group.sinks]]
 name = "default"
 use = "file_raw_sink"
-params = { base = "./tests/instance/out", file = "default.dat" }
+params = { base = "./out", file = "default.dat" }

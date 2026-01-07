@@ -6,4 +6,4 @@ match = { oml = [], rule = [] }
 [[sink_group.sinks]]
 name = "mon"
 use = "file_raw_sink"
-params = { base = "./tests/instance/out", file = "monitor.dat" }
+params = { base = "./out", file = "monitor.dat" }

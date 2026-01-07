@@ -1,12 +1,12 @@
 version = "1.0"
 [models]
-wpl = "./tests/instance/wpl"
-oml = "./tests/instance/oml"
+wpl = "./wpl"
+oml = "./oml"
 [topology]
-sources = "./tests/instance/topology/sources"
-sinks = "./tests/instance/topology/sinks"
+sources = "./topology/sources"
+sinks = "./topology/sinks"
 [rescue]
-path = "./tests/instance/rescue"
+path = "./rescue"
 parallel = 2
 speed_limit = 10000
 robust = "normal"

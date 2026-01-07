@@ -3,5 +3,5 @@ id = "file_raw_sink"
 type = "file"
 allow_override = ["base","file"]
 [connectors.params]
-base = "./tests/instance/out"
-file = "./tests/instance/out/default.dat"
+base = "./out"
+file = "default.dat"

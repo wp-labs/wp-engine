@@ -5,4 +5,4 @@ name = "error"
 [[sink_group.sinks]]
 name = "error"
 use = "file_raw_sink"
-params = { base = "./tests/instance/out", file = "error.dat" }
+params = { base = "./out", file = "error.dat" }

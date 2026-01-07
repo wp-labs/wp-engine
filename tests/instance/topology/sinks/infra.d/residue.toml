@@ -5,4 +5,4 @@ name = "residue"
 [[sink_group.sinks]]
 name = "residue"
 use = "file_raw_sink"
-params = { base = "./tests/instance/out", file = "residue.dat" }
+params = { base = "./out", file = "residue.dat" }
