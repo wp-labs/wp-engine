@@ -12,12 +12,14 @@ impl WarpConf {
     pub fn load_source_config(&self) -> RunResult<Vec<SourceConfig>> {
         use crate::sources::config::SourceConfigParser;
 
-        let wp_conf = EngineConfig::load_or_init(&self.work_root).owe_conf()?;
+        let wp_conf = EngineConfig::load_or_init(self.work_root())
+            .owe_conf()?
+            .conf_absolutize(self.work_root(), self.original_hint());
         let path = PathBuf::from(wp_conf.src_conf_of(WPSRC_TOML));
         let content = std::fs::read_to_string(&path).owe_conf().with(&path)?;
 
         // 仅支持统一 [[sources]] 配置；不再回退旧格式
-        let parser = SourceConfigParser::new(self.work_root.clone());
+        let parser = SourceConfigParser::new(self.work_root().to_path_buf());
         let specs = parser.parse_and_validate_only(&content).map_err(|e| {
             use orion_error::{ToStructError, UvsConfFrom};
             wp_error::run_error::RunReason::from_conf(format!(

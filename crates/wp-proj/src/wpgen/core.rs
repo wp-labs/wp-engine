@@ -31,6 +31,7 @@ pub fn log_resolved_out_sink(wgr: &WpGenResolved) {
 /// 初始化 wpgen 配置（conf/wpgen.toml），纯函数：不打印、不初始化日志
 pub fn gen_conf_init<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
     use wp_engine::facade::config::{WPGEN_TOML, WarpConf, WpGenConfig};
+    let work_root = work_root.as_ref();
     let god = WarpConf::new(work_root);
     god.create_config_delegate::<WpGenConfig>(WPGEN_TOML)
         .init()?;
@@ -40,6 +41,7 @@ pub fn gen_conf_init<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
 /// 清理 wpgen 配置（conf/wpgen.toml 及相关生成物，遵循 safe_clean），纯函数：不打印
 pub fn gen_conf_clean<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
     use wp_engine::facade::config::{WPGEN_TOML, WarpConf, WpGenConfig};
+    let work_root = work_root.as_ref();
     let god = WarpConf::new(work_root);
     god.create_config_delegate::<WpGenConfig>(WPGEN_TOML)
         .safe_clean()
@@ -48,6 +50,7 @@ pub fn gen_conf_clean<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
 /// 检查 wpgen 配置是否存在且可解析
 pub fn gen_conf_check<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
     use wp_engine::facade::config::{WPGEN_TOML, WarpConf};
+    let work_root = work_root.as_ref();
     let god = WarpConf::new(work_root);
     let _ = load_wpgen_resolved(WPGEN_TOML, &god)?;
     Ok(())

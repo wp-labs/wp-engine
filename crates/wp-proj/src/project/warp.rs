@@ -1,5 +1,8 @@
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::{
+    env,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use super::{Connectors, Oml, ProjectPaths, Sinks, Sources, Wpl, init::PrjScope};
 use crate::{
@@ -44,16 +47,21 @@ pub struct WarpProject {
 
 impl WarpProject {
     fn build(work_root: &Path) -> Self {
-        let paths = ProjectPaths::from_root(work_root);
-        let eng_conf = Arc::new(EngineConfig::load_or_init(work_root).expect("load engine config"));
+        let (abs_root, hint) = normalize_work_root(work_root);
+        let paths = ProjectPaths::from_root(&abs_root);
+        let eng_conf = Arc::new(
+            EngineConfig::load_or_init(&abs_root)
+                .expect("load engine config")
+                .conf_absolutize(&abs_root, hint.as_deref()),
+        );
         let connectors = Connectors::new(paths.connectors.clone());
-        let sinks_c = Sinks::new(work_root, eng_conf.clone());
-        let sources_c = Sources::new(work_root, eng_conf.clone());
-        let wpl = Wpl::new(work_root, eng_conf.clone());
-        let oml = Oml::new(work_root, eng_conf.clone());
+        let sinks_c = Sinks::new(&abs_root, eng_conf.clone());
+        let sources_c = Sources::new(&abs_root, eng_conf.clone());
+        let wpl = Wpl::new(&abs_root, eng_conf.clone());
+        let oml = Oml::new(&abs_root, eng_conf.clone());
         let knowledge = Knowledge::new();
-        let wparse_manager = WParseManager::new(work_root);
-        let wpgen_manager = WpGenManager::new(work_root);
+        let wparse_manager = WParseManager::new(&abs_root);
+        let wpgen_manager = WpGenManager::new(&abs_root);
 
         Self {
             paths,
@@ -161,5 +169,15 @@ impl WarpProject {
         }
 
         Ok(())
+    }
+}
+
+pub(crate) fn normalize_work_root(work_root: &Path) -> (PathBuf, Option<PathBuf>) {
+    if work_root.is_absolute() {
+        (work_root.to_path_buf(), None)
+    } else {
+        let rel = work_root.to_path_buf();
+        let base = env::current_dir().unwrap_or_else(|err| panic!("获取当前工作目录失败: {}", err));
+        (base.join(&rel), Some(rel))
     }
 }

@@ -1,6 +1,9 @@
 use orion_conf::{ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
 use serde_derive::{Deserialize, Serialize};
-use std::{fs::create_dir_all, path::Path};
+use std::{
+    fs::create_dir_all,
+    path::{Component, Path, PathBuf},
+};
 use wp_error::error_handling::RobustnessMode;
 use wp_log::conf::LogConf;
 
@@ -255,6 +258,18 @@ impl EngineConfig {
         format!("{}/{}", self.src_root(), file_name)
     }
 
+    pub fn conf_absolutize<P: AsRef<Path>>(mut self, work_root: P, provided_root: Option<&Path>) -> Self {
+        let work_root = work_root.as_ref();
+        self.models.wpl = resolve_engine_path(self.models.wpl.as_str(), work_root, provided_root);
+        self.models.oml = resolve_engine_path(self.models.oml.as_str(), work_root, provided_root);
+        self.topology.sources =
+            resolve_engine_path(self.topology.sources.as_str(), work_root, provided_root);
+        self.topology.sinks =
+            resolve_engine_path(self.topology.sinks.as_str(), work_root, provided_root);
+        self.rescue.path = resolve_engine_path(self.rescue.path.as_str(), work_root, provided_root);
+        self
+    }
+
     pub fn load_or_init<P: AsRef<Path>>(work_root: P) -> OrionConfResult<Self> {
         use crate::constants::ENGINE_CONF_FILE;
         let engine_conf_path = work_root.as_ref().join("conf").join(ENGINE_CONF_FILE);
@@ -295,4 +310,37 @@ impl EngineConfig {
         // This is a no-op since the rule_root is derived from wpl_root
         // The method is kept for compatibility
     }
+}
+
+fn resolve_engine_path(value: &str, work_root: &Path, provided_root: Option<&Path>) -> String {
+    let path = Path::new(value);
+    if path.is_absolute() {
+        return value.to_string();
+    }
+    if let Some(prefix) = provided_root {
+        if let Some(stripped) = strip_duplicate_prefix(path, prefix) {
+            return work_root.join(stripped).to_string_lossy().to_string();
+        }
+    }
+    work_root.join(path).to_string_lossy().to_string()
+}
+
+fn strip_duplicate_prefix(path: &Path, prefix: &Path) -> Option<PathBuf> {
+    let norm_path = normalize_relative_path(path);
+    let norm_prefix = normalize_relative_path(prefix);
+    norm_path
+        .strip_prefix(&norm_prefix)
+        .ok()
+        .map(|p| p.to_path_buf())
+}
+
+fn normalize_relative_path(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for comp in path.components() {
+        match comp {
+            Component::CurDir => continue,
+            _ => normalized.push(comp.as_os_str()),
+        }
+    }
+    normalized
 }

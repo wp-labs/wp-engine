@@ -22,7 +22,8 @@ mod tests {
     fn test_wpgen_conf_init_clean() -> OrionConfResult<()> {
         use crate::orchestrator::config::models::wpgen::WpGenConfig;
         let tw = TestCasePath::new("wp", "wpgen_conf").owe_conf()?;
-        let conf_manager = WarpConf::new(tw.path_string().as_str());
+        let path = tw.path_string();
+        let conf_manager = WarpConf::new(&path);
         conf_manager.clear_work_directory();
         let delegate = conf_manager.create_config_delegate::<WpGenConfig>(WPGEN_TOML);
         delegate.init()?;
@@ -34,7 +35,8 @@ mod tests {
     #[test]
     fn test_wpgen_resolved_without_connector() -> AnyResult<()> {
         let tw = TestCasePath::new("wp", "wpgen_no_conn")?;
-        let cm = WarpConf::new(tw.path_string().as_str());
+        let path = tw.path_string();
+        let cm = WarpConf::new(&path);
         // 写入最小新格式配置（不使用 connectors）
         let toml = r#"
 version = "1.0"
@@ -61,7 +63,8 @@ output = "stdout"
     #[test]
     fn test_wpgen_resolved_with_connector_and_override() -> AnyResult<()> {
         let tw = TestCasePath::new("wp", "wpgen_resolved")?;
-        let cm = WarpConf::new(tw.path_string().as_str());
+        let path = tw.path_string();
+        let cm = WarpConf::new(&path);
 
         // 准备 sink 连接器文件（id = file_json_sink）
         let cdir = format!("{}/connectors/sink.d", cm.work_root_path());
@@ -113,7 +116,8 @@ output = "file"
     #[test]
     fn test_wpgen_resolved_override_not_allowed() -> AnyResult<()> {
         let tw = TestCasePath::new("wp", "wpgen_resolved_2")?;
-        let cm = WarpConf::new(tw.path_string().as_str());
+        let path = tw.path_string();
+        let cm = WarpConf::new(&path);
         // 仅允许 base/file
         let cdir = format!("{}/connectors/sink.d", cm.work_root_path());
         std::fs::create_dir_all(&cdir)?;

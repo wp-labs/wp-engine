@@ -1,4 +1,4 @@
-use super::warp::WarpProject;
+use super::warp::{WarpProject, normalize_work_root};
 use crate::utils::error_handler::ErrorHandler;
 use orion_conf::{ErrorOwe, ToStructError, TomlIO};
 use orion_error::{UvsConfFrom, UvsValidationFrom};
@@ -180,24 +180,29 @@ impl WarpProject {
         use std::fs;
 
         let work_root = work_root.as_ref();
-        let conf_dir = work_root.join(CONF_DIR);
+        let (abs_root, hint) = normalize_work_root(work_root);
+        let conf_dir = abs_root.join(CONF_DIR);
         if let Err(_) = fs::create_dir_all(&conf_dir) {
             eprintln!("Warning: Failed to create conf directory");
         }
 
-        let engine_config_path = work_root.join(CONF_WPARSE_FILE);
+        let engine_config_path = abs_root.join(CONF_WPARSE_FILE);
         if !engine_config_path.exists() {
             let engine_config_content = include_str!("../example/conf/wparse.toml");
             if let Err(_) = fs::write(&engine_config_path, engine_config_content) {
                 eprintln!("Warning: Failed to write wparse.toml");
             }
         }
-        EngineConfig::load_toml(&engine_config_path).owe_conf()
+        let conf = EngineConfig::load_toml(&engine_config_path)
+            .owe_conf()?
+            .conf_absolutize(&abs_root, hint.as_deref());
+        Ok(conf)
     }
 
     fn load_engine_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<EngineConfig> {
         let work_root = work_root.as_ref();
-        let engine_config_path = work_root.join(CONF_WPARSE_FILE);
+        let (abs_root, hint) = normalize_work_root(work_root);
+        let engine_config_path = abs_root.join(CONF_WPARSE_FILE);
         if !engine_config_path.exists() {
             return RunReason::from_conf(format!(
                 "wparse config missing: {}",
@@ -205,12 +210,16 @@ impl WarpProject {
             ))
             .err_result();
         }
-        EngineConfig::load_toml(&engine_config_path).owe_conf()
+        let conf = EngineConfig::load_toml(&engine_config_path)
+            .owe_conf()?
+            .conf_absolutize(&abs_root, hint.as_deref());
+        Ok(conf)
     }
 
     fn load_wpgen_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
         let work_root = work_root.as_ref();
-        let wpgen_config_path = work_root.join(CONF_WPGEN_FILE);
+        let (abs_root, _) = normalize_work_root(work_root);
+        let wpgen_config_path = abs_root.join(CONF_WPGEN_FILE);
         if !wpgen_config_path.exists() {
             return RunReason::from_conf(format!(
                 "wpgen config missing: {}",

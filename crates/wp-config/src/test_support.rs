@@ -16,9 +16,10 @@ pub fn target_dir() -> PathBuf {
     }
     if let Ok(current) = current_dir() {
         return current.join("target");
-        //PathBuf::from("./target");
     }
-    unreachable!(" current fail!!!")
+    let mut tmp = env::temp_dir();
+    tmp.push("wp-target");
+    tmp
 }
 
 /// Test working directory helper, rooted at `target/test-work/<crate>/<test>-<pid>-<ts>`.

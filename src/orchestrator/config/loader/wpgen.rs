@@ -74,15 +74,16 @@ impl WarpConf {
 
     // 2.1) 装载 connectors 并按 id 获取（带错误上下文）
     fn load_connector_by_id(&self, conn_id: &str) -> OrionConfResult<(String, ConnectorRec)> {
-        let wp_conf = EngineConfig::load_or_init(&self.work_root)
+        let wp_conf = EngineConfig::load_or_init(self.work_root())
             .owe_res()
-            .with("load_or_init")?;
+            .with("load_or_init")?
+            .conf_absolutize(self.work_root(), self.original_hint());
         let configured_root = wp_conf.sinks_root().to_string();
         let configured_path = Path::new(&configured_root);
         let resolved_root = if configured_path.is_absolute() {
             configured_path.to_path_buf()
         } else {
-            self.work_root.join(configured_path)
+            self.work_root().join(configured_path)
         };
         let start_root = resolved_root.to_string_lossy().to_string();
         let connectors = load_connectors_for(&start_root)?;
