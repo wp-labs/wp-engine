@@ -381,9 +381,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.53"
+version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9e340e012a1bf4935f5282ed1436d1489548e8f72308207ea5df0e23d2d03f8"
+checksum = "c6e6ff9dcd79cff5cd969a17a545d79e84ab086e444102a591e288a8aa3ce394"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -391,9 +391,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.53"
+version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d76b5d13eaa18c901fd2f7fca939fefe3a0727a953561fefdf3b2922b8569d00"
+checksum = "fa42cf4d2b7a41bc8f663a7cab4031ebafa1bf3875705bfaf8466dc60ab52c00"
 dependencies = [
  "anstream",
  "anstyle",
@@ -1010,28 +1010,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dd6caf6059519a65843af8fe2a3ae298b14b80179855aeb4adc2c1934ee619"
 
 [[package]]
-name = "futures"
-version = "0.3.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-executor",
- "futures-io",
- "futures-sink",
- "futures-task",
- "futures-util",
-]
-
-[[package]]
 name = "futures-channel"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
 dependencies = [
  "futures-core",
- "futures-sink",
 ]
 
 [[package]]
@@ -1105,13 +1089,9 @@ version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
- "futures-channel",
  "futures-core",
- "futures-io",
  "futures-macro",
- "futures-sink",
  "futures-task",
- "memchr",
  "pin-project-lite",
  "pin-utils",
  "slab",
@@ -1170,9 +1150,9 @@ checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
 name = "h2"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c0b69cfcb4e1b9f1bf2f53f95f766e4661169728ec61cd3fe5a0166f2d1386"
+checksum = "2f44da3a8150a6703ed5d34e164b875fd14c2cdab9af1252a9a1020bde2bdc54"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -1616,9 +1596,9 @@ checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
 
 [[package]]
 name = "jiff"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a87d9b8105c23642f50cbbae03d1f75d8422c5cb98ce7ee9271f7ff7505be6b8"
+checksum = "e67e8da4c49d6d9909fe03361f9b620f58898859f5c7aded68351e85e71ecf50"
 dependencies = [
  "jiff-static",
  "log",
@@ -1629,9 +1609,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b787bebb543f8969132630c51fd0afab173a86c6abae56ff3b9e5e3e3f9f6e58"
+checksum = "e0c84ee7f197eca9a86c6fd6cb771e55eb991632f15f2bc3ca6ec838929e6e78"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1666,9 +1646,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.178"
+version = "0.2.179"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37c93d8daa9d8a012fd8ab92f088405fb202ea0b6ab73ee2482ae66af4f42091"
+checksum = "c5a2d376baa530d1238d133232d15e239abad80d05838b4b59354e5268af431f"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -1940,9 +1920,9 @@ dependencies = [
 
 [[package]]
 name = "orion-error"
-version = "0.5.5"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69a32d5716f1decc8128108099322d9e9c812698bf531828e7164dc914fe2dbf"
+checksum = "2379b42b93905be7ea54689820d863c1663a77e6950e758ddab0f402007ccfee"
 dependencies = [
  "derive-getters",
  "derive_more",
@@ -2225,18 +2205,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.104"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9695f8df41bb4f3d222c95a67532365f569318332d03d5f3f67f37b20e6ebdf0"
+checksum = "535d180e0ecab6268a3e718bb9fd44db66bbbc256257165fc699dadf70d16fe7"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a338cc41d27e6cc6dce6cefc13a0729dfbb81c262b1f519331575dd80ef3067f"
+checksum = "dc74d9a594b72ae6656596548f56f667211f8a97b3d4c3d467150794690dc40a"
 dependencies = [
  "proc-macro2",
 ]
@@ -2566,9 +2546,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.148"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3084b546a1dd6289475996f182a22aba973866ea8e8b02c51d9f46b1336a22da"
+checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
  "itoa",
  "memchr",
@@ -2611,11 +2591,12 @@ dependencies = [
 
 [[package]]
 name = "serial_test"
-version = "3.2.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b258109f244e1d6891bf1053a55d63a5cd4f8f4c30cf9a1280989f80e7a1fa9"
+checksum = "0d0b343e184fc3b7bb44dff0705fffcf4b3756ba6aff420dddd8b24ca145e555"
 dependencies = [
- "futures",
+ "futures-executor",
+ "futures-util",
  "log",
  "once_cell",
  "parking_lot",
@@ -2625,9 +2606,9 @@ dependencies = [
 
 [[package]]
 name = "serial_test_derive"
-version = "3.2.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d69265a08751de7844521fd15003ae0a888e035773ba05695c5c759a6f89eef"
+checksum = "6f50427f258fb77356e4cd4aa0e87e2bd2c66dbcee41dc405282cae2bfc26c83"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2775,9 +2756,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.112"
+version = "2.0.114"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21f182278bf2d2bcb3c88b1b08a37df029d71ce3d3ae26168e3c653b213b99d4"
+checksum = "d4d107df263a3013ef9b1879b0df87d706ff80f65a86ea879bd9c31f9b307c2a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2962,9 +2943,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.17"
+version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2efa149fe76073d6e8fd97ef4f4eca7b67f599660115591483572e406e165594"
+checksum = "9ae9cec805b01e8fc3fd2fe289f89149a9b66dd16786abd8b19cfa7b48cb0098"
 dependencies = [
  "bytes",
  "futures-core",
@@ -3110,9 +3091,9 @@ checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "url"
-version = "2.5.7"
+version = "2.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08bc136a29a3d1758e07a9cca267be308aeebf5cfd5a10f3f67ab2097683ef5b"
+checksum = "ff67a8a4397373c3ef660812acab3268222035010ab8680ec4215f38ba3d0eed"
 dependencies = [
  "form_urlencoded",
  "idna",
@@ -3643,7 +3624,7 @@ dependencies = [
 [[package]]
 name = "wp-conf-base"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0-beta#99462d0176d59c64293e3f85f6e833beb04f6c45"
+source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3696,7 +3677,7 @@ dependencies = [
 [[package]]
 name = "wp-connector-api"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0-beta#e6b58c23c870dbec205747f9389ceadc6441e461"
+source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0#0eb0f49356094b1b622ec4c44e35896c8c1cb819"
 dependencies = [
  "anyhow",
  "async-broadcast",
@@ -3725,7 +3706,7 @@ dependencies = [
 [[package]]
 name = "wp-data-fmt"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0-beta#99462d0176d59c64293e3f85f6e833beb04f6c45"
+source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
 dependencies = [
  "chrono",
  "serde",
@@ -3847,7 +3828,7 @@ dependencies = [
 [[package]]
 name = "wp-error"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0-beta#99462d0176d59c64293e3f85f6e833beb04f6c45"
+source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
 dependencies = [
  "chrono",
  "derive_more",
@@ -3956,7 +3937,7 @@ dependencies = [
 [[package]]
 name = "wp-log"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0-beta#99462d0176d59c64293e3f85f6e833beb04f6c45"
+source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
 dependencies = [
  "anyhow",
  "getset",
@@ -3985,7 +3966,7 @@ dependencies = [
 [[package]]
 name = "wp-model-core"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0-beta#e6b58c23c870dbec205747f9389ceadc6441e461"
+source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0#0eb0f49356094b1b622ec4c44e35896c8c1cb819"
 dependencies = [
  "arcstr",
  "chrono",
@@ -4054,7 +4035,7 @@ dependencies = [
 [[package]]
 name = "wp-parse-api"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0-beta#e6b58c23c870dbec205747f9389ceadc6441e461"
+source = "git+https://github.com/wp-labs/wp-open-api?tag=v0.7.0#0eb0f49356094b1b622ec4c44e35896c8c1cb819"
 dependencies = [
  "bytes",
  "derive_more",
@@ -4105,7 +4086,7 @@ dependencies = [
 [[package]]
 name = "wp-specs"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0-beta#99462d0176d59c64293e3f85f6e833beb04f6c45"
+source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
 dependencies = [
  "serde",
  "toml",
@@ -4171,18 +4152,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.31"
+version = "0.8.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd74ec98b9250adb3ca554bdde269adf631549f51d8a8f8f0a10b50f1cb298c3"
+checksum = "1fabae64378cb18147bb18bca364e63bdbe72a0ffe4adf0addfec8aa166b2c56"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.31"
+version = "0.8.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8a8d209fdf45cf5138cbb5a506f6b52522a25afccc534d1475dad8e31105c6a"
+checksum = "c9c2d862265a8bb4471d87e033e730f536e2a285cc7cb05dbce09a2a97075f90"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4245,6 +4226,6 @@ dependencies = [
 
 [[package]]
 name = "zmij"
-version = "1.0.7"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de9211a9f64b825911bdf0240f58b7a8dac217fe260fc61f080a07f61372fbd5"
+checksum = "2fc5a66a20078bf1251bde995aa2fdcc4b800c70b5d92dd2c62abc5c60f679f8"
