@@ -1,7 +1,8 @@
 use clap::{Args, Parser, Subcommand};
 use orion_conf::ToStructError;
 use orion_conf::UvsConfFrom;
-use std::{env, path::Path};
+use std::env;
+use std::path::PathBuf;
 use wpl::check_level_or_stop;
 
 //use crate::build::CLAP_LONG_VERSION;
@@ -61,8 +62,8 @@ pub enum DataCmd {
 #[command(name = "parse")]
 pub struct ParseArgs {
     /// Work root directory (absolute path); omit to use current dir/工作根目录（绝对路径）；省略则使用当前目录
-    #[clap(long, default_value = "", hide_default_value = true)]
-    pub work_root: String,
+    #[clap(long, default_value = None )]
+    pub work_root: Option<String>,
     /// Execution mode: p=precise, else=automated/执行模式：p=精确，否则=自动
     #[clap(short, long, default_value = "p")]
     pub mode: String,
@@ -98,11 +99,6 @@ pub struct ParseArgs {
 }
 
 impl ParseArgs {
-    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
-        self.work_root = resolve_cli_work_root(&self.work_root)?;
-        Ok(())
-    }
-
     pub fn completion_from(&self, conf: &EngineConfig) -> RunResult<RunArgs> {
         let (lev, stop) = check_level_or_stop(self.check_continue, self.check_stop);
         let robust = self.robust.clone().unwrap_or(conf.robust().clone());
@@ -129,68 +125,24 @@ impl ParseArgs {
     }
 }
 
-#[derive(Subcommand, Debug)]
-#[command(name = "conf")]
-pub enum ConfCmd {
-    /// Check config file/检查配置
-    #[command(name = "check")]
-    Check(ConfCmdArgs),
-    /// Initialize config/初始化配置
-    Init(ConfCmdArgs),
-    /// Clean config/清理配置
-    Clean(ConfCmdArgs),
-}
-
-impl Default for ConfCmd {
-    fn default() -> Self {
-        Self::Check(Default::default())
+pub fn resolve_run_work_root(raw: &Option<String>) -> RunResult<String> {
+    match raw {
+        Some(raw) => {
+            let path = PathBuf::from(raw);
+            if !path.is_absolute() {
+                return RunReason::from_conf(format!(
+                    "--work_root 必须为绝对路径（传入: '{}'）。可去掉该参数以默认当前目录",
+                    raw
+                ))
+                .err_result();
+            }
+            Ok(path.to_string_lossy().to_string())
+        }
+        None => {
+            let cwd = env::current_dir().map_err(|err| {
+                RunReason::from_conf(format!("获取当前工作目录失败: {}", err)).to_err()
+            })?;
+            Ok(cwd.to_string_lossy().to_string())
+        }
     }
-}
-
-#[derive(Args, Debug, Default)]
-pub struct ConfCmdArgs {
-    /// Work root directory (absolute path); omit to use current dir/工作根目录（绝对路径）；省略则使用当前目录
-    #[clap(short, long, default_value = "", hide_default_value = true)]
-    pub work_root: String,
-    /// Output logs to console (default false)/输出日志到控制台（默认否；false 时仅写文件）
-    #[clap(long, default_value_t = false)]
-    pub console: bool,
-    /// Mode: base(A)=conf+data | env(B)=base+connectors | full(C)=env+models/模式：base(A)=conf+data | env(B)=base+connectors | full(C)=env+models
-    #[clap(long = "mode", default_value = "base")]
-    pub mode: String,
-    /// wpgen: preset conf/wpgen.toml output.connect (generator-only)/wpgen：预置 conf/wpgen.toml 的 output.connect（仅生成器 CLI 使用）
-    #[clap(long = "gen-connect")]
-    pub gen_connect: Option<String>,
-}
-
-impl DataArgs {
-    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
-        self.work_root = resolve_cli_work_root(&self.work_root)?;
-        Ok(())
-    }
-}
-
-impl ConfCmdArgs {
-    pub fn ensure_work_root_absolute(&mut self) -> RunResult<()> {
-        self.work_root = resolve_cli_work_root(&self.work_root)?;
-        Ok(())
-    }
-}
-
-fn resolve_cli_work_root(raw: &str) -> RunResult<String> {
-    if raw.trim().is_empty() {
-        let cwd = env::current_dir().map_err(|err| {
-            RunReason::from_conf(format!("获取当前工作目录失败: {}", err)).to_err()
-        })?;
-        return Ok(cwd.to_string_lossy().to_string());
-    }
-    let path = Path::new(raw);
-    if !path.is_absolute() {
-        return RunReason::from_conf(format!(
-            "--work_root 必须为绝对路径（传入: '{}'）。可去掉该参数以默认当前目录",
-            raw
-        ))
-        .err_result();
-    }
-    Ok(path.to_string_lossy().to_string())
 }

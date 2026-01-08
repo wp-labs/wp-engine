@@ -190,11 +190,8 @@ impl PathGroup {
 
 pub fn env_eval_params(mut params: ParamMap, dict: &orion_variate::EnvDict) -> ParamMap {
     for (_, v) in params.iter_mut() {
-        match v {
-            serde_json::Value::String(str_val) => {
-                *str_val = str_val.clone().env_eval(dict);
-            }
-            _ => {}
+        if let serde_json::Value::String(str_val) = v {
+            *str_val = str_val.clone().env_eval(dict);
         }
     }
     params

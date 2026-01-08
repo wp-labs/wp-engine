@@ -90,7 +90,7 @@ impl InfraSinkService {
     ) -> RunResult<Self> {
         let table_conf = InfraSinkConf::load(sink_root, dict)
             .err_conv()?
-            .env_eval(&dict);
+            .env_eval(dict);
         //.want("load sink_root")?;
         let default_group = infra_sink_group(
             rescue.to_string(),

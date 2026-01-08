@@ -1,6 +1,5 @@
 //! Facade: 配置/模型对外入口（稳定 re-export）。
 
-pub use crate::facade::args::{ConfCmd, DataCmd};
 pub use crate::orchestrator::config::loader::WarpConf;
 pub use crate::orchestrator::config::models::{
     load_warp_engine_confs, load_warp_engine_confs_with_dict, stat_reqs_from,

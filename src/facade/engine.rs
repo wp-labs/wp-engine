@@ -18,6 +18,7 @@ use wp_log::{info_ctrl, warn_ctrl};
 use wp_stat::{StatRequires, StatStage};
 
 use crate::facade::args::ParseArgs;
+use crate::facade::args::resolve_run_work_root;
 use crate::orchestrator::config::loader::WarpConf;
 use crate::orchestrator::config::models::{load_warp_engine_confs_with_dict, stat_reqs_from};
 use crate::orchestrator::engine::resource::EngineResource;
@@ -51,10 +52,11 @@ pub struct WpApp {
 impl WpApp {
     /// 从 CLI 参数构建应用上下文：加载主配置、完成运行参数、初始化日志/统计
     pub fn try_from(args: ParseArgs, env_dict: EnvDict) -> Result<Self, wp_error::RunError> {
-        let mut args = args;
-        args.ensure_work_root_absolute()?;
-        let (conf_manager, mut main_conf) =
-            load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
+        //let mut args = args;
+        let (conf_manager, mut main_conf) = load_warp_engine_confs_with_dict(
+            resolve_run_work_root(&args.work_root)?.as_str(),
+            &env_dict,
+        )?;
         // CLI 覆盖：当提供 --wpl-dir 时，优先于 wparse.toml 的 [models].wpl
         if let Some(dir) = &args.wpl_dir {
             main_conf.set_rule_root(dir.clone());
