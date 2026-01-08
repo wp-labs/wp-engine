@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use wp_cli_core::connectors::sources as sources_core;
 use wp_conf::sources::types::{SourceItem, WarpSources};
-use wp_conf::{engine::EngineConfig, sources::build::build_sources_from_file};
+use wp_conf::{engine::EngineConfig, sources::build::load_source_instances_from_file};
 use wp_engine::facade::config::WPSRC_TOML;
 use wp_engine::sources::SourceConfigParser;
 use wp_error::run_error::{RunReason, RunResult};
@@ -171,7 +171,7 @@ impl Sources {
     /// Builds source specifications for validation
     fn build_source_specs(&self, wpsrc_path: &Path) -> RunResult<()> {
         let env_dict = EnvDict::new();
-        let _specs = build_sources_from_file(wpsrc_path, &env_dict).map_err(|e| {
+        let _specs = load_source_instances_from_file(wpsrc_path, &env_dict).map_err(|e| {
             RunReason::from_conf(format!("Failed to build source specs: {}", e)).to_err()
         })?;
         Ok(())

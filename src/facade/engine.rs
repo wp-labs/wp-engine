@@ -54,6 +54,7 @@ impl WpApp {
     pub fn try_from(args: ParseArgs) -> Result<Self, wp_error::RunError> {
         let mut args = args;
         args.ensure_work_root_absolute()?;
+        //TODO:
         let env_dict =
             load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
         let (conf_manager, mut main_conf) =

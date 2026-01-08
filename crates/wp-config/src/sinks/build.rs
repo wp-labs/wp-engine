@@ -1,4 +1,8 @@
 use super::types::RouteSink;
+use super::types::{ConnectorRec, DefaultsBody, RouteFile, StringOrArray};
+use crate::sinks::io::business_dir;
+use crate::sinks::{load_connectors_for, load_route_files_from, load_sink_defaults};
+use crate::structure::{SinkInstanceConf, SinkRouteConf, Validate as ConfValidate};
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
 use orion_variate::EnvDict;
@@ -8,7 +12,14 @@ use std::sync::Arc;
 use wp_connector_api::ParamMap;
 use wp_model_core::model::fmt_def::TextFmt;
 
-pub fn build_sink_use_from(
+use crate::structure::{FlexGroup, extend_matches};
+
+const CONNECTOR_TYPE_FILE: &str = "file";
+const CONNECTOR_TYPE_TEST_RESCUE: &str = "test_rescue";
+const FIELD_FMT: &str = "fmt";
+const DEFAULT_OUTPUT_FORMAT: &str = "json";
+
+fn build_sink_instance(
     group_name: &str,
     index: usize,
     origin: Option<&Path>,
@@ -19,7 +30,7 @@ pub fn build_sink_use_from(
         .inner_name()
         .map(|s| s.to_string())
         .unwrap_or_else(|| format!("[{}]", index));
-    let merged_params = merge_params(group_name, index, origin, conn, r)?;
+    let merged_params = merge_sink_params(group_name, index, origin, conn, r)?;
     let fmt = decide_fmt(conn, &merged_params);
     let mut sink = crate::structure::SinkInstanceConf::new_type(
         sink_name.clone(),
@@ -43,6 +54,16 @@ pub trait SinkFactoryLookup {
     fn get(&self, kind: &str) -> Option<Arc<dyn wp_connector_api::SinkFactory + 'static>>;
 }
 
+#[derive(Copy, Clone, Debug, Default)]
+struct NullSinkFactoryLookup;
+impl SinkFactoryLookup for NullSinkFactoryLookup {
+    fn get(&self, _kind: &str) -> Option<Arc<dyn wp_connector_api::SinkFactory + 'static>> {
+        None
+    }
+}
+
+static NULL_FACTORY_LOOKUP: NullSinkFactoryLookup = NullSinkFactoryLookup;
+
 fn pick_string(m: &ParamMap, key: &str) -> Option<String> {
     m.get(key).and_then(|v| match v {
         serde_json::Value::String(s) => Some(s.clone()),
@@ -58,11 +79,7 @@ fn pick_string(m: &ParamMap, key: &str) -> Option<String> {
 /// 决定输出文本格式
 /// - 文件类（file/test_rescue）：从合并后的参数表读取 `fmt`（允许覆写），若缺省则默认 `json`
 /// - 其它类型：固定为 `json`
-pub fn decide_fmt(conn: &ConnectorRec, params: &ParamMap) -> TextFmt {
-    const CONNECTOR_TYPE_FILE: &str = "file";
-    const CONNECTOR_TYPE_TEST_RESCUE: &str = "test_rescue";
-    const FIELD_FMT: &str = "fmt";
-    const DEFAULT_OUTPUT_FORMAT: &str = "json";
+fn decide_fmt(conn: &ConnectorRec, params: &ParamMap) -> TextFmt {
     if conn.kind == CONNECTOR_TYPE_FILE || conn.kind == CONNECTOR_TYPE_TEST_RESCUE {
         let s = pick_string(params, FIELD_FMT).unwrap_or_else(|| DEFAULT_OUTPUT_FORMAT.to_string());
         TextFmt::from(s.as_str())
@@ -71,7 +88,7 @@ pub fn decide_fmt(conn: &ConnectorRec, params: &ParamMap) -> TextFmt {
     }
 }
 
-pub fn merge_params(
+fn merge_sink_params(
     group_name: &str,
     index: usize,
     origin: Option<&Path>,
@@ -97,14 +114,8 @@ fn is_nested_field_blacklisted(k: &str) -> bool {
     matches!(k, "params" | "params_override")
 }
 
-use crate::sinks::io::business_dir;
-use crate::sinks::{load_connectors_for, load_route_files_from, load_sink_defaults};
-use crate::structure::{SinkInstanceConf, SinkRouteConf, Validate as ConfValidate};
-
-use super::types::{ConnectorRec, DefaultsBody, RouteFile, StringOrArray};
-
 /// 合并 connector 默认参数与覆盖表，并执行白名单/嵌套校验（可被 CLI/工具链共用）
-pub(crate) fn merge_params_with_allowlist(
+fn merge_params_with_allowlist(
     base: &ParamMap,
     overrides: &ParamMap,
     allow: &[String],
@@ -153,7 +164,7 @@ pub(crate) fn merge_params_with_allowlist(
     Ok(m)
 }
 
-fn extract_matchers(rf: &RouteFile) -> (Vec<String>, Vec<String>) {
+fn collect_group_matchers(rf: &RouteFile) -> (Vec<String>, Vec<String>) {
     // 处理 oml 匹配器
     let oml_vec = if let Some(oml) = &rf.sink_group.oml {
         match oml {
@@ -182,7 +193,7 @@ fn extract_matchers(rf: &RouteFile) -> (Vec<String>, Vec<String>) {
     (vec![], vec![])
 }
 
-fn merge_tags_for_sink(
+fn assemble_sink_tags(
     sink: &mut crate::structure::SinkInstanceConf,
     defaults_tags: Option<&Vec<String>>,
     group_tags: Option<&Vec<String>>,
@@ -200,7 +211,7 @@ fn merge_tags_for_sink(
     sink.set_tags(merged);
 }
 
-fn apply_group_meta(
+fn apply_group_metadata(
     g: &mut crate::structure::FlexGroup,
     rf: &RouteFile,
     defaults: Option<&DefaultsBody>,
@@ -226,13 +237,7 @@ pub fn build_route_conf_from(
     defaults: Option<&DefaultsBody>,
     conn_map: &BTreeMap<String, ConnectorRec>,
 ) -> OrionConfResult<crate::structure::SinkRouteConf> {
-    struct Null;
-    impl SinkFactoryLookup for Null {
-        fn get(&self, _kind: &str) -> Option<Arc<dyn wp_connector_api::SinkFactory + 'static>> {
-            None
-        }
-    }
-    build_route_conf_from_with(rf, defaults, conn_map, &Null)
+    build_route_conf_from_with(rf, defaults, conn_map, &NULL_FACTORY_LOOKUP)
 }
 
 pub fn build_route_conf_from_with(
@@ -241,25 +246,22 @@ pub fn build_route_conf_from_with(
     conn_map: &BTreeMap<String, ConnectorRec>,
     reg: &dyn SinkFactoryLookup,
 ) -> OrionConfResult<crate::structure::SinkRouteConf> {
-    use crate::structure::{FlexGroup, extend_matches};
-    use crate::structure::{SinkInstanceConf, SinkRouteConf};
-
     // 1) 解析匹配器（oml/rule）
-    let (oml_vec, rule_vec) = extract_matchers(rf);
+    let (oml_vec, rule_vec) = collect_group_matchers(rf);
 
     // 2) 构建每个 sink 实例（合并参数、标签、校验、插件校验）
     let mut sinks: Vec<SinkInstanceConf> = Vec::with_capacity(rf.sink_group.sinks.len());
     let mut name_guard: BTreeSet<String> = BTreeSet::new();
     for (idx, s) in rf.sink_group.sinks.iter().enumerate() {
-        let conn = get_connector(conn_map, rf, s)?;
-        let mut sink = build_sink_use_from(
+        let conn = resolve_connector(conn_map, rf, s)?;
+        let mut sink = build_sink_instance(
             rf.sink_group.name.as_str(),
             idx,
             rf.origin.as_deref(),
             conn,
             s,
         )?;
-        merge_tags_for_sink(
+        assemble_sink_tags(
             &mut sink,
             defaults.and_then(|d| d.tags.as_ref()),
             rf.sink_group.tags.as_ref(),
@@ -281,7 +283,7 @@ pub fn build_route_conf_from_with(
     let mut group = FlexGroup::build_conf(&rf.sink_group.name, sinks);
     group.oml = extend_matches(oml_vec);
     group.rule = extend_matches(rule_vec);
-    apply_group_meta(&mut group, rf, defaults);
+    apply_group_metadata(&mut group, rf, defaults);
 
     Ok(SinkRouteConf {
         version: "2.0".into(),
@@ -291,7 +293,7 @@ pub fn build_route_conf_from_with(
 
 // ----- small helpers kept close to callsite for readability -----
 
-fn get_connector<'a>(
+fn resolve_connector<'a>(
     conn_map: &'a BTreeMap<String, ConnectorRec>,
     rf: &RouteFile,
     s: &RouteSink,
@@ -380,13 +382,7 @@ pub fn load_business_route_confs(
     sink_root: &str,
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<crate::structure::SinkRouteConf>> {
-    struct Null;
-    impl SinkFactoryLookup for Null {
-        fn get(&self, _kind: &str) -> Option<Arc<dyn wp_connector_api::SinkFactory + 'static>> {
-            None
-        }
-    }
-    load_business_route_confs_with(sink_root, &Null, dict)
+    load_business_route_confs_with(sink_root, &NULL_FACTORY_LOOKUP, dict)
 }
 
 pub fn load_business_route_confs_with(
@@ -418,27 +414,12 @@ pub fn load_infra_route_confs(
     for rf in routes.iter() {
         // Infra 组不支持并行与文件分片：
         // - 禁止 [sink_group].parallel（基础组只有单消费协程，并行无效，易误导）
-        // - 禁止 sinks.params 中的 replica_shard/file_template（移除分片命名语义）
         if rf.sink_group.parallel.is_some() {
             return ConfIOReason::from_validation(format!(
                 "infra group '{}' does not support [sink_group].parallel; remove this field and use business.d parallel for throughput",
                 rf.sink_group.name
             ))
             .err_result();
-        }
-        for (idx, s) in rf.sink_group.sinks.iter().enumerate() {
-            if s.params().contains_key("replica_shard") || s.params().contains_key("file_template")
-            {
-                let nm = s
-                    .inner_name()
-                    .map(|n| n.to_string())
-                    .unwrap_or_else(|| format!("[{}]", idx));
-                return ConfIOReason::from_validation(format!(
-                    "infra group '{}' sink '{}' must not set 'replica_shard' or 'file_template'",
-                    rf.sink_group.name, nm
-                ))
-                .err_result();
-            }
         }
         let conf = build_route_conf_from(rf, defaults.as_ref(), &conn_map)?;
         out.push(conf);
@@ -452,7 +433,7 @@ mod tests {
     use crate::sinks::types::{RouteFile, RouteGroup, StringOrArray};
 
     #[test]
-    fn test_extract_matchers_rule_only() {
+    fn test_collect_matchers_rule_only() {
         // 测试只有 rule 的情况（修复前会失败的场景）
         let route_file = RouteFile {
             version: Some("2.0".to_string()),
@@ -471,7 +452,7 @@ mod tests {
             origin: None,
         };
 
-        let (oml_vec, rule_vec) = extract_matchers(&route_file);
+        let (oml_vec, rule_vec) = collect_group_matchers(&route_file);
 
         assert_eq!(oml_vec.len(), 0);
         assert_eq!(rule_vec.len(), 2);
@@ -480,7 +461,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_matchers_oml_only() {
+    fn test_collect_matchers_oml_only() {
         // 测试只有 oml 的情况
         let route_file = RouteFile {
             version: Some("2.0".to_string()),
@@ -496,7 +477,7 @@ mod tests {
             origin: None,
         };
 
-        let (oml_vec, rule_vec) = extract_matchers(&route_file);
+        let (oml_vec, rule_vec) = collect_group_matchers(&route_file);
 
         assert_eq!(oml_vec.len(), 1);
         assert_eq!(oml_vec[0], "test_model");
@@ -504,7 +485,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_matchers_both_oml_and_rule() {
+    fn test_collect_matchers_both_oml_and_rule() {
         // 测试同时有 oml 和 rule 的情况
         let route_file = RouteFile {
             version: Some("2.0".to_string()),
@@ -523,7 +504,7 @@ mod tests {
             origin: None,
         };
 
-        let (oml_vec, rule_vec) = extract_matchers(&route_file);
+        let (oml_vec, rule_vec) = collect_group_matchers(&route_file);
 
         assert_eq!(oml_vec.len(), 2);
         assert_eq!(rule_vec.len(), 1);
@@ -533,7 +514,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_matchers_neither_oml_nor_rule() {
+    fn test_collect_matchers_neither_oml_nor_rule() {
         // 测试既没有 oml 也没有 rule 的情况
         let route_file = RouteFile {
             version: Some("2.0".to_string()),
@@ -549,7 +530,7 @@ mod tests {
             origin: None,
         };
 
-        let (oml_vec, rule_vec) = extract_matchers(&route_file);
+        let (oml_vec, rule_vec) = collect_group_matchers(&route_file);
 
         assert_eq!(oml_vec.len(), 0);
         assert_eq!(rule_vec.len(), 0);

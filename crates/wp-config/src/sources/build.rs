@@ -30,28 +30,12 @@ pub fn parse_and_validate_only(config_str: &str) -> OrionConfResult<Vec<wp_specs
     Ok(out)
 }
 
-/// 加载文件并解析（最小校验）
-pub fn parse_and_validate_only_from_file(
-    path: &std::path::Path,
-) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
-    let content = std::fs::read_to_string(path)
-        .owe_conf()
-        .want("load sources config")
-        .with(path)?;
-    parse_and_validate_only(&content)
-}
-
-/// 从起点向上查找 connectors/source.d 并加载连接器
-pub fn connectors_from_start(start: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
-    super::io::load_connectors_for(start)
-}
-
 /// whitelist + 合并参数，返回 a merged table
 fn is_nested_field_blacklisted(k: &str) -> bool {
     matches!(k, "params" | "params_override")
 }
 
-fn merge_params(
+fn merge_source_params(
     base: &ParamMap,
     override_tbl: &ParamMap,
     allow: &[String],
@@ -77,7 +61,7 @@ fn merge_params(
 }
 
 /// 解析字符串并结合 connectors（通过 `connect` 字段）构建 CoreSourceSpec + connector_id 列表
-pub fn load_source_ins_confs(
+pub fn load_source_instances_from_str(
     config_str: &str,
     start: &Path,
     dict: &EnvDict,
@@ -87,11 +71,11 @@ pub fn load_source_ins_confs(
         .want("parse sources")?
         .env_eval(dict);
     let cnn_dict = load_connectors_for(start)?;
-    build_srcins_confs(src_conf, &cnn_dict)
+    build_source_instances(src_conf, &cnn_dict)
 }
 
 /// 解析文件并结合 connectors 构建 CoreSourceSpec + connector_id 列表
-pub fn build_sources_from_file(
+pub fn load_source_instances_from_file(
     path: &Path,
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
@@ -106,11 +90,11 @@ pub fn build_sources_from_file(
             .map(|p| p.to_path_buf())
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
     };
-    load_source_ins_confs(&content, &start, dict)
+    load_source_instances_from_str(&content, &start, dict)
 }
 
 /// 从 WarpSources + 连接器字典 构建 SourceInstanceConf（包含 Core + connector_id）列表
-pub fn build_srcins_confs(
+pub fn build_source_instances(
     source_conf: WpSourcesConfig,
     cnn_dict: &BTreeMap<String, SourceConnector>,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
@@ -126,7 +110,7 @@ pub fn build_srcins_confs(
             ))
             .to_err()
         })?;
-        let merged = merge_params(&conn.default_params, &s.params, &conn.allow_override)?;
+        let merged = merge_source_params(&conn.default_params, &s.params, &conn.allow_override)?;
         let mut inst = SourceInstanceConf::new_type(s.key, conn.kind.clone(), merged, s.tags);
         inst.connector_id = Some(conn.id.clone());
         srcins_confs.push(inst);
@@ -159,13 +143,6 @@ pub fn validate_specs_with_factory(
             })?;
         }
     }
-    Ok(())
-}
-
-/// Deprecated: kept for compatibility; does nothing when API registry is removed.
-pub fn validate_specs_with_factory_and_registry(
-    _specs: &[SourceInstanceConf],
-) -> OrionConfResult<()> {
     Ok(())
 }
 
@@ -210,13 +187,13 @@ connect = "conn1"
         // ok: allowed key
         let mut over = ParamMap::new();
         over.insert("path".into(), json!("/a"));
-        let ok = merge_params(&base, &over, &allow).expect("ok");
+        let ok = merge_source_params(&base, &over, &allow).expect("ok");
         assert_eq!(ok.get("path").and_then(|v| v.as_str()), Some("/a"));
 
         // err: disallowed key
         let mut bad = ParamMap::new();
         bad.insert("badkey".into(), json!("v"));
-        let e = merge_params(&base, &bad, &allow)
+        let e = merge_source_params(&base, &bad, &allow)
             .expect_err("err")
             .to_string();
         assert!(e.contains("override not allowed"));
@@ -224,7 +201,7 @@ connect = "conn1"
         // err: nested blacklisted field
         let mut nested = ParamMap::new();
         nested.insert("params".into(), json!("x"));
-        let e2 = merge_params(&base, &nested, &allow)
+        let e2 = merge_source_params(&base, &nested, &allow)
             .expect_err("err")
             .to_string();
         assert!(e2.contains("invalid nested table"));
@@ -265,7 +242,7 @@ connect = "conn1"
                 },
             ],
         };
-        let specs = build_srcins_confs(w, &cmap).expect("specs");
+        let specs = build_source_instances(w, &cmap).expect("specs");
         assert_eq!(specs.len(), 1);
         assert_eq!(specs[0].name(), &"s2".to_string());
     }

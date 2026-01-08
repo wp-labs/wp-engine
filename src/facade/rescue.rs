@@ -37,7 +37,8 @@ impl WpRescueApp {
         let mut args = args;
         args.ensure_work_root_absolute()?;
         let env_dict =
-            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
+            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml)
+                .unwrap_or_else(|_| EnvDict::new());
         let (conf_manager, main_conf) =
             load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
         let run_args = args.completion_from(&main_conf)?;

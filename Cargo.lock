@@ -2123,6 +2123,31 @@ dependencies = [
 [[package]]
 name = "orion-sec"
 version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fdcdc2fc0420dbe294da8aa120256f672c51302db869bb47151b3b2cab5249b"
+dependencies = [
+ "chrono",
+ "contracts",
+ "derive_more",
+ "fs_extra",
+ "getset",
+ "indexmap",
+ "log",
+ "once_cell",
+ "orion-error",
+ "orion-variate",
+ "orion_conf",
+ "serde",
+ "serde_derive",
+ "serde_yaml",
+ "thiserror 2.0.17",
+ "unicase",
+ "url",
+]
+
+[[package]]
+name = "orion-sec"
+version = "0.3.1"
 source = "git+https://github.com/galaxy-sec/orion-sec.git?branch=main#123908ffe98c25836f2f017a79b94122f5b19588"
 dependencies = [
  "chrono",
@@ -3877,7 +3902,7 @@ dependencies = [
 [[package]]
 name = "wp-conf-base"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
+source = "git+https://github.com/wp-labs/wp-infras?branch=main#e6160afafc63eec4a4a3f23dba324c9f4d927751"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3960,7 +3985,7 @@ dependencies = [
 [[package]]
 name = "wp-data-fmt"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
+source = "git+https://github.com/wp-labs/wp-infras?branch=main#e6160afafc63eec4a4a3f23dba324c9f4d927751"
 dependencies = [
  "chrono",
  "serde",
@@ -4027,7 +4052,7 @@ dependencies = [
  "mockall",
  "once_cell",
  "orion-error",
- "orion-sec",
+ "orion-sec 0.3.1 (git+https://github.com/galaxy-sec/orion-sec.git?branch=main)",
  "orion-variate",
  "orion_conf",
  "orion_exp",
@@ -4084,11 +4109,12 @@ dependencies = [
 [[package]]
 name = "wp-error"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
+source = "git+https://github.com/wp-labs/wp-infras?branch=main#e6160afafc63eec4a4a3f23dba324c9f4d927751"
 dependencies = [
  "chrono",
  "derive_more",
  "orion-error",
+ "orion-sec 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "orion_conf",
  "serde",
  "serde_json",
@@ -4193,7 +4219,7 @@ dependencies = [
 [[package]]
 name = "wp-log"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
+source = "git+https://github.com/wp-labs/wp-infras?branch=main#e6160afafc63eec4a4a3f23dba324c9f4d927751"
 dependencies = [
  "anyhow",
  "getset",
@@ -4343,7 +4369,7 @@ dependencies = [
 [[package]]
 name = "wp-specs"
 version = "0.7.0"
-source = "git+https://github.com/wp-labs/wp-infras?tag=v0.7.0#340f9daae00a4a425c4502b7c48eac6a8a56ea3d"
+source = "git+https://github.com/wp-labs/wp-infras?branch=main#e6160afafc63eec4a4a3f23dba324c9f4d927751"
 dependencies = [
  "serde",
  "toml",

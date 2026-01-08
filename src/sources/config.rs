@@ -93,7 +93,7 @@ impl SourceConfigParser {
         dict: &EnvDict,
     ) -> OrionConfResult<(Vec<SourceHandle>, Vec<AcceptorHandle>)> {
         // 使用配置层装配：加载 connectors + 合并 + 产出 CoreSpec + connector_id
-        let specs = wp_conf::sources::build_sources_from_file(config_path, dict)?;
+        let specs = wp_conf::sources::load_source_instances_from_file(config_path, dict)?;
         // 插件校验（类型特有；不触发 I/O）
         struct Lookup;
         impl wp_conf::sources::SourceFactoryRegistry for Lookup {
@@ -116,7 +116,7 @@ impl SourceConfigParser {
     ) -> OrionConfResult<(Vec<SourceHandle>, Vec<AcceptorHandle>)> {
         // 起点：work_root；由配置层自行解析 modern/legacy（sources/ 或 source/）布局
         let start = self.work_dir.clone();
-        let specs = wp_conf::sources::load_source_ins_confs(config_str, &start, dict)?;
+        let specs = wp_conf::sources::load_source_instances_from_str(config_str, &start, dict)?;
         struct Lookup2;
         impl wp_conf::sources::SourceFactoryRegistry for Lookup2 {
             fn get_factory(
@@ -149,7 +149,7 @@ impl SourceConfigParser {
         run_mode: wp_conf::RunMode,
         dict: &EnvDict,
     ) -> OrionConfResult<(Vec<String>, Vec<SourceHandle>, Vec<AcceptorHandle>)> {
-        let specs = wp_conf::sources::build_sources_from_file(wpsrc_path, dict)?;
+        let specs = wp_conf::sources::load_source_instances_from_file(wpsrc_path, dict)?;
         wp_conf::sources::validate_specs_with_factory(&specs, &SourceFactoryLookup)?;
 
         // Filter specs by run_mode
