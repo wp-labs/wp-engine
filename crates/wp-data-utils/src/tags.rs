@@ -46,7 +46,7 @@ pub fn validate_tags(items: &[String]) -> Result<(), String> {
             let mut msg = String::new();
             let _ = write!(
                 &mut msg,
-                "invalid tag value at index {}: '{}' (allowed: [A-Za-z0-9_.:/=@+,-], len 0..=64)",
+                "invalid tag value at index {}: '{}' (allowed: [A-Za-z0-9_.:/=@+,-,${}], len 0..=64)",
                 idx, v
             );
             return Err(msg);
@@ -59,5 +59,9 @@ fn is_valid_key_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')
 }
 fn is_valid_val_char(c: char) -> bool {
-    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':' | '/' | '=' | '@' | '+' | ',' | '-')
+    c.is_ascii_alphanumeric()
+        || matches!(
+            c,
+            '_' | '.' | ':' | '/' | '=' | '@' | '+' | ',' | '-' | '$' | '{' | '}'
+        )
 }
