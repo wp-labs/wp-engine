@@ -4,7 +4,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 use orion_error::ErrorConv;
-use orion_sec::load_sec_dict_by;
 use orion_variate::EnvDict;
 use wp_conf::RunArgs;
 use wp_error::run_error::RunResult;
@@ -28,19 +27,16 @@ pub struct WpRescueApp {
     stat_reqs: StatRequires,
     run_args: RunArgs,
     pid_guard: Option<PidRec>,
-    env_dict: EnvDict,
+    val_dict: EnvDict,
 }
 
 impl WpRescueApp {
     /// 从 CLI 参数构建应用上下文
-    pub fn try_from(args: ParseArgs) -> Result<Self, wp_error::RunError> {
+    pub fn try_from(args: ParseArgs, val_dict: EnvDict) -> Result<Self, wp_error::RunError> {
         let mut args = args;
         args.ensure_work_root_absolute()?;
-        let env_dict =
-            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml)
-                .unwrap_or_else(|_| EnvDict::new());
         let (conf_manager, main_conf) =
-            load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
+            load_warp_engine_confs_with_dict(args.work_root.as_str(), &val_dict)?;
         let run_args = args.completion_from(&main_conf)?;
         let stat_reqs = stat_reqs_from(main_conf.stat_conf());
         log_init(main_conf.log_conf()).err_conv()?;
@@ -50,7 +46,7 @@ impl WpRescueApp {
             stat_reqs,
             run_args,
             pid_guard: None,
-            env_dict,
+            val_dict,
         })
     }
 
@@ -105,13 +101,13 @@ impl WpRescueApp {
             self.main_conf.sinks_root(),
             self.main_conf.rescue_root(),
             self.stat_reqs.get_requ_items(StatStage::Sink),
-            &self.env_dict,
+            &self.val_dict,
         )
         .await?;
 
         // 读取源配置并构建 ResManager
         //let data_src = self.conf_manager.load_source_config()?;
-        let res_center = ResManager::build(&self.main_conf, &infra_sinks, &self.env_dict).await?;
+        let res_center = ResManager::build(&self.main_conf, &infra_sinks, &self.val_dict).await?;
         let sink_service = SinkService::async_sinks_spawn(
             self.main_conf.rescue_root().to_string(),
             res_center.must_get_sink_table()?,

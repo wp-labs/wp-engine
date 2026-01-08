@@ -6,6 +6,7 @@ tmp
 /data
 /rescue
 /res.dat
+Cargo.lock
 tests/instance
 wp-docs
 .idea/
