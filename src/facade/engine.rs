@@ -1,6 +1,8 @@
 //! wparse 引擎的 Facade 封装：装配/启动/重载/优雅退出 与 PID 管理。
 
 use futures_lite::StreamExt;
+use orion_conf::ToStructError;
+use orion_conf::UvsConfFrom;
 use orion_sec::load_sec_dict_by;
 use orion_variate::EnvDict;
 use std::path::Path;
@@ -8,6 +10,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::timeout;
+use wp_error::RunReason;
 use wp_knowledge::facade::init_thread_cloned_from_knowdb;
 
 use orion_error::{ErrorConv, ErrorOwe, ErrorWith, OperationContext};
@@ -54,9 +57,10 @@ impl WpApp {
     pub fn try_from(args: ParseArgs) -> Result<Self, wp_error::RunError> {
         let mut args = args;
         args.ensure_work_root_absolute()?;
-        //TODO:
         let env_dict =
-            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
+            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml)
+                .map_err(|e| RunReason::from_conf(format!("{}", e)).to_err())?;
+
         let (conf_manager, mut main_conf) =
             load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
         // CLI 覆盖：当提供 --wpl-dir 时，优先于 wparse.toml 的 [models].wpl
