@@ -4,12 +4,13 @@ use orion_conf::{
     error::{ConfIOReason, OrionConfResult},
 };
 use orion_error::UvsValidationFrom;
+use orion_variate::EnvEvaluable;
 use wp_conf_base::ConfParser;
 use wp_connector_api::Tags;
 use wp_model_core::model::fmt_def::TextFmt;
 
-use crate::structure::SinkInstanceConf;
 use crate::types::AnyResult;
+use crate::{structure::SinkInstanceConf, utils::env_eval_vec};
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use wildmatch::WildMatch;
@@ -35,6 +36,15 @@ pub struct FlexGroup {
     pub sinks: Vec<SinkInstanceConf>,
 }
 
+impl EnvEvaluable<FlexGroup> for FlexGroup {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> Self {
+        self.name = self.name.env_eval(dict);
+        self.tags = env_eval_vec(self.tags, dict);
+        self.filter = self.filter.env_eval(dict);
+        self.sinks = env_eval_vec(self.sinks, dict);
+        self
+    }
+}
 /// 组级期望的公共参数
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone, Default, Getters)]
 #[serde(deny_unknown_fields)]
@@ -177,6 +187,14 @@ pub struct FixedGroup {
     #[serde(default)]
     pub parallel: usize,
 }
+impl EnvEvaluable<FixedGroup> for FixedGroup {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> FixedGroup {
+        for sink in self.sinks.iter_mut() {
+            *sink = sink.clone().env_eval(dict)
+        }
+        self
+    }
+}
 
 impl FixedGroup {
     pub fn append(&mut self, conf: SinkInstanceConf) {
@@ -259,8 +277,6 @@ impl crate::structure::Validate for FlexGroup {
         Ok(())
     }
 }
-
-// 本文件原有 validate_tag_item 已移除；统一走 wp_model_core::tags::validate_tags。
 
 impl crate::structure::Validate for FixedGroup {
     fn validate(&self) -> OrionConfResult<()> {
@@ -350,4 +366,64 @@ pub fn extend_matches<S: Into<String>>(rule: Vec<S>) -> WildArray {
         out.push(WildMatch::new(&x));
     }
     WildArray(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use orion_variate::{EnvDict, ValueType};
+    use serde_json::json;
+    use wp_connector_api::ParamMap;
+
+    #[test]
+    fn flex_group_env_eval_updates_members_and_sinks() {
+        let mut params = ParamMap::new();
+        params.insert("base".into(), json!("${WORK_ROOT}/out"));
+        params.insert("file".into(), json!("${FILE}"));
+        let sink = SinkInstanceConf::new_type(
+            "${SINK_NAME}".to_string(),
+            TextFmt::Json,
+            "${SINK_KIND}".to_string(),
+            params,
+            Some("${SINK_FILTER}".to_string()),
+        );
+        let flex = FlexGroup {
+            name: "${GROUP_NAME}".to_string(),
+            parallel: 2,
+            rule: WildArray::default(),
+            oml: WildArray::default(),
+            tags: vec!["env-${TAG}".to_string()],
+            filter: Some("${GROUP_FILTER}".to_string()),
+            expect: None,
+            sinks: vec![sink],
+        };
+
+        let mut dict = EnvDict::new();
+        dict.insert("GROUP_NAME", ValueType::from("alpha"));
+        dict.insert("TAG", ValueType::from("prod"));
+        dict.insert("GROUP_FILTER", ValueType::from("grp-filter"));
+        dict.insert("SINK_NAME", ValueType::from("sink-file"));
+        dict.insert("SINK_KIND", ValueType::from("file"));
+        dict.insert("SINK_FILTER", ValueType::from("sink-filter"));
+        dict.insert("WORK_ROOT", ValueType::from("/tmp/work"));
+        dict.insert("FILE", ValueType::from("data.log"));
+
+        let evaluated = flex.env_eval(&dict);
+        assert_eq!(evaluated.name(), "alpha");
+        assert_eq!(evaluated.tags(), &vec!["env-prod".to_string()]);
+        assert_eq!(evaluated.filter(), &Some("grp-filter".to_string()));
+        let sink = evaluated.sinks().first().expect("one sink");
+        assert_eq!(sink.name(), "sink-file");
+        assert_eq!(sink.resolved_kind_str(), "file");
+        assert_eq!(sink.filter(), &Some("sink-filter".to_string()));
+        let params = sink.resolved_params_table();
+        assert_eq!(
+            params.get("base").and_then(|v| v.as_str()),
+            Some("/tmp/work/out")
+        );
+        assert_eq!(
+            params.get("file").and_then(|v| v.as_str()),
+            Some("data.log")
+        );
+    }
 }

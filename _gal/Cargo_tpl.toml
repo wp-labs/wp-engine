@@ -158,6 +158,7 @@ mockall = { workspace = true }
 # --- Internal: Core Libraries ---
 orion_overload= { path = "crates/orion_overload" }
 orion_exp = { path = "crates/orion_exp" }
+orion-sec  =  {workspace = true }
 
 # --- Internal: Configuration & Knowledge ---
 wp_conf = { package = "wp-config", path = "crates/wp-config" }
@@ -196,10 +197,10 @@ wp-data-fmt = { workspace = true }
 
 [dev-dependencies]
 serial_test = "3"
-httpmock = "~0.8"
-collection_literals = "~1.0"
+httpmock = "0.8"
+collection_literals = "1.0"
 criterion = { workspace = true }
-tempfile = "~3.23"
+tempfile = "3.23"
 
 # ============================================================================
 # Feature Flags
@@ -346,6 +347,8 @@ rust-crypto = "0.2"
 
 # --- Configuration ---
 orion_conf = { version = "0.3", features = ["yaml", "toml"] }
+orion-sec  = "0.3"
+orion-variate = "0.10"
 
 # --- Testing ---
 criterion = "0.8"

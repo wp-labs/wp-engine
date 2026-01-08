@@ -59,7 +59,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.7.0"
+version = "1.8.0"
 edition = "2024"
 license = "SLv2"
 
@@ -158,6 +158,7 @@ mockall = { workspace = true }
 # --- Internal: Core Libraries ---
 orion_overload= { path = "crates/orion_overload" }
 orion_exp = { path = "crates/orion_exp" }
+orion-sec  =  {workspace = true }
 
 # --- Internal: Configuration & Knowledge ---
 wp_conf = { package = "wp-config", path = "crates/wp-config" }
@@ -196,10 +197,10 @@ wp-data-fmt = { workspace = true }
 
 [dev-dependencies]
 serial_test = "3"
-httpmock = "~0.8"
-collection_literals = "~1.0"
+httpmock = "0.8"
+collection_literals = "1.0"
 criterion = { workspace = true }
-tempfile = "~3.23"
+tempfile = "3.23"
 
 # ============================================================================
 # Feature Flags
@@ -240,121 +241,124 @@ normal = ["ctor"]
 
 [workspace.dependencies]
 # --- Async Runtime ---
-tokio = { version = "~1.48", features = ["full"] }
-async-trait = "~0.1"
-futures-util = "~0.3"
-smol_str = { version = "~0.3", features = ["serde"] }
+tokio = { version = "1.48", features = ["full"] }
+async-trait = "0.1"
+futures-util = "0.3"
+smol_str = { version = "0.3", features = ["serde"] }
 
 # --- Serialization ---
-serde = "~1.0"
-serde_json = "~1.0"
-serde_derive = "~1.0"
-toml = "~0.9"
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+toml = "0.9"
 
 # --- Error Handling & Logging ---
-anyhow = "~1.0"
-thiserror = "~2.0"
-log = "~0.4"
-env_logger = "~0.11"
-orion-error = "0.5.5"
+anyhow = "1.0"
+thiserror = "2.0"
+log = "0.4"
+env_logger = "0.11"
+orion-error = "0.5"
 
 # --- Parsing & Text ---
-winnow = "~0.7"
-regex = "~1.12"
-wildmatch = "~2.6"
-strfmt = "~0.2"
-memchr = "~2.7"
+winnow = "0.7"
+regex = "1.12"
+wildmatch = "2.6"
+strfmt = "0.2"
+memchr = "2.7"
 
 # --- Data Types & Utilities ---
-chrono = "~0.4"
-bytes = "~1.11"
-uuid = { version = "1.11.1", features = ["v4"] }
-base64 = "~0.22"
-hex = "~0.4"
-ipnet = "~2.11"
-glob = "~0.3"
-rand = "~0.9"
-rand_distr = "~0.5"
+chrono = "0.4"
+bytes = "1.11"
+uuid = { version = "1.11", features = ["v4"] }
+base64 = "0.22"
+hex = "0.4"
+ipnet = "2.11"
+glob = "0.3"
+rand = "0.9"
+rand_distr = "0.5"
 ordered-float = "5.1"
-lru = "~0.16"
-arrayvec = "~0.7"
-unicode-segmentation = "~1.12"
-ahash = "~0.8"
+lru = "0.16"
+arrayvec = "0.7"
+unicode-segmentation = "1.12"
+ahash = "0.8"
 
 # --- Code Generation & Macros ---
 derive_more = "2.1"
-derive_builder = "~0.20"
-getset = "0.1.6"
-educe = { version = "~0.6", default-features = false }
-enum_dispatch = "~0.3"
-contracts = "~0.6"
-lazy_static = "~1.5"
-once_cell = "~1.21"
-derive-getters = "~0.5"
-strum = "~0.27"
-strum_macros = "~0.27"
-parse-display = "~0.10"
-parse-display-derive = "~0.10"
-ctor = "~0.6"
+derive_builder = "0.20"
+getset = "0.1"
+educe = { version = "0.6", default-features = false }
+enum_dispatch = "0.3"
+contracts = "0.6"
+lazy_static = "1.5"
+once_cell = "1.21"
+derive-getters = "0.5"
+strum = "0.27"
+strum_macros = "0.27"
+parse-display = "0.10"
+parse-display-derive = "0.10"
+ctor = "0.6"
 
 # --- System & Platform ---
-arcstr = "~1.2"
-walkdir = "~2.5"
-libc = "~0.2"
-hostname = "~0.4"
-socket2 = "~0.6"
-async-signal = "~0.2"
-signal-hook-registry = "~1.4"
-getrandom = { version = "~0.3"  }
-sysinfo = "~0.37"
+arcstr = "1.2"
+walkdir = "2.5"
+libc = "0.2"
+hostname = "0.4"
+socket2 = "0.6"
+async-signal = "0.2"
+signal-hook-registry = "1.4"
+getrandom = { version = "0.3"  }
+sysinfo = "0.37"
 
 # --- Async Runtime & Concurrency ---
-tokio-util = { version = "~0.7", features = ["full"] }
-tokio-async-drop = "~0.1"
-futures-lite = "~2.6"
-async-broadcast = "~0.7"
+tokio-util = { version = "0.7", features = ["full"] }
+tokio-async-drop = "0.1"
+futures-lite = "2.6"
+async-broadcast = "0.7"
 
 # --- Time & Date ---
-time = "~0.3"
+time = "0.3"
 
 # --- CLI ---
-clap = { version = "~4.5", features = ["derive"] }
-comfy-table = "~7.2"
+clap = { version = "4.5", features = ["derive"] }
+comfy-table = "7.2"
 
 # --- Database ---
 rusqlite = { version = "0.32.1", features = ["backup", "functions"] }
-r2d2 = "~0.8"
-r2d2_sqlite = "0.25.0"
+r2d2 = "0.8"
+r2d2_sqlite = "0.25"
 
 # --- Web & Network ---
-url = "2.5.4"
-mailchecker = "6.0.15"
-idcard = "0.3.0"
-phone = "0.1.2"
+url = "2.5"
+mailchecker = "6.0"
+idcard = "0.3"
+phone = "0.1"
 html-escape = "0.2"
 escape8259 = "0.5"
-imap-types = "1.0.0"
+imap-types = "1.0"
 
 # --- Text Processing & Format ---
-csv = "~1.4"
+csv = "1.4"
 md5 = "0.8"
 encoding_rs = "0.8"
-similar = "~2.7"
+similar = "2.7"
 
 # --- Cryptography ---
-rust-crypto = "~0.2"
+rust-crypto = "0.2"
 
 # --- Configuration ---
-orion_conf = { version = "~0.3", features = ["yaml", "toml"] }
+orion_conf = { version = "0.3", features = ["yaml", "toml"] }
+orion-sec  = { git = "https://github.com/galaxy-sec/orion-sec.git" , tag = "v0.3.0"}
+
+orion-variate = "0.10"
 
 # --- Testing ---
-criterion = "~0.8"
-tokio-test = "0.4.4"
-mockall = "~0.14"
-tempfile = "~3.23"
+criterion = "0.8"
+tokio-test = "0.4"
+mockall = "0.14"
+tempfile = "3.23"
 serial_test = "3"
-httpmock = "~0.8"
-collection_literals = "~1.0"
+httpmock = "0.8"
+collection_literals = "1.0"
 arbitrary = { version = "1.4", features = ["derive"] }
 libfuzzer-sys = "0.4"
 

@@ -2,6 +2,7 @@
 use crate::structure::{FixedGroup, FlexGroup};
 use anyhow::Result as AnyResult;
 use orion_error::ToStructError;
+use orion_variate::EnvEvaluable;
 use wp_error::config_error::ConfResult;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -18,6 +19,16 @@ pub struct InfraSinkConf {
     pub error: FixedGroup,
 }
 
+impl EnvEvaluable<InfraSinkConf> for InfraSinkConf {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> Self {
+        self.default = self.default.env_eval(dict);
+        self.miss = self.miss.env_eval(dict);
+        self.residue = self.residue.env_eval(dict);
+        self.monitor = self.monitor.env_eval(dict);
+        self.error = self.error.env_eval(dict);
+        self
+    }
+}
 impl InfraSinkConf {
     pub fn clean_local_file(&self) -> AnyResult<()> {
         for i in self.miss.sinks() {

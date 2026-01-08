@@ -6,7 +6,9 @@ use anyhow::Context;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_conf::{ToStructError, TomlIO};
 use orion_error::{ErrorOwe, ErrorWith, UvsValidationFrom};
+use orion_variate::EnvEvaluable;
 use serde::Serialize;
+use wp_connector_api::ParamMap;
 use wp_error::config_error::{ConfReason, ConfResult};
 use wp_log::info_ctrl;
 
@@ -184,6 +186,28 @@ impl PathGroup {
     pub fn new(fst: Option<PathBuf>, sec: Option<PathBuf>) -> Self {
         PathGroup { fst, sec }
     }
+}
+
+pub fn env_eval_params(mut params: ParamMap, dict: &orion_variate::EnvDict) -> ParamMap {
+    for (_, v) in params.iter_mut() {
+        match v {
+            serde_json::Value::String(str_val) => {
+                *str_val = str_val.clone().env_eval(dict);
+            }
+            _ => {}
+        }
+    }
+    params
+}
+
+pub fn env_eval_vec<T: EnvEvaluable<T> + Clone>(
+    mut params: Vec<T>,
+    dict: &orion_variate::EnvDict,
+) -> Vec<T> {
+    for v in params.iter_mut() {
+        *v = v.clone().env_eval(dict);
+    }
+    params
 }
 
 #[cfg(test)]

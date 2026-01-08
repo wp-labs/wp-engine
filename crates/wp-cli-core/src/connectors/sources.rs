@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
 use wp_conf::connectors::{
     ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table,
 };
@@ -109,6 +110,7 @@ pub fn route_table(
     work_root: &str,
     eng_conf: &EngineConfig,
     path_like: Option<&str>,
+    ditc: &EnvDict,
 ) -> OrionConfResult<Vec<RouteRow>> {
     let wpsrc_path = resolve_wpsrc_path(work_root, eng_conf)?;
     let conn_base = find_connectors_dir(&wpsrc_path).ok_or_else(|| {
@@ -118,7 +120,7 @@ pub fn route_table(
         ))
     })?;
     let conn_map = load_connectors_map(&conn_base)?;
-    let wrapper = WpSourcesConfig::load_toml(&wpsrc_path)?;
+    let wrapper = WpSourcesConfig::load_toml(&wpsrc_path)?.env_eval(dict);
     let mut rows: Vec<RouteRow> = Vec::new();
     for src in wrapper.sources.into_iter() {
         let conn = conn_map.get(&src.connect).ok_or_else(|| {
@@ -231,7 +233,9 @@ params_override = { path = "/data/x.dat" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let rows = route_table(root.to_string_lossy().as_ref(), &eng, None).expect("routes");
+        let mut env_dict = EnvDict::new();
+        let rows =
+            route_table(root.to_string_lossy().as_ref(), &eng, None, &env_dict).expect("routes");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].key, "s1");
         assert_eq!(rows[0].kind, "file");
@@ -266,10 +270,17 @@ params_override = { path = "/data/a.dat" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let rows_all = route_table(root.to_string_lossy().as_ref(), &eng, None).expect("all");
+        let env_dict = EnvDict::new();
+        let rows_all =
+            route_table(root.to_string_lossy().as_ref(), &eng, None, &env_dict).expect("all");
         assert_eq!(rows_all.len(), 1);
-        let rows_none =
-            route_table(root.to_string_lossy().as_ref(), &eng, Some("b.dat")).expect("filtered");
+        let rows_none = route_table(
+            root.to_string_lossy().as_ref(),
+            &eng,
+            Some("b.dat"),
+            &env_dict,
+        )
+        .expect("filtered");
         assert_eq!(rows_none.len(), 0);
     }
 }

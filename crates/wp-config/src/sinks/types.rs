@@ -1,6 +1,7 @@
 use crate::connectors::ConnectorTomlFile;
 use crate::structure::GroupExpectSpec;
 use crate::structure::SinkExpectOverride;
+use orion_variate::EnvEvaluable;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use wp_connector_api::ConnectorDef;
@@ -17,6 +18,11 @@ pub struct RouteFile {
     /// 原始文件路径（IO 层注入；用于错误上下文）
     #[serde(skip)]
     pub origin: Option<PathBuf>,
+}
+impl EnvEvaluable<RouteFile> for RouteFile {
+    fn env_eval(self, dict: &orion_variate::EnvDict) -> RouteFile {
+        todo!()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -41,6 +47,12 @@ pub struct RouteGroup {
     pub sinks: Vec<RouteSink>,
 }
 
+impl EnvEvaluable<RouteGroup> for RouteGroup {
+    fn env_eval(self, dict: &orion_variate::EnvDict) -> Self {
+        todo!()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RouteSink {
     #[serde(rename = "use", alias = "connect", alias = "connector")]
@@ -48,8 +60,7 @@ pub struct RouteSink {
     /// 同一 sink_group 内唯一名称（配置字段仍为 `name`）
     #[serde(default, rename = "name")]
     inner_name: Option<String>,
-    // 统一写法：params（不再兼容 params_override）
-    #[serde(default, rename = "params")]
+    #[serde(default)]
     params: ParamMap,
     /// sink 级标签
     #[serde(default)]

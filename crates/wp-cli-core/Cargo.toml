@@ -10,6 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+orion-variate =  {workspace = true }
 orion-error = { workspace = true }
 wp-conf = { path = "../wp-config", package = "wp-config" }
 wpcnt_lib = { package = "wp-cli-utils", path = "../wp-cli-utils" }

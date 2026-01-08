@@ -14,6 +14,7 @@ name = "wp_conf"
 winnow = { workspace = true }
 orion-error = { workspace = true }
 orion_conf = { workspace = true }
+orion-variate =  {workspace = true }
 derive_more = { workspace = true }
 wp_knowledge = { package = "wp-knowledge", path = "../wp-knowledge" }
 orion_exp = { path = "../orion_exp" }

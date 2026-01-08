@@ -1,10 +1,12 @@
 use super::expect::SinkExpectOverride;
 use crate::types::AnyResult;
+use crate::utils::{env_eval_params, env_eval_vec};
 use crate::{cond::WarpConditionParser, structure::Validate};
 use derive_getters::Getters;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_conf::{ErrorOwe, ErrorWith, ToStructError};
 use orion_error::{ContextRecord, OperationContext, UvsValidationFrom};
+use orion_variate::EnvEvaluable;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -30,6 +32,18 @@ pub struct SinkInstanceConf {
     /// 运行期上下文：所属组名（仅在路由装配阶段注入；不参与序列化）
     #[serde(skip, default)]
     pub group_name: Option<String>,
+}
+
+impl EnvEvaluable<SinkInstanceConf> for SinkInstanceConf {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> SinkInstanceConf {
+        self.core.name = self.core.name.env_eval(dict);
+        self.core.kind = self.core.kind.env_eval(dict);
+        self.core.params = env_eval_params(self.core.params, dict);
+        self.core.tags = env_eval_vec(self.core.tags, dict);
+        self.core.filter = self.core.filter.env_eval(dict);
+        self.connector_id = self.connector_id.env_eval(dict);
+        self
+    }
 }
 
 // derive(Deserialize) via flatten core (CoreSinkSpec)
@@ -253,6 +267,7 @@ impl Validate for SinkInstanceConf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use orion_variate::{EnvDict, ValueType};
     use serde_json::json;
 
     fn tbl(k: &str, v: &str) -> ParamMap {
@@ -317,6 +332,49 @@ path = "p2.dat"
 
         s.set_filter(Some("ff".to_string()));
         assert_eq!(s.core.filter, s.filter().clone());
+    }
+
+    #[test]
+    fn env_eval_rewrites_all_fields() {
+        let mut params = ParamMap::new();
+        params.insert("base".into(), json!("${WORK_ROOT}/out"));
+        params.insert("file".into(), json!("${FILE_NAME}"));
+        let mut sink = SinkInstanceConf::new_type(
+            "${SINK_NAME}".to_string(),
+            TextFmt::Json,
+            "${SINK_KIND}".to_string(),
+            params,
+            None,
+        );
+        sink.set_tags(vec!["${TAG_ONE}".to_string(), "env-${TAG_TWO}".to_string()]);
+        sink.connector_id = Some("${CONNECTOR}".to_string());
+
+        let mut dict = EnvDict::new();
+        dict.insert("SINK_NAME", ValueType::from("file_sink"));
+        dict.insert("SINK_KIND", ValueType::from("file"));
+        dict.insert("WORK_ROOT", ValueType::from("/tmp/work"));
+        dict.insert("FILE_NAME", ValueType::from("test.dat"));
+        dict.insert("TAG_ONE", ValueType::from("alpha"));
+        dict.insert("TAG_TWO", ValueType::from("beta"));
+        dict.insert("CONNECTOR", ValueType::from("file_raw_sink"));
+
+        let evaluated = sink.env_eval(&dict);
+        assert_eq!(evaluated.name(), "file_sink");
+        assert_eq!(evaluated.resolved_kind_str(), "file");
+        let params = evaluated.resolved_params_table();
+        assert_eq!(
+            params.get("base").and_then(|v| v.as_str()),
+            Some("/tmp/work/out")
+        );
+        assert_eq!(
+            params.get("file").and_then(|v| v.as_str()),
+            Some("test.dat")
+        );
+        assert_eq!(
+            evaluated.tags(),
+            &vec!["alpha".to_string(), "env-beta".to_string()]
+        );
+        assert_eq!(evaluated.connector_id.as_deref(), Some("file_raw_sink"));
     }
 
     // manual_mutation_can_resync_core: 不再支持直接字段突变
