@@ -1,4 +1,5 @@
 use anyhow::Result;
+use orion_variate::EnvDict;
 use std::path::Path;
 
 /// Build groups and rows for sinks, used by validators. Caller supplies sink_root and ctx.
@@ -14,7 +15,10 @@ pub fn build_groups_v2(
     let mut rows = Vec::new();
     let mut groups = Vec::new();
     let mut total = 0u64;
-    for conf in wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref())? {
+    let env_dict = EnvDict::new();
+    for conf in
+        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
+    {
         let g = conf.sink_group;
         if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
@@ -30,7 +34,9 @@ pub fn build_groups_v2(
         );
         groups.push(gacc);
     }
-    for conf in wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref())? {
+    for conf in
+        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
+    {
         let g = conf.sink_group;
         if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;

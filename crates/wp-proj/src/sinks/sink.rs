@@ -1,4 +1,5 @@
 use orion_error::ErrorConv;
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use wp_cli_core::connectors::sinks as sinks_core;
@@ -58,7 +59,8 @@ impl Sinks {
         }
 
         let sink_root = self.sink_root();
-        let defaults = load_sink_defaults(&sink_root).err_conv()?;
+        let env_dict = EnvDict::new();
+        let defaults = load_sink_defaults(&sink_root, &env_dict).err_conv()?;
         let conn_map = load_connectors_for(sink_root.to_string_lossy().as_ref()).err_conv()?;
         let mut rows = Vec::new();
 
@@ -66,7 +68,7 @@ impl Sinks {
             ("biz", business_dir(&sink_root)),
             ("infra", infra_dir(&sink_root)),
         ] {
-            let route_files = load_route_files_from(&dir).err_conv()?;
+            let route_files = load_route_files_from(&dir, &env_dict).err_conv()?;
             for rf in route_files {
                 let conf = build_route_conf_from(&rf, defaults.as_ref(), &conn_map).err_conv()?;
                 let group = conf.sink_group;

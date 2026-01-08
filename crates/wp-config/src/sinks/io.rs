@@ -1,11 +1,10 @@
 use super::types::*;
 use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::TomlIO;
-use orion_conf::error::{ConfIOReason, OrionConfResult};
-use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
+use orion_conf::error::OrionConfResult;
+use orion_error::ErrorWith;
 use orion_variate::{EnvDict, EnvEvalable};
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 use wp_connector_api::ConnectorScope;
 
@@ -69,7 +68,7 @@ pub fn load_route_files_from(dir: &Path, dict: &EnvDict) -> OrionConfResult<Vec<
 
 pub fn load_sink_defaults<P: AsRef<Path>>(
     sink_root: P,
-    dict: &EnvDict,
+    _dict: &EnvDict,
 ) -> OrionConfResult<Option<DefaultsBody>> {
     let p = sink_root.as_ref().join(PATH_DEFAULTS_FILE);
     if !p.exists() {

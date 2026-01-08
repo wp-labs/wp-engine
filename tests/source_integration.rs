@@ -8,8 +8,11 @@
 //! - Error handling and validation
 //! - Tag functionality and metadata attachment
 
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
+use tempfile::NamedTempFile;
 use tokio::time::{Duration, timeout};
+use wp_conf::RunMode;
 use wp_engine::connectors::registry as reg;
 use wp_engine::sources::SourceConfigParser;
 use wp_parse_api::RawData;
@@ -494,6 +497,8 @@ async fn source_error_handling_detects_invalid_configurations() {
 
     let work_dir = PathBuf::from(".");
     let parser = SourceConfigParser::new(work_dir);
+    let env_dict = EnvDict::new();
+    let run_mode = RunMode::Daemon;
 
     // Test 1: Non-existent file should fail
     let invalid_file_config = r#"
@@ -508,7 +513,11 @@ params_override = {
 }
 "#;
 
-    let result = parser.build_source_handles(invalid_file_config).await;
+    let tmp_wpsrc = NamedTempFile::new().expect("create temp wpsrc");
+    std::fs::write(tmp_wpsrc.path(), invalid_file_config).expect("write temp wpsrc");
+    let result = parser
+        .build_source_handles(tmp_wpsrc.path(), run_mode, &env_dict)
+        .await;
     assert!(result.is_err(), "Expected failure for non-existent file");
     println!("✅ Non-existent file correctly rejected");
 
@@ -526,7 +535,9 @@ params_override = {
 }
 "#;
 
-    let result = parser.parse_specs_and_build(invalid_port_config).await;
+    let result = parser
+        .parse_and_build_from(invalid_port_config, &env_dict)
+        .await;
     assert!(result.is_err(), "Expected failure for invalid port");
     println!("✅ Invalid port configuration correctly rejected");
 }

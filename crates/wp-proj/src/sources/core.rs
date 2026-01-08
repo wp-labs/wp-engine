@@ -6,6 +6,7 @@
 
 use orion_conf::TomlIO;
 use orion_error::{ErrorConv, ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -169,7 +170,8 @@ impl Sources {
 
     /// Builds source specifications for validation
     fn build_source_specs(&self, wpsrc_path: &Path) -> RunResult<()> {
-        let _specs = build_sources_from_file(wpsrc_path).map_err(|e| {
+        let env_dict = EnvDict::new();
+        let _specs = build_sources_from_file(wpsrc_path, &env_dict).map_err(|e| {
             RunReason::from_conf(format!("Failed to build source specs: {}", e)).to_err()
         })?;
         Ok(())

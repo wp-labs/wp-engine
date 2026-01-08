@@ -20,7 +20,7 @@ use wp_stat::{StatRequires, StatStage};
 
 use crate::facade::args::ParseArgs;
 use crate::orchestrator::config::loader::WarpConf;
-use crate::orchestrator::config::models::{load_warp_engine_confs, stat_reqs_from};
+use crate::orchestrator::config::models::{load_warp_engine_confs_with_dict, stat_reqs_from};
 use crate::orchestrator::engine::resource::EngineResource;
 use crate::orchestrator::engine::resource::WarpResourceBuilder;
 use crate::orchestrator::engine::service::start_warp_service;
@@ -57,7 +57,7 @@ impl WpApp {
         let env_dict =
             load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
         let (conf_manager, mut main_conf) =
-            load_warp_engine_confs(args.work_root.as_str(), &env_dict)?;
+            load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
         // CLI 覆盖：当提供 --wpl-dir 时，优先于 wparse.toml 的 [models].wpl
         if let Some(dir) = &args.wpl_dir {
             main_conf.set_rule_root(dir.clone());
@@ -243,7 +243,6 @@ async fn load_engine_res(
     // 源配置：解析 wpsrc.toml（统一 [[sources]] + connectors）
     let parser = SourceConfigParser::new(PathBuf::from(conf_manager.work_root_path()));
     let wpsrc_path = PathBuf::from(main_conf.src_conf_of(constants::WPSRC_TOML));
-    let config_str = std::fs::read_to_string(&wpsrc_path).owe_conf()?;
     let (_src_keys, source_inits, acceptor_inits) = parser
         .build_source_handles(&wpsrc_path, run_mode, env_dict)
         .await

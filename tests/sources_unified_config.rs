@@ -1,3 +1,4 @@
+use orion_variate::EnvDict;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -51,8 +52,9 @@ params_override = { }
 
     // 4) 解析并构建（work_dir 指向 tmp/test_v2，使解析器能向上寻找 connectors/source.d）
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
+    let env_dict = EnvDict::new();
     let (inits, _) = parser
-        .parse_and_build_from(cfg)
+        .parse_and_build_from(cfg, &env_dict)
         .await
         .expect("parse_and_build_from_str failed");
 
@@ -136,7 +138,8 @@ enable = true
 connect = "file_main"
 "#;
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
-    let res = parser.parse_and_build_from(cfg).await;
+    let env_dict = EnvDict::new();
+    let res = parser.parse_and_build_from(cfg, &env_dict).await;
     assert!(res.is_err(), "expect error without connectors");
     let s = format!("{}", res.unwrap_err());
     println!("{}", s);
@@ -184,8 +187,9 @@ params_override = { }
 
     // 4) 构建并断言成功
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
+    let env_dict = EnvDict::new();
     let (inits, _) = parser
-        .parse_and_build_from(cfg)
+        .parse_and_build_from(cfg, &env_dict)
         .await
         .expect("parse_and_build_from (base+file) failed");
     assert_eq!(inits.len(), 1);
@@ -224,7 +228,8 @@ connect = "file_main"
 params_override = { encode = "hex" }
 "#;
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
-    let res = parser.parse_and_build_from(cfg).await;
+    let env_dict = EnvDict::new();
+    let res = parser.parse_and_build_from(cfg, &env_dict).await;
     assert!(res.is_err(), "expect error due to override not allowed");
 }
 

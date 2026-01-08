@@ -33,8 +33,6 @@ pub struct RouteGroup {
     pub name: String,
     #[serde(default)]
     pub parallel: Option<usize>,
-    #[serde(rename = "match")]
-    /// 顶层扁平写法：oml/rule；可为字符串或字符串数组
     #[serde(default)]
     pub oml: Option<StringOrArray>,
     #[serde(default)]

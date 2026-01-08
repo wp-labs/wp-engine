@@ -1,4 +1,5 @@
 use anyhow::Result;
+use orion_variate::EnvDict;
 use std::path::Path;
 use wp_conf::{
     engine::EngineConfig,
@@ -30,7 +31,8 @@ pub fn stat_sink_file(
     }
     let mut rows = Vec::new();
     let mut total = 0u64;
-    for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref())? {
+    let env_dict = EnvDict::new();
+    for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
         let g = conf.sink_group;
         if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
@@ -45,7 +47,7 @@ pub fn stat_sink_file(
             &mut total,
         );
     }
-    for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref())? {
+    for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
         let g = conf.sink_group;
         if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;

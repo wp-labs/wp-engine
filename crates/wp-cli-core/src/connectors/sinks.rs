@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use orion_conf::ToStructError;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, UvsValidationFrom};
+use orion_variate::EnvDict;
 
 use wp_conf::connectors::{
     ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table,
@@ -48,6 +49,7 @@ impl RouteFileWithPath {
 /// Recursively discover sink route files under `usecase/*/(sink/business.d|sink/infra.d)`.
 fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
     let mut out: Vec<RouteFileWithPath> = Vec::new();
+    let env_dict = EnvDict::new();
     // 1) usecase/*/<case>/sink/{business.d,infra.d}
     let uc = work_root.join("usecase");
     if uc.exists() {
@@ -57,7 +59,7 @@ fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
                 let r2 = case.join("sink/infra.d");
                 for rd in [r1, r2] {
                     if rd.exists() {
-                        let rfs = load_route_files_from(&rd)?;
+                        let rfs = load_route_files_from(&rd, &env_dict)?;
                         for rf in rfs.into_iter() {
                             let path = rf.origin.clone().unwrap_or_else(|| rd.clone());
                             out.push(RouteFileWithPath { inner: rf, path });
@@ -72,7 +74,7 @@ fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
     let models = work_root.join("models").join("sinks");
     for rd in [models.join("business.d"), models.join("infra.d")] {
         if rd.exists() {
-            let rfs = load_route_files_from(&rd)?;
+            let rfs = load_route_files_from(&rd, &env_dict)?;
             for rf in rfs.into_iter() {
                 let path = rf.origin.clone().unwrap_or_else(|| rd.clone());
                 out.push(RouteFileWithPath { inner: rf, path });
@@ -86,6 +88,7 @@ fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
 pub fn validate_routes(work_root: &str) -> OrionConfResult<()> {
     let wr = PathBuf::from(work_root);
     let routes = load_routes(&wr)?;
+    let env_dict = EnvDict::new();
     for rf in &routes {
         let sink_root = rf
             .path
@@ -94,7 +97,7 @@ pub fn validate_routes(work_root: &str) -> OrionConfResult<()> {
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
         let conn_map = load_sink_connectors(&sink_root)?;
-        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref())?;
+        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map)?;
 
         // 验证 FlexGroup 配置：OML 和 RULE 只能有一个
@@ -172,6 +175,7 @@ pub fn list_connectors_usage(
     let conn_map = load_sink_connectors(Path::new(work_root))?;
     let routes = load_routes(&wr)?;
     let mut usage: Vec<(String, String, String)> = Vec::new();
+    let env_dict = EnvDict::new();
     for rf in &routes {
         let sink_root = rf
             .path
@@ -180,7 +184,7 @@ pub fn list_connectors_usage(
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
         let conn_map_local = load_sink_connectors(&sink_root)?;
-        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref())?;
+        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map_local)?;
         let g = conf.sink_group;
         for s in g.sinks.iter() {
@@ -220,6 +224,7 @@ pub fn route_table(
     let wr = PathBuf::from(work_root);
     let mut out = Vec::new();
     let rows = load_routes(&wr)?;
+    let env_dict = EnvDict::new();
     for rf in rows {
         let sink_root = rf
             .path
@@ -228,7 +233,7 @@ pub fn route_table(
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
         let conn_map_local = load_sink_connectors(&sink_root)?;
-        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref())?;
+        let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map_local)?;
         let g = conf.sink_group;
         let scope = if rf.path.to_string_lossy().contains("/infra.d/")

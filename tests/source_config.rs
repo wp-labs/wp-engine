@@ -8,6 +8,7 @@
 //! - Parameter override enforcement
 //! - Base+file path handling
 
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 use wp_engine::facade::test_helpers as fth;
@@ -302,17 +303,21 @@ async fn unified_config_builds_file_source_successfully() -> anyhow::Result<()> 
 
     // Parse and build configuration
     let parser = create_config_parser(test_dir);
+    let env_dict = EnvDict::new();
     let (sources, _) = parser
-        .parse_and_build_from(&format!(
-            r#"
+        .parse_and_build_from(
+            &format!(
+                r#"
 [[sources]]
 key = "{}"
 enable = true
 connect = "{}"
 params_override = {{ }}
 "#,
-            FILE_SOURCE_KEY, FILE_CONNECTOR_ID
-        ))
+                FILE_SOURCE_KEY, FILE_CONNECTOR_ID
+            ),
+            &env_dict,
+        )
         .await
         .expect("Failed to parse and build configuration");
 
@@ -414,7 +419,8 @@ async fn build_fails_without_connectors() {
     let source_config = SourceConfigBuilder::new("s1", FILE_CONNECTOR_ID).build();
 
     let parser = create_config_parser(test_dir);
-    let result = parser.parse_and_build_from(&source_config).await;
+    let env_dict = EnvDict::new();
+    let result = parser.parse_and_build_from(&source_config, &env_dict).await;
 
     assert!(result.is_err(), "Build should fail without connectors");
 
@@ -464,17 +470,21 @@ async fn unified_config_handles_base_file_parameters() -> anyhow::Result<()> {
 
     // Parse and build configuration
     let parser = create_config_parser(test_dir);
+    let env_dict = EnvDict::new();
     let (sources, _) = parser
-        .parse_and_build_from(&format!(
-            r#"
+        .parse_and_build_from(
+            &format!(
+                r#"
 [[sources]]
 key = "{}"
 enable = true
 connect = "{}"
 params_override = {{ }}
 "#,
-            FILE_SOURCE_KEY, FILE_CONNECTOR_ID
-        ))
+                FILE_SOURCE_KEY, FILE_CONNECTOR_ID
+            ),
+            &env_dict,
+        )
         .await
         .expect("Failed to parse and build base+file configuration");
 
@@ -518,17 +528,21 @@ async fn unified_config_enforces_parameter_override_whitelist() {
 
     // Attempt to parse and build configuration
     let parser = create_config_parser(test_dir);
+    let env_dict = EnvDict::new();
     let result = parser
-        .parse_and_build_from(&format!(
-            r#"
+        .parse_and_build_from(
+            &format!(
+                r#"
 [[sources]]
 key = "{}"
 enable = true
 connect = "{}"
 params_override = {{ encode = "hex" }}
 "#,
-            "s1", FILE_CONNECTOR_ID
-        ))
+                "s1", FILE_CONNECTOR_ID
+            ),
+            &env_dict,
+        )
         .await;
 
     assert!(

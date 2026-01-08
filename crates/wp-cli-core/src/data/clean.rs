@@ -1,4 +1,5 @@
 use anyhow::Result;
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::Path;
 use wp_conf::structure::SinkInstanceConf;
@@ -28,15 +29,18 @@ pub fn clean_outputs(sink_root: &Path) -> Result<DataCleanReport> {
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         return Ok(rep);
     }
-    for conf in wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref())
-        .unwrap_or_default()
+    let env_dict = EnvDict::new();
+    for conf in
+        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)
+            .unwrap_or_default()
     {
         for s in conf.sink_group.sinks.iter() {
             append_clean_item(&mut rep, s)?;
         }
     }
-    for conf in wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref())
-        .unwrap_or_default()
+    for conf in
+        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)
+            .unwrap_or_default()
     {
         for s in conf.sink_group.sinks.iter() {
             append_clean_item(&mut rep, s)?;

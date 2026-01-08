@@ -155,7 +155,6 @@ impl SourceConfigParser {
         // Filter specs by run_mode
         let filtered: Vec<SourceInstanceConf> = match run_mode {
             wp_conf::RunMode::Batch => {
-                let mut skipped: Vec<(String, String)> = Vec::new();
                 let kept: Vec<SourceInstanceConf> = specs
                     .into_iter()
                     .filter_map(|item| {

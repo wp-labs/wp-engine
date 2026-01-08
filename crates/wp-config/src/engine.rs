@@ -139,16 +139,6 @@ pub fn default_rescue_path() -> String {
     "./data/rescue".to_string()
 }
 
-fn reject_data_path<'de, D>(_de: D) -> Result<Option<String>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Error as DeError;
-    Err(D::Error::custom(
-        "[rescue].data_path 已移除；请改为 [rescue].path",
-    ))
-}
-
 pub fn default_parse_workers() -> usize {
     2
 }

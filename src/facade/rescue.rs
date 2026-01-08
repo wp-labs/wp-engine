@@ -13,7 +13,7 @@ use wp_stat::{StatRequires, StatStage};
 
 use crate::facade::args::ParseArgs;
 use crate::orchestrator::config::loader::WarpConf;
-use crate::orchestrator::config::models::{load_warp_engine_confs, stat_reqs_from};
+use crate::orchestrator::config::models::{load_warp_engine_confs_with_dict, stat_reqs_from};
 use crate::orchestrator::engine::recovery::recover_main;
 use crate::resources::core::manager::ResManager;
 use crate::runtime::sink::act_sink::SinkService;
@@ -38,7 +38,8 @@ impl WpRescueApp {
         args.ensure_work_root_absolute()?;
         let env_dict =
             load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
-        let (conf_manager, main_conf) = load_warp_engine_confs(args.work_root.as_str(), &env_dict)?;
+        let (conf_manager, main_conf) =
+            load_warp_engine_confs_with_dict(args.work_root.as_str(), &env_dict)?;
         let run_args = args.completion_from(&main_conf)?;
         let stat_reqs = stat_reqs_from(main_conf.stat_conf());
         log_init(main_conf.log_conf()).err_conv()?;

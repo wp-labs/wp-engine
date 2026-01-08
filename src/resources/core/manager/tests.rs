@@ -6,6 +6,7 @@ use crate::resources::ResManager;
 use crate::runtime::sink::infrastructure::InfraSinkService;
 use orion_error::ErrorOwe;
 use orion_error::UvsLogicFrom;
+use orion_variate::EnvDict;
 use wp_conf::utils::save_data;
 use wp_error::RunReason;
 use wp_error::run_error::RunResult;
@@ -21,10 +22,12 @@ async fn test_res() -> RunResult<()> {
     let _data_src = conf_manager.load_source_config()?;
     let stat_reqs = stat_reqs_from(main_conf.stat_conf());
 
+    let env_dict = EnvDict::new();
     let infra_sinks = InfraSinkService::default_ins(
         main_conf.sinks_root(),
         main_conf.rescue_root(),
         stat_reqs.get_requ_items(StatStage::Sink),
+        &env_dict,
     )
     .await?;
     let mut res_center = ResManager::default();
@@ -34,7 +37,7 @@ async fn test_res() -> RunResult<()> {
     res_center.load_all_ldm(main_conf.oml_root()).await?;
 
     res_center
-        .load_all_sink(main_conf.sinks_root())
+        .load_all_sink(main_conf.sinks_root(), &env_dict)
         .owe_conf()?;
 
     let res_path = "res.dat";

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
-use orion_variate::EnvDict;
+use orion_variate::{EnvDict, EnvEvalable};
 use wp_conf::connectors::{
     ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table,
 };
@@ -110,7 +110,7 @@ pub fn route_table(
     work_root: &str,
     eng_conf: &EngineConfig,
     path_like: Option<&str>,
-    ditc: &EnvDict,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<RouteRow>> {
     let wpsrc_path = resolve_wpsrc_path(work_root, eng_conf)?;
     let conn_base = find_connectors_dir(&wpsrc_path).ok_or_else(|| {
@@ -233,7 +233,7 @@ params_override = { path = "/data/x.dat" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let mut env_dict = EnvDict::new();
+        let env_dict = EnvDict::new();
         let rows =
             route_table(root.to_string_lossy().as_ref(), &eng, None, &env_dict).expect("routes");
         assert_eq!(rows.len(), 1);

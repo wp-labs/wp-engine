@@ -329,9 +329,11 @@ mod tests {
 
     #[tokio::test]
     async fn syslog_sink_tcp_emits_rfc3164_message() {
-        let listener = TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("bind test listener");
+        let listener = match TcpListener::bind("127.0.0.1:0").await {
+            Ok(lst) => lst,
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => return,
+            Err(e) => panic!("bind test listener: {}", e),
+        };
         let addr = listener.local_addr().expect("addr");
 
         let mut sink = SyslogSink::tcp(addr.to_string().as_str(), Some("wpgen".into()), 0)
