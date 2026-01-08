@@ -1,11 +1,14 @@
 //! wparse 引擎的 Facade 封装：装配/启动/重载/优雅退出 与 PID 管理。
 
 use futures_lite::StreamExt;
+use orion_sec::load_sec_dict_by;
+use orion_variate::EnvDict;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::timeout;
+use wp_knowledge::facade::init_thread_cloned_from_knowdb;
 
 use orion_error::{ErrorConv, ErrorOwe, ErrorWith, OperationContext};
 use wp_conf::{RunArgs, RunMode};
@@ -43,6 +46,7 @@ pub struct WpApp {
     cmd_recv: Receiver<CommandType>,
     pid_guard: Option<PidRec>,
     bus_enabled: bool,
+    env_dict: EnvDict,
 }
 
 impl WpApp {
@@ -50,14 +54,16 @@ impl WpApp {
     pub fn try_from(args: ParseArgs) -> Result<Self, wp_error::RunError> {
         let mut args = args;
         args.ensure_work_root_absolute()?;
-        let (conf_manager, mut main_conf) = load_warp_engine_confs(args.work_root.as_str())?;
+        let env_dict =
+            load_sec_dict_by(".warp_parse", "sec_value.toml", orion_sec::SecFileFmt::Toml).unwrap();
+        let (conf_manager, mut main_conf) =
+            load_warp_engine_confs(args.work_root.as_str(), &env_dict)?;
         // CLI 覆盖：当提供 --wpl-dir 时，优先于 wparse.toml 的 [models].wpl
         if let Some(dir) = &args.wpl_dir {
             main_conf.set_rule_root(dir.clone());
         }
         let run_args = args.completion_from(&main_conf)?;
         let stat_reqs = stat_reqs_from(main_conf.stat_conf());
-        // 注：log_profile 覆盖行为在 EngineConfig 内部不再可变；此处直接使用配置文件
         log_init(main_conf.log_conf()).err_conv()?;
         info_ctrl!("log conf: {} ", main_conf.log_conf());
         // 初始化引擎侧注册表：注册内置工厂 + 导入 API 已注册工厂 + 打印注册清单
@@ -72,6 +78,7 @@ impl WpApp {
             cmd_recv,
             pid_guard: None,
             bus_enabled: false,
+            env_dict,
         })
     }
 
@@ -95,7 +102,11 @@ impl WpApp {
     }
 
     /// 启动服务并返回任务管理器
-    pub async fn start_service(&mut self, run_mode: RunMode) -> RunResult<TaskManager> {
+    pub async fn start_service(
+        &mut self,
+        run_mode: RunMode,
+        env_dict: &EnvDict,
+    ) -> RunResult<TaskManager> {
         // 保持 PID 文件在进程生命周期内存在
         self.pid_guard = Some(PidRec::current(
             self.conf_manager.runtime_path("wparse.pid").as_str(),
@@ -112,6 +123,7 @@ impl WpApp {
             &self.conf_manager,
             self.stat_reqs.clone(),
             run_mode.clone(),
+            env_dict,
         )
         .await?;
 
@@ -128,7 +140,10 @@ impl WpApp {
     /// 运行主循环：处理信号与控制面热重载
     async fn engine_working(&mut self, run_mode: RunMode) -> RunResult<()> {
         let mut signals = actor::signal::stop_signals()?;
-        let mut task_admin = self.start_service(run_mode.clone()).await?;
+
+        let mut task_admin = self
+            .start_service(run_mode.clone(), &self.env_dict.clone())
+            .await?;
         warn_ctrl!("engine started!");
 
         if self.bus_enabled {
@@ -182,16 +197,17 @@ async fn load_engine_res(
     conf_manager: &WarpConf,
     stat_reqs: StatRequires,
     run_mode: RunMode,
+    env_dict: &EnvDict,
 ) -> RunResult<EngineResource> {
     let mut ctx = OperationContext::want("load-engine-res").with_auto_log();
-    let knowdb_path = std::path::Path::new(conf_manager.work_root_path().as_str())
-        .join("models/knowledge/knowdb.toml");
+    let knowdb_path =
+        Path::new(conf_manager.work_root_path().as_str()).join("models/knowledge/knowdb.toml");
     let mut knowdb_handler = None;
     if knowdb_path.exists() {
-        let auth_file = std::path::PathBuf::from(conf_manager.runtime_path("authority.sqlite"));
+        let auth_file = PathBuf::from(conf_manager.runtime_path("authority.sqlite"));
         let _ = std::fs::remove_file(&auth_file);
         let authority_uri = format!("file:{}?mode=rwc&uri=true", auth_file.display());
-        match wp_knowledge::facade::init_thread_cloned_from_knowdb(
+        match init_thread_cloned_from_knowdb(
             Path::new(conf_manager.work_root_path().as_str()),
             &knowdb_path,
             &authority_uri,
@@ -220,6 +236,7 @@ async fn load_engine_res(
         main_conf.sinks_root(),
         main_conf.rescue_root(),
         stat_reqs.get_requ_items(StatStage::Sink),
+        env_dict,
     )
     .await?;
 
@@ -228,12 +245,12 @@ async fn load_engine_res(
     let wpsrc_path = PathBuf::from(main_conf.src_conf_of(constants::WPSRC_TOML));
     let config_str = std::fs::read_to_string(&wpsrc_path).owe_conf()?;
     let (_src_keys, source_inits, acceptor_inits) = parser
-        .parse_specs_and_build_filtered(&config_str, run_mode)
+        .build_source_handles(&wpsrc_path, run_mode, env_dict)
         .await
         .err_conv()
         .want("parse/build sources")?;
 
-    let mut res_center = ResManager::build_from_keys(conf_manager, main_conf, &infra_sinks).await?;
+    let mut res_center = ResManager::build(main_conf, &infra_sinks, env_dict).await?;
     let sink_service = SinkService::async_sinks_spawn(
         main_conf.rescue_root().to_string(),
         res_center.must_get_sink_table()?,

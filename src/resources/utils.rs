@@ -106,11 +106,5 @@ pub async fn load_wpl_code(
 
 pub async fn load_engine_code(main_conf: &EngineConfig) -> RunResult<WplCodePKG> {
     let model_wpl = load_wpl_code(main_conf, None).await?;
-    Ok(WplCodePKG::from_model_with_keys(model_wpl))
-}
-
-/// 仅根据源 key 列表构建 ServiceDefinition（source_code_map 为空代码，key 映射存在）
-pub async fn load_engine_code_with_keys(main_conf: &EngineConfig) -> RunResult<WplCodePKG> {
-    let model_wpl = load_wpl_code(main_conf, None).await?;
-    Ok(WplCodePKG::from_model_with_keys(model_wpl))
+    Ok(WplCodePKG::from_codes(model_wpl))
 }

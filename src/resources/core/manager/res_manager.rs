@@ -1,4 +1,5 @@
 use derive_getters::Getters;
+use orion_variate::EnvDict;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
@@ -71,45 +72,31 @@ impl ResManager {
 
 impl ResManager {
     /// 构建：根据完整的 SourceConfig 列表初始化运行期资源
-    pub async fn build_from_sources(
+    pub async fn build(
         main_conf: &EngineConfig,
         infra_sinks: &InfraSinkService,
+        dict: &EnvDict,
     ) -> RunResult<Self> {
         let mut res_center = ResManager::default();
         res_center.set_infra_agent(infra_sinks.agent());
         res_center
             .load_all_wpl_code(main_conf, infra_sinks.agent().error())
             .await?;
-        res_center.load_all_model(main_conf.oml_root()).await?;
+        res_center.load_all_ldm(main_conf.oml_root()).await?;
         res_center
-            .load_all_sink(main_conf.sinks_root())
+            .load_all_sink(main_conf.sinks_root(), dict)
             .owe_conf()?;
         Ok(res_center)
     }
 
     /// 构建：仅根据源 key 列表初始化运行期资源（用于 WPL 索引建立）
+    #[deprecated]
     pub async fn build_from_keys(
-        _conf_manager: &crate::orchestrator::config::loader::WarpConf,
-        main_conf: &crate::orchestrator::config::models::EngineConfig,
-        infra_sinks: &crate::runtime::sink::infrastructure::InfraSinkService,
+        main_conf: &EngineConfig,
+        infra_sinks: &InfraSinkService,
+        dict: &EnvDict,
     ) -> wp_error::run_error::RunResult<Self> {
-        use crate::resources::utils::load_engine_code_with_keys;
-
-        let mut res_center = ResManager::default();
-        res_center.set_infra_agent(infra_sinks.agent());
-        let wpl_code = load_engine_code_with_keys(main_conf).await?;
-        let wpl_space = crate::core::parser::WplRepository::from_wpl_tolerant(
-            wpl_code,
-            infra_sinks.agent().error().end_point(),
-        )
-        .owe_rule()?;
-        res_center.wpl_index = Some(crate::core::parser::SpaceIndex::from(&wpl_space));
-        res_center.wpl_space = Some(wpl_space);
-        res_center.load_all_model(main_conf.oml_root()).await?;
-        res_center
-            .load_all_sink(main_conf.sinks_root())
-            .owe_conf()?;
-        Ok(res_center)
+        Self::build(main_conf, infra_sinks, dict).await
     }
 }
 

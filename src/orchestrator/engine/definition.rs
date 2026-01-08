@@ -25,10 +25,7 @@ impl WplCodePKG {
     }
 
     /// 附带源 key 的构造函数：取代旧的 `new(wpl, source_wpl)`
-    pub fn from_model_with_keys(wpl: Vec<WplCode>) -> Self {
-        Self {
-            code_vec: wpl,
-            //source_keys: src_keys,
-        }
+    pub fn from_codes(wpl: Vec<WplCode>) -> Self {
+        Self { code_vec: wpl }
     }
 }

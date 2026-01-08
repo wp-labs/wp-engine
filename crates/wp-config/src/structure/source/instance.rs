@@ -33,6 +33,9 @@ impl SourceInstanceConf {
     pub fn set_kind(&mut self, kind: String) {
         self.core.kind = kind;
     }
+    pub fn kind(&self) -> String {
+        self.core.kind.clone()
+    }
     pub fn set_params(&mut self, params: toml::value::Table) {
         self.core.params = param_map_from_table_ref(&params);
     }

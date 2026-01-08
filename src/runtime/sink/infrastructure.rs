@@ -8,6 +8,8 @@ use crate::sinks::SinkDispatcher;
 use crate::sinks::SinkGroupAgent;
 use derive_getters::Getters;
 use orion_error::ErrorConv;
+use orion_variate::EnvDict;
+use orion_variate::EnvEvaluable;
 use wp_conf::structure::SinkGroupConf;
 use wp_error::run_error::RunResult;
 use wp_stat::StatReq;
@@ -84,8 +86,11 @@ impl InfraSinkService {
         sink_root: &str,
         rescue: &str,
         stat_reqs: Vec<StatReq>,
+        dict: &EnvDict,
     ) -> RunResult<Self> {
-        let table_conf = InfraSinkConf::load(sink_root).err_conv()?;
+        let table_conf = InfraSinkConf::load(sink_root, dict)
+            .err_conv()?
+            .env_eval(&dict);
         //.want("load sink_root")?;
         let default_group = infra_sink_group(
             rescue.to_string(),

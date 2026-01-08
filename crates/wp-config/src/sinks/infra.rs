@@ -2,7 +2,7 @@
 use crate::structure::{FixedGroup, FlexGroup};
 use anyhow::Result as AnyResult;
 use orion_error::ToStructError;
-use orion_variate::EnvEvaluable;
+use orion_variate::{EnvDict, EnvEvaluable};
 use wp_error::config_error::ConfResult;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -48,13 +48,13 @@ impl InfraSinkConf {
         }
         Ok(())
     }
-    pub fn load(path: &str) -> ConfResult<Self> {
+    pub fn load(path: &str, dict: &EnvDict) -> ConfResult<Self> {
         // Prefer sink/infra.d under sink_root
         let infra_d = std::path::Path::new(path).join("infra.d");
         let business_d = std::path::Path::new(path).join("business.d");
         if infra_d.exists() || business_d.exists() {
             // 使用配置层统一输出：将 SinkRouteConf 映射为不同的 Infra 组
-            let confs = crate::sinks::load_infra_route_confs(path).map_err(|e| {
+            let confs = crate::sinks::load_infra_route_confs(path, dict).map_err(|e| {
                 wp_error::config_error::ConfError::from(wp_error::config_error::ConfReason::Syntax(
                     e.to_string(),
                 ))

@@ -1,6 +1,7 @@
 use super::types::RouteSink;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
@@ -96,7 +97,9 @@ fn is_nested_field_blacklisted(k: &str) -> bool {
     matches!(k, "params" | "params_override")
 }
 
-use crate::structure::{SinkInstanceConf, Validate as ConfValidate};
+use crate::sinks::io::business_dir;
+use crate::sinks::{load_connectors_for, load_route_files_from, load_sink_defaults};
+use crate::structure::{SinkInstanceConf, SinkRouteConf, Validate as ConfValidate};
 
 use super::types::{ConnectorRec, DefaultsBody, RouteFile, StringOrArray};
 
@@ -175,19 +178,7 @@ fn extract_matchers(rf: &RouteFile) -> (Vec<String>, Vec<String>) {
     if !oml_vec.is_empty() || !rule_vec.is_empty() {
         return (oml_vec, rule_vec);
     }
-    if let Some(m) = &rf.sink_group._match {
-        let to_vec = |key: &str| -> Vec<String> {
-            m.get(key)
-                .and_then(|v| v.as_array())
-                .map(|arr| {
-                    arr.iter()
-                        .filter_map(|x| x.as_str().map(|s| s.to_string()))
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default()
-        };
-        return (to_vec("oml"), to_vec("rule"));
-    }
+
     (vec![], vec![])
 }
 
@@ -387,6 +378,7 @@ fn plugin_validate_with(
 /// 加载 business.d 下所有路由文件并构建 SinkRouteConf 列表
 pub fn load_business_route_confs(
     sink_root: &str,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<crate::structure::SinkRouteConf>> {
     struct Null;
     impl SinkFactoryLookup for Null {
@@ -394,17 +386,17 @@ pub fn load_business_route_confs(
             None
         }
     }
-    load_business_route_confs_with(sink_root, &Null)
+    load_business_route_confs_with(sink_root, &Null, dict)
 }
 
 pub fn load_business_route_confs_with(
     sink_root: &str,
     reg: &dyn SinkFactoryLookup,
-) -> OrionConfResult<Vec<crate::structure::SinkRouteConf>> {
-    use super::io::{business_dir, load_connectors_for, load_route_files_from, load_sink_defaults};
+    dict: &EnvDict,
+) -> OrionConfResult<Vec<SinkRouteConf>> {
     let conn_map = load_connectors_for(sink_root)?;
-    let routes = load_route_files_from(&business_dir(sink_root))?;
-    let defaults = load_sink_defaults(sink_root)?;
+    let routes = load_route_files_from(&business_dir(sink_root), dict)?;
+    let defaults = load_sink_defaults(sink_root, dict)?;
     let mut out = Vec::new();
     for rf in routes.iter() {
         let conf = build_route_conf_from_with(rf, defaults.as_ref(), &conn_map, reg)?;
@@ -416,11 +408,12 @@ pub fn load_business_route_confs_with(
 /// 加载 infra.d 下所有路由文件并构建 SinkRouteConf 列表
 pub fn load_infra_route_confs(
     sink_root: &str,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<crate::structure::SinkRouteConf>> {
     use super::io::{infra_dir, load_connectors_for, load_route_files_from, load_sink_defaults};
     let conn_map = load_connectors_for(sink_root)?;
-    let routes = load_route_files_from(&infra_dir(sink_root))?;
-    let defaults = load_sink_defaults(sink_root)?;
+    let routes = load_route_files_from(&infra_dir(sink_root), dict)?;
+    let defaults = load_sink_defaults(sink_root, dict)?;
     let mut out = Vec::new();
     for rf in routes.iter() {
         // Infra 组不支持并行与文件分片：

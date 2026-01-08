@@ -508,7 +508,7 @@ params_override = {
 }
 "#;
 
-    let result = parser.parse_specs_and_build(invalid_file_config).await;
+    let result = parser.build_source_handles(invalid_file_config).await;
     assert!(result.is_err(), "Expected failure for non-existent file");
     println!("✅ Non-existent file correctly rejected");
 

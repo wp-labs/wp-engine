@@ -31,7 +31,7 @@ async fn test_res() -> RunResult<()> {
     res_center
         .load_all_wpl_code(&main_conf, infra_sinks.agent().error())
         .await?;
-    res_center.load_all_model(main_conf.oml_root()).await?;
+    res_center.load_all_ldm(main_conf.oml_root()).await?;
 
     res_center
         .load_all_sink(main_conf.sinks_root())

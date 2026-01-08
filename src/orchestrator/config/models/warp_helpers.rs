@@ -1,20 +1,24 @@
+use crate::{
+    core::parser::wpl_engine, facade::diagnostics::print_run_error,
+    orchestrator::config::loader::WarpConf,
+};
 use anyhow::Result;
 use orion_error::{ErrorConv, ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
+use orion_variate::EnvEvaluable;
+use std::{env, path::PathBuf};
+use wp_conf::engine::EngineConfig;
 use wp_conf::stat::StatConf;
 use wp_error::{RunReason, run_error::RunResult};
 use wp_knowledge::facade;
 use wp_log::conf::LogConf;
 use wp_stat::{StatReq, StatRequires, StatStage, StatTarget};
 
-use crate::{
-    core::parser::wpl_engine, facade::diagnostics::print_run_error,
-    orchestrator::config::loader::WarpConf,
-};
-use std::{env, path::PathBuf};
-use wp_conf::engine::EngineConfig;
-
 /// Load main configuration and return configuration manager and engine config
-pub fn load_warp_engine_confs(work_root: &str) -> RunResult<(WarpConf, EngineConfig)> {
+pub fn load_warp_engine_confs(
+    work_root: &str,
+    dict: &EnvDict,
+) -> RunResult<(WarpConf, EngineConfig)> {
     let conf_manager = WarpConf::new(work_root);
     let abs_root = conf_manager.work_root().to_path_buf();
     if let Err(err) = env::set_current_dir(&abs_root) {
@@ -23,6 +27,7 @@ pub fn load_warp_engine_confs(work_root: &str) -> RunResult<(WarpConf, EngineCon
     };
     let main_conf = EngineConfig::load(&abs_root)
         .err_conv()?
+        .env_eval(dict)
         .conf_absolutize(&abs_root);
     Ok((conf_manager, main_conf))
 }

@@ -1,4 +1,5 @@
 use orion_conf::{ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
+use orion_variate::EnvEvaluable;
 use serde_derive::{Deserialize, Serialize};
 use std::{fs::create_dir_all, path::Path};
 use wp_error::error_handling::RobustnessMode;
@@ -12,22 +13,20 @@ impl EngineConfig {}
 pub struct RescueConf {
     #[serde(default = "default_rescue_path")]
     pub path: String,
-    // 若旧字段 data_path 出现，直接报错（与 log_conf.output_path 策略一致）
-    #[serde(
-        rename = "data_path",
-        default,
-        deserialize_with = "reject_data_path",
-        skip_serializing
-    )]
-    _deprecated_data_path: Option<String>,
 }
 
 impl Default for RescueConf {
     fn default() -> Self {
         Self {
             path: default_rescue_path(),
-            _deprecated_data_path: None,
         }
+    }
+}
+
+impl EnvEvaluable<RescueConf> for RescueConf {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> RescueConf {
+        self.path = self.path.env_eval(dict);
+        self
     }
 }
 
@@ -39,12 +38,28 @@ pub struct ModelsConf {
     pub oml: String,
 }
 
+impl EnvEvaluable<ModelsConf> for ModelsConf {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> ModelsConf {
+        self.wpl = self.wpl.env_eval(dict);
+        self.oml = self.oml.env_eval(dict);
+        self
+    }
+}
+
 #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
 pub struct TopologyConf {
     #[serde(default = "default_sources_root")]
     pub sources: String,
     #[serde(default = "default_sinks_root")]
     pub sinks: String,
+}
+
+impl EnvEvaluable<TopologyConf> for TopologyConf {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> TopologyConf {
+        self.sources = self.sources.env_eval(dict);
+        self.sinks = self.sinks.env_eval(dict);
+        self
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
@@ -88,6 +103,15 @@ pub struct EngineConfig {
     /// 是否跳过 SINK 阶段（不启动 sink/infra 任务；若未进一步配置为黑洞，将阻塞在下发边界）
     #[serde(default)]
     skip_sink: bool,
+}
+
+impl EnvEvaluable<EngineConfig> for EngineConfig {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> EngineConfig {
+        self.models = self.models.env_eval(dict);
+        self.topology = self.topology.env_eval(dict);
+        self.rescue = self.rescue.env_eval(dict);
+        self
+    }
 }
 
 // Default values and helper functions
@@ -170,7 +194,6 @@ impl EngineConfig {
             version: "1.0".to_string(),
             rescue: RescueConf {
                 path: format!("{}/data/rescue", root.as_ref().display()),
-                _deprecated_data_path: None,
             },
             models: ModelsConf {
                 wpl: format!("{}/models/wpl", root.as_ref().display()),

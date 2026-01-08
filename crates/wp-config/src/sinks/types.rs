@@ -1,6 +1,8 @@
 use crate::connectors::ConnectorTomlFile;
 use crate::structure::GroupExpectSpec;
 use crate::structure::SinkExpectOverride;
+use crate::utils::env_eval_params;
+use crate::utils::env_eval_vec;
 use orion_variate::EnvEvaluable;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -20,8 +22,9 @@ pub struct RouteFile {
     pub origin: Option<PathBuf>,
 }
 impl EnvEvaluable<RouteFile> for RouteFile {
-    fn env_eval(self, dict: &orion_variate::EnvDict) -> RouteFile {
-        todo!()
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> RouteFile {
+        self.sink_group = self.sink_group.env_eval(dict);
+        self
     }
 }
 
@@ -31,8 +34,6 @@ pub struct RouteGroup {
     #[serde(default)]
     pub parallel: Option<usize>,
     #[serde(rename = "match")]
-    #[serde(default)]
-    pub _match: Option<toml::value::Table>,
     /// 顶层扁平写法：oml/rule；可为字符串或字符串数组
     #[serde(default)]
     pub oml: Option<StringOrArray>,
@@ -48,8 +49,13 @@ pub struct RouteGroup {
 }
 
 impl EnvEvaluable<RouteGroup> for RouteGroup {
-    fn env_eval(self, dict: &orion_variate::EnvDict) -> Self {
-        todo!()
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> Self {
+        self.name = self.name.env_eval(dict);
+        if let Some(tags) = self.tags {
+            self.tags = Some(env_eval_vec(tags, dict));
+        }
+        self.sinks = env_eval_vec(self.sinks, dict);
+        self
     }
 }
 
@@ -72,6 +78,19 @@ pub struct RouteSink {
     /// 当 cond 结果等于该值时投递；默认为 true
     #[serde(default = "crate_default_true")]
     filter_expect: bool,
+}
+
+impl EnvEvaluable<RouteSink> for RouteSink {
+    fn env_eval(mut self, dict: &orion_variate::EnvDict) -> RouteSink {
+        self.connect = self.connect.env_eval(dict);
+        self.inner_name = self.inner_name.env_eval(dict);
+        self.params = env_eval_params(self.params, dict);
+        if let Some(tags) = self.tags {
+            self.tags = Some(env_eval_vec(tags, dict));
+        }
+        self.filter = self.filter.env_eval(dict);
+        self
+    }
 }
 
 impl RouteSink {

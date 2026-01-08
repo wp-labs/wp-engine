@@ -2,8 +2,9 @@ use crate::connectors::registry;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_conf::{ErrorOwe, ErrorWith};
 use orion_error::{ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
 use serde_derive::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use wp_conf::structure::SourceInstanceConf;
 use wp_connector_api::{AcceptorHandle, SourceBuildCtx, SourceHandle};
 use wp_log::info_ctrl;
@@ -30,6 +31,16 @@ impl UnifiedSourcesConfig {
         toml::from_str(content)
             .owe_conf()
             .want("to UnifiedSourcesConfig")
+    }
+}
+
+struct SourceFactoryLookup;
+impl wp_conf::sources::SourceFactoryRegistry for SourceFactoryLookup {
+    fn get_factory(
+        &self,
+        kind: &str,
+    ) -> Option<std::sync::Arc<dyn wp_connector_api::SourceFactory + 'static>> {
+        crate::connectors::registry::get_source_factory(kind)
     }
 }
 
@@ -79,9 +90,10 @@ impl SourceConfigParser {
     pub async fn parse_and_build(
         &self,
         config_path: &PathBuf,
+        dict: &EnvDict,
     ) -> OrionConfResult<(Vec<SourceHandle>, Vec<AcceptorHandle>)> {
         // 使用配置层装配：加载 connectors + 合并 + 产出 CoreSpec + connector_id
-        let specs = wp_conf::sources::build_specs_with_ids_from_file(config_path)?;
+        let specs = wp_conf::sources::build_sources_from_file(config_path, dict)?;
         // 插件校验（类型特有；不触发 I/O）
         struct Lookup;
         impl wp_conf::sources::SourceFactoryRegistry for Lookup {
@@ -100,10 +112,11 @@ impl SourceConfigParser {
     pub async fn parse_and_build_from(
         &self,
         config_str: &str,
+        dict: &EnvDict,
     ) -> OrionConfResult<(Vec<SourceHandle>, Vec<AcceptorHandle>)> {
         // 起点：work_root；由配置层自行解析 modern/legacy（sources/ 或 source/）布局
         let start = self.work_dir.clone();
-        let specs = wp_conf::sources::build_specs_with_ids_from_str(config_str, &start)?;
+        let specs = wp_conf::sources::load_source_ins_confs(config_str, &start, dict)?;
         struct Lookup2;
         impl wp_conf::sources::SourceFactoryRegistry for Lookup2 {
             fn get_factory(
@@ -129,48 +142,15 @@ impl SourceConfigParser {
 }
 
 impl SourceConfigParser {
-    /// 单次解析：返回 (源 key 列表, 构建好的 SourceHandle 列表)
-    /// - 避免调用方分别 parse_and_validate_only + parse_and_build_from 的重复解析
-    pub async fn parse_specs_and_build(
-        &self,
-        config_str: &str,
-    ) -> OrionConfResult<(Vec<String>, Vec<SourceHandle>, Vec<AcceptorHandle>)> {
-        let start = self.work_dir.clone();
-        let specs = wp_conf::sources::build_specs_with_ids_from_str(config_str, &start)?;
-        // 配置层插件校验（类型特有）
-        struct Lookup3;
-        impl wp_conf::sources::SourceFactoryRegistry for Lookup3 {
-            fn get_factory(
-                &self,
-                kind: &str,
-            ) -> Option<std::sync::Arc<dyn wp_connector_api::SourceFactory + 'static>> {
-                crate::connectors::registry::get_source_factory(kind)
-            }
-        }
-        wp_conf::sources::validate_specs_with_factory(&specs, &Lookup3)?;
-        let keys: Vec<String> = specs.iter().map(|s| s.name().clone()).collect();
-        let (handles, acceptors) = self.build_from_specs_with_ids(specs).await?;
-        Ok((keys, handles, acceptors))
-    }
-
     /// 解析并构建（带运行模式过滤）：batch 下忽略 tcp/syslog(tcp) 源
-    pub async fn parse_specs_and_build_filtered(
+    pub async fn build_source_handles(
         &self,
-        config_str: &str,
+        wpsrc_path: &Path,
         run_mode: wp_conf::RunMode,
+        dict: &EnvDict,
     ) -> OrionConfResult<(Vec<String>, Vec<SourceHandle>, Vec<AcceptorHandle>)> {
-        let start = self.work_dir.clone();
-        let specs = wp_conf::sources::build_specs_with_ids_from_str(config_str, &start)?;
-        struct Lookup3;
-        impl wp_conf::sources::SourceFactoryRegistry for Lookup3 {
-            fn get_factory(
-                &self,
-                kind: &str,
-            ) -> Option<std::sync::Arc<dyn wp_connector_api::SourceFactory + 'static>> {
-                crate::connectors::registry::get_source_factory(kind)
-            }
-        }
-        wp_conf::sources::validate_specs_with_factory(&specs, &Lookup3)?;
+        let specs = wp_conf::sources::build_sources_from_file(wpsrc_path, dict)?;
+        wp_conf::sources::validate_specs_with_factory(&specs, &SourceFactoryLookup)?;
 
         // Filter specs by run_mode
         let filtered: Vec<SourceInstanceConf> = match run_mode {
@@ -179,37 +159,18 @@ impl SourceConfigParser {
                 let kept: Vec<SourceInstanceConf> = specs
                     .into_iter()
                     .filter_map(|item| {
-                        let core: wp_specs::CoreSourceSpec = (&item).into();
-                        let resolved = wp_conf::sources::core_to_resolved_with(
-                            &core,
-                            item.connector_id.clone().unwrap_or_default(),
-                        );
-                        let kind = resolved.kind.to_ascii_lowercase();
+                        let kind = item.kind().to_ascii_lowercase();
                         if kind == "tcp" {
-                            skipped.push((resolved.name.clone(), "kind=tcp".to_string()));
+                            info_ctrl!("run-mode=batch: ignore: {:#?}", item.core());
                             return None;
                         }
                         if kind == "syslog" {
-                            // protocol default is UDP; only skip when protocol==tcp
-                            if let Some(p) =
-                                resolved.params.get("protocol").and_then(|v| v.as_str())
-                                && p.eq_ignore_ascii_case("tcp")
-                            {
-                                skipped.push((resolved.name.clone(), "syslog[tcp]".to_string()));
-                                return None;
-                            }
+                            info_ctrl!("run-mode=batch: ignore: {:#?}", item.core());
+                            return None;
                         }
                         Some(item)
                     })
                     .collect();
-                if !skipped.is_empty() {
-                    let detail = skipped
-                        .iter()
-                        .map(|(n, r)| format!("{}({})", n, r))
-                        .collect::<Vec<_>>()
-                        .join(", ");
-                    info_ctrl!("run-mode=batch: 忽略网络类源: {}", detail);
-                }
                 kept
             }
             _ => specs,

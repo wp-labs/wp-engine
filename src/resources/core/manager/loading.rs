@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use crate::orchestrator::config::build_sinks::SinkRouteTable;
 use crate::resources::ModelName;
 use crate::resources::utils::{load_engine_code, load_oml_code};
@@ -6,6 +8,7 @@ use oml::core::ConfADMExt;
 use oml::language::{DataModel, ObjModel};
 use orion_conf::{ErrorWith, UvsConfFrom};
 use orion_error::{ErrorConv, ErrorOwe, OperationContext, ToStructError, UvsLogicFrom};
+use orion_variate::EnvDict;
 use wp_conf::engine::EngineConfig;
 use wp_error::RunReason;
 use wp_error::run_error::RunResult;
@@ -30,7 +33,7 @@ impl ResManager {
         Ok(())
     }
 
-    pub async fn load_all_model(&mut self, oml_root: &str) -> RunResult<()> {
+    pub async fn load_all_ldm(&mut self, oml_root: &str) -> RunResult<()> {
         info_ctrl!("load all oml model");
         let oml_spc = load_oml_code(oml_root).await?;
         let wpl_index = self
@@ -65,7 +68,11 @@ impl ResManager {
         Ok(())
     }
 
-    pub(crate) fn load_all_sink(&mut self, sink_root: &str) -> RunResult<SinkRouteTable> {
+    pub(crate) fn load_all_sink(
+        &mut self,
+        sink_root: &str,
+        dict: &EnvDict,
+    ) -> RunResult<SinkRouteTable> {
         let mut op = OperationContext::want("load all sink").with_auto_log();
         let wpl_index = self
             .wpl_index
@@ -73,21 +80,11 @@ impl ResManager {
             .ok_or(RunReason::from_logic("not init  wpl all rule key"))?;
 
         let mut sink_route = SinkRouteTable::default();
-        let busin_d = std::path::Path::new(sink_root).join("business.d");
-        let infra_d = std::path::Path::new(sink_root).join("infra.d");
+        let busin_d = Path::new(sink_root).join("business.d");
+        let infra_d = Path::new(sink_root).join("infra.d");
         if busin_d.exists() || infra_d.exists() {
-            struct Lookup;
-            impl wp_conf::sinks::SinkFactoryLookup for Lookup {
-                fn get(
-                    &self,
-                    kind: &str,
-                ) -> Option<std::sync::Arc<dyn wp_connector_api::SinkFactory + 'static>>
-                {
-                    crate::connectors::registry::get_sink_factory(kind)
-                }
-            }
-            let confs =
-                wp_conf::sinks::load_business_route_confs_with(sink_root, &Lookup).err_conv()?;
+            let confs = wp_conf::sinks::load_business_route_confs_with(sink_root, &Lookup, dict)
+                .err_conv()?;
             for mut conf in confs {
                 // 现有的方法正确处理 FlexGroup rule 和 oml 字段
                 self.update_sink_rule_index(&wpl_index, &mut conf);
@@ -100,5 +97,14 @@ impl ResManager {
         } else {
             RunReason::from_conf("business and infra sink route not exists").err_result()
         }
+    }
+}
+struct Lookup;
+impl wp_conf::sinks::SinkFactoryLookup for Lookup {
+    fn get(
+        &self,
+        kind: &str,
+    ) -> Option<std::sync::Arc<dyn wp_connector_api::SinkFactory + 'static>> {
+        crate::connectors::registry::get_sink_factory(kind)
     }
 }

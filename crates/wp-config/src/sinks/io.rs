@@ -3,6 +3,7 @@ use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
+use orion_variate::{EnvDict, EnvEvalable};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,7 +31,7 @@ pub fn load_connectors_for(sink_root: &str) -> OrionConfResult<BTreeMap<String, 
     Ok(map)
 }
 
-pub fn load_route_files_from(dir: &Path) -> OrionConfResult<Vec<RouteFile>> {
+pub fn load_route_files_from(dir: &Path, dict: &EnvDict) -> OrionConfResult<Vec<RouteFile>> {
     let mut out = Vec::new();
     if !dir.exists() {
         return Ok(out);
@@ -59,43 +60,22 @@ pub fn load_route_files_from(dir: &Path) -> OrionConfResult<Vec<RouteFile>> {
 
     for fstr in uniq.into_iter() {
         let fp = Path::new(&fstr).to_path_buf();
-        let raw = fs::read_to_string(&fp).owe_conf().with(&fp)?;
-        if let Ok(v) = toml::from_str::<toml::Value>(&raw)
-            && let Some(exp) = v.get("sink_group").and_then(|d| d.get("expect"))
-            && let Some(tbl) = exp.as_table()
-            && tbl.contains_key("tags")
-        {
-            return ConfIOReason::from_validation(format!(
-                            "invalid key 'tags' under [sink_group.expect] in {}. Move it to [sink_group.tags] (group-level) or to individual [[sink_group.sinks]].tags",
-                            fp.display()
-                        ))
-                        .err_result();
-        }
-        let mut rf: RouteFile = RouteFile::load_toml(&fp).with(&fp)?;
+        let mut rf: RouteFile = RouteFile::load_toml(&fp).with(&fp)?.env_eval(dict);
         rf.origin = Some(fp.clone());
         out.push(rf);
     }
     Ok(out)
 }
 
-pub fn load_sink_defaults<P: AsRef<Path>>(sink_root: P) -> OrionConfResult<Option<DefaultsBody>> {
+pub fn load_sink_defaults<P: AsRef<Path>>(
+    sink_root: P,
+    dict: &EnvDict,
+) -> OrionConfResult<Option<DefaultsBody>> {
     let p = sink_root.as_ref().join(PATH_DEFAULTS_FILE);
     if !p.exists() {
         return Ok(None);
     }
-    let raw = fs::read_to_string(&p).owe_conf().with(&p)?;
-    if let Ok(v) = toml::from_str::<toml::Value>(&raw)
-        && let Some(exp) = v.get("defaults").and_then(|d| d.get("expect"))
-        && let Some(tbl) = exp.as_table()
-        && tbl.contains_key("tags")
-    {
-        return ConfIOReason::from_validation(format!(
-            "invalid key 'tags' under [defaults.expect] in {}; move it to [defaults]",
-            p.display()
-        ))
-        .err_result();
-    }
-    let f: super::types::DefaultsFile = super::types::DefaultsFile::load_toml(&p)?;
+    let f: super::types::DefaultsFile = DefaultsFile::load_toml(&p)?;
     Ok(Some(f.defaults))
 }
 

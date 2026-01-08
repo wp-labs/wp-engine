@@ -1,8 +1,10 @@
 use super::types::WpSourcesConfig;
+use crate::sources::load_connectors_for;
 use crate::sources::types::SourceConnector;
 use crate::structure::SourceInstanceConf;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
+use orion_variate::{EnvDict, EnvEvaluable};
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -75,20 +77,23 @@ fn merge_params(
 }
 
 /// 解析字符串并结合 connectors（通过 `connect` 字段）构建 CoreSourceSpec + connector_id 列表
-pub fn build_specs_with_ids_from_str(
+pub fn load_source_ins_confs(
     config_str: &str,
     start: &Path,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
-    let wrapper: WpSourcesConfig = toml::from_str(config_str)
+    let src_conf: WpSourcesConfig = toml::from_str::<WpSourcesConfig>(config_str)
         .owe_conf()
-        .want("parse sources v2")?;
-    let cmap = connectors_from_start(start)?;
-    specs_from_wrapper(wrapper, &cmap)
+        .want("parse sources")?
+        .env_eval(dict);
+    let cnn_dict = load_connectors_for(start)?;
+    build_srcins_confs(src_conf, &cnn_dict)
 }
 
 /// 解析文件并结合 connectors 构建 CoreSourceSpec + connector_id 列表
-pub fn build_specs_with_ids_from_file(
-    path: &std::path::Path,
+pub fn build_sources_from_file(
+    path: &Path,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
     let content = std::fs::read_to_string(path)
         .owe_conf()
@@ -101,20 +106,20 @@ pub fn build_specs_with_ids_from_file(
             .map(|p| p.to_path_buf())
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_default())
     };
-    build_specs_with_ids_from_str(&content, &start)
+    load_source_ins_confs(&content, &start, dict)
 }
 
 /// 从 WarpSources + 连接器字典 构建 SourceInstanceConf（包含 Core + connector_id）列表
-pub fn specs_from_wrapper(
-    wrapper: WpSourcesConfig,
-    cmap: &BTreeMap<String, SourceConnector>,
+pub fn build_srcins_confs(
+    source_conf: WpSourcesConfig,
+    cnn_dict: &BTreeMap<String, SourceConnector>,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
-    let mut specs: Vec<SourceInstanceConf> = Vec::new();
-    for s in wrapper.sources.into_iter() {
+    let mut srcins_confs: Vec<SourceInstanceConf> = Vec::new();
+    for s in source_conf.sources.into_iter() {
         if !s.enable.unwrap_or(true) {
             continue;
         }
-        let conn = cmap.get(&s.connect).ok_or_else(|| {
+        let conn = cnn_dict.get(&s.connect).ok_or_else(|| {
             ConfIOReason::from_validation(format!(
                 "connector not found: '{}' (looked up under connectors/source.d)",
                 s.connect
@@ -124,9 +129,9 @@ pub fn specs_from_wrapper(
         let merged = merge_params(&conn.default_params, &s.params, &conn.allow_override)?;
         let mut inst = SourceInstanceConf::new_type(s.key, conn.kind.clone(), merged, s.tags);
         inst.connector_id = Some(conn.id.clone());
-        specs.push(inst);
+        srcins_confs.push(inst);
     }
-    Ok(specs)
+    Ok(srcins_confs)
 }
 
 /// 使用插件 Factory 执行“类型特有校验”（不触发 I/O）。
@@ -260,7 +265,7 @@ connect = "conn1"
                 },
             ],
         };
-        let specs = specs_from_wrapper(w, &cmap).expect("specs");
+        let specs = build_srcins_confs(w, &cmap).expect("specs");
         assert_eq!(specs.len(), 1);
         assert_eq!(specs[0].name(), &"s2".to_string());
     }
