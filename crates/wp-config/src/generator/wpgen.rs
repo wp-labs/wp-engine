@@ -187,7 +187,22 @@ impl ConfStdOperation for WpGenConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::LoggingConfig;
+    use super::*;
+    use orion_variate::ValueType;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn tmp_dir(prefix: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let mut p = std::env::temp_dir();
+        p.push(format!("{}_{}", prefix, nanos));
+        fs::create_dir_all(&p).unwrap();
+        p
+    }
+
     #[test]
     fn to_log_conf_uses_plain_level() {
         let lg = LoggingConfig {
@@ -200,5 +215,141 @@ mod tests {
         let lc = lg.to_log_conf();
         assert_eq!(lc.level, "warn");
         assert_eq!(lc.file.as_ref().unwrap().path, "./data/logs");
+    }
+
+    #[test]
+    fn wpgen_config_load_with_env_variables() {
+        let base = tmp_dir("wpgen_env");
+        let conf_path = base.join("wpgen.toml");
+
+        // 创建包含环境变量的 wpgen 配置
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+speed = 1000
+parallel = 2
+rule_root = "${RULE_ROOT}/models"
+
+[output]
+connect = "file_${ENV}"
+name = "${OUTPUT_NAME}"
+
+[output.params]
+base = "${DATA_ROOT}/out"
+file = "${OUTPUT_FILE}"
+
+[logging]
+level = "${LOG_LEVEL}"
+output = "file"
+file_path = "${LOG_PATH}"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        // 设置环境变量字典
+        let mut dict = EnvDict::new();
+        dict.insert("RULE_ROOT", ValueType::from("/opt/app"));
+        dict.insert("ENV", ValueType::from("prod"));
+        dict.insert("OUTPUT_NAME", ValueType::from("gen_output"));
+        dict.insert("DATA_ROOT", ValueType::from("/data"));
+        dict.insert("OUTPUT_FILE", ValueType::from("result.dat"));
+        dict.insert("LOG_LEVEL", ValueType::from("info"));
+        dict.insert("LOG_PATH", ValueType::from("/var/log/wpgen"));
+
+        // 加载配置
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        // 验证变量替换
+        assert_eq!(
+            config.generator.rule_root,
+            Some("/opt/app/models".to_string())
+        );
+        assert_eq!(config.output.connect, Some("file_prod".to_string()));
+        assert_eq!(config.output.name, Some("gen_output".to_string()));
+        assert_eq!(
+            config.output.params.get("base").and_then(|v| v.as_str()),
+            Some("/data/out")
+        );
+        assert_eq!(
+            config.output.params.get("file").and_then(|v| v.as_str()),
+            Some("result.dat")
+        );
+        assert_eq!(config.logging.level, "info");
+        assert_eq!(config.logging.file_path, Some("/var/log/wpgen".to_string()));
+    }
+
+    #[test]
+    fn wpgen_config_load_without_env_keeps_literal() {
+        let base = tmp_dir("wpgen_literal");
+        let conf_path = base.join("wpgen.toml");
+
+        // 创建不含环境变量的配置
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 50
+speed = 500
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "debug"
+output = "stdout"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert_eq!(config.generator.count, Some(50));
+        assert_eq!(config.generator.speed, 500);
+        assert_eq!(config.output.connect, Some("file_sink".to_string()));
+        assert_eq!(config.logging.level, "debug");
+    }
+
+    #[test]
+    fn wpgen_config_with_partial_env_substitution() {
+        let base = tmp_dir("wpgen_partial");
+        let conf_path = base.join("wpgen.toml");
+
+        // 配置中混合使用变量和字面值
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+rule_root = "${APP_ROOT}/rules"
+
+[output]
+connect = "tcp_sink"
+
+[logging]
+level = "warn"
+output = "file"
+file_path = "${LOG_DIR}/app.log"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let mut dict = EnvDict::new();
+        dict.insert("APP_ROOT", ValueType::from("/home/app"));
+        dict.insert("LOG_DIR", ValueType::from("/var/log"));
+
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert_eq!(
+            config.generator.rule_root,
+            Some("/home/app/rules".to_string())
+        );
+        assert_eq!(config.output.connect, Some("tcp_sink".to_string()));
+        assert_eq!(
+            config.logging.file_path,
+            Some("/var/log/app.log".to_string())
+        );
     }
 }
