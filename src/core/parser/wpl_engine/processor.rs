@@ -200,7 +200,10 @@ mod tests {
         } = parsed;
 
         assert!(missed_packets.is_empty());
-        assert_eq!(residue_data, vec![(id_c, "TAIL".to_string())]);
+        assert_eq!(
+            residue_data,
+            vec![(id_c, "wpl:nginx_access,residue:TAIL".to_string())]
+        );
 
         let alpha_pkg = sink_groups
             .get("nginx_access")
