@@ -39,8 +39,12 @@ impl WplEngine {
                     // 部分成功，有残留数据
                     let record = enrich_record_with_tags(record, &data.tags);
                     let rec_unit = SinkRecUnit::new(data.event_id, ProcMeta::Null, record);
-                    sink_groups.entry(wpl_key).or_default().push(rec_unit);
-                    residue_data.push((data.event_id, residue));
+                    sink_groups
+                        .entry(wpl_key.clone())
+                        .or_default()
+                        .push(rec_unit);
+                    let residue_event = format!("wpl:{},residue:{}", wpl_key, residue);
+                    residue_data.push((data.event_id, residue_event));
                 }
                 ProcessResult::Miss(fail_info) => {
                     // 完全失败，记录深度最高的错误信息
