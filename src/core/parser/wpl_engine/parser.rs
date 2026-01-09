@@ -3,7 +3,8 @@
 use super::types::ProcessResult;
 use crate::core::parser::wpl_engine::pipeline::WplPipeline;
 use crate::{core::parser::ParseOption, stat::MonSend};
-use orion_error::UvsReason;
+use orion_conf::ToStructError;
+use orion_error::{UvsDataFrom, UvsReason};
 use std::sync::Arc;
 use wp_connector_api::SourceEvent;
 use wp_model_core::model::data::Field;
@@ -51,12 +52,29 @@ impl MultiParser {
                         let record = Arc::new(tdo_crate);
                         return ProcessResult::Success { wpl_key, record };
                     } else {
-                        let record = Arc::new(tdo_crate);
-                        return ProcessResult::Partial {
-                            wpl_key,
-                            record,
-                            residue: un_parsed.to_string(),
-                        };
+                        let parsed_len = event.payload.len() - un_parsed.len();
+                        if un_parsed.len() as f64 / event.payload.len() as f64 > 0.2 {
+                            info_data!(
+                                "wpl parse not complete: {}\n data:{}",
+                                wpl_line.wpl_key(),
+                                event.payload,
+                            );
+                            if parsed_len > max_depth {
+                                max_depth = parsed_len;
+                                best_wpl = wpl_line.wpl_key().clone();
+                                best_error = Some(
+                                    WparseReason::from_data("not complete", Some(parsed_len))
+                                        .to_err(),
+                                );
+                            }
+                        } else {
+                            let record = Arc::new(tdo_crate);
+                            return ProcessResult::Partial {
+                                wpl_key,
+                                record,
+                                residue: un_parsed.to_string(),
+                            };
+                        }
                     }
                 }
                 Err(e) => {
