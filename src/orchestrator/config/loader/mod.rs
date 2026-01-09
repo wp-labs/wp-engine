@@ -14,6 +14,7 @@ mod tests {
     use crate::types::AnyResult;
     use orion_conf::ErrorOwe;
     use orion_conf::error::OrionConfResult;
+    use orion_variate::EnvDict;
     use std::fs;
     use std::path::Path;
     use wp_log::conf::Output as LogOutput;
@@ -27,7 +28,7 @@ mod tests {
         conf_manager.clear_work_directory();
         let delegate = conf_manager.create_config_delegate::<WpGenConfig>(WPGEN_TOML);
         delegate.init()?;
-        delegate.load()?;
+        delegate.load(&EnvDict::default())?;
         delegate.safe_clean()?;
         Ok(())
     }
@@ -56,7 +57,7 @@ output = "stdout"
 "#;
         let p = cm.ensure_config_path_exists(WPGEN_TOML)?;
         fs::write(&p, toml)?;
-        assert!(cm.load_wpgen_config(WPGEN_TOML).is_err());
+        assert!(cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default()).is_err());
         Ok(())
     }
 
@@ -102,7 +103,7 @@ output = "file"
 "#;
         let p = cm.ensure_config_path_exists(WPGEN_TOML)?;
         fs::write(&p, toml)?;
-        let rt = cm.load_wpgen_config(WPGEN_TOML)?;
+        let rt = cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default())?;
         assert_eq!(rt.out_sink.resolved_kind_str(), "file");
         // 覆盖应生效，最终路径包含 over.dat
         let fpath = rt.out_sink.resolve_file_path().expect("file path");
@@ -148,7 +149,7 @@ output = "stdout"
 "#;
         let p = cm.ensure_config_path_exists(WPGEN_TOML)?;
         fs::write(&p, toml)?;
-        let err = cm.load_wpgen_config(WPGEN_TOML).unwrap_err();
+        let err = cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default()).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("override 'path' not allowed"), "msg={}", msg);
         cm.clear_work_directory();

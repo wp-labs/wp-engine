@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use crate::structure::ConfStdOperation;
 use crate::structure::SinkInstanceConf;
 use crate::utils::{backup_clean, save_conf};
-use orion_conf::TomlIO;
 use orion_conf::error::OrionConfResult;
+use orion_variate::EnvDict;
 use serde_derive::{Deserialize, Serialize};
 use toml;
 // no external IO traits for resolved wpgen; handled in loader
@@ -131,10 +131,11 @@ impl LoggingConfig {
     }
 }
 
+use orion_conf::EnvTomlLoad;
 impl WpGenConfig {
     /// Load WpGenConfig from a path with generic path parameter support
-    pub fn load_from_path<P: AsRef<Path>>(path: P) -> OrionConfResult<Self> {
-        Self::load_toml(path.as_ref())
+    pub fn load_from_path<P: AsRef<Path>>(path: P, dict: &EnvDict) -> OrionConfResult<Self> {
+        Self::env_load_toml(path.as_ref(), dict)
     }
 
     /// Initialize WpGenConfig to a path with generic path parameter support
@@ -157,11 +158,11 @@ impl WpGenConfig {
 }
 
 impl ConfStdOperation for WpGenConfig {
-    fn load(path: &str) -> OrionConfResult<Self>
+    fn load(path: &str, dict: &EnvDict) -> OrionConfResult<Self>
     where
         Self: Sized,
     {
-        WpGenConfig::load_toml(&PathBuf::from(path))
+        WpGenConfig::env_load_toml(&PathBuf::from(path), dict)
     }
 
     fn init(path: &str) -> OrionConfResult<Self>

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use orion_conf::error::OrionConfResult;
 use orion_error::ErrorOwe;
+use orion_variate::EnvDict;
 use std::path::Path;
 use wp_conf::structure::SinkInstanceConf;
 use wp_engine::facade::config::{WarpConf, WpGenResolved};
@@ -11,8 +12,12 @@ use wp_error::run_error::RunResult;
 use wp_log::info_ctrl;
 
 /// 加载 wpgen 配置并解析输出；支持命令行覆盖输出到文件路径
-pub fn load_wpgen_resolved(conf_name: &str, god: &WarpConf) -> OrionConfResult<WpGenResolved> {
-    let rt = god.load_wpgen_config(conf_name).owe_conf()?;
+pub fn load_wpgen_resolved(
+    conf_name: &str,
+    god: &WarpConf,
+    dict: &EnvDict,
+) -> OrionConfResult<WpGenResolved> {
+    let rt = god.load_wpgen_config(conf_name, dict).owe_conf()?;
     Ok(rt)
 }
 
@@ -48,11 +53,11 @@ pub fn gen_conf_clean<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
 }
 
 /// 检查 wpgen 配置是否存在且可解析
-pub fn gen_conf_check<P: AsRef<Path>>(work_root: P) -> OrionConfResult<()> {
+pub fn gen_conf_check<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> OrionConfResult<()> {
     use wp_engine::facade::config::{WPGEN_TOML, WarpConf};
     let work_root = work_root.as_ref();
     let god = WarpConf::new(work_root);
-    let _ = load_wpgen_resolved(WPGEN_TOML, &god)?;
+    let _ = load_wpgen_resolved(WPGEN_TOML, &god, dict)?;
     Ok(())
 }
 
@@ -71,6 +76,7 @@ pub fn clean_wpgen_output_file(
     work_root: &str,
     conf_name: &str,
     local_only: bool,
+    dict: &EnvDict,
 ) -> Result<GenCleanReport> {
     if !local_only {
         return Ok(GenCleanReport {
@@ -79,7 +85,7 @@ pub fn clean_wpgen_output_file(
         });
     }
     let god = WarpConf::new(work_root);
-    match load_wpgen_resolved(conf_name, &god) {
+    match load_wpgen_resolved(conf_name, &god, dict) {
         Ok(conf) => {
             if let Some(p) = conf.out_sink.resolve_file_path() {
                 let resolved_path = Path::new(&p);

@@ -1,3 +1,4 @@
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use wp_conf::connectors::{ConnectorDef, ConnectorScope, load_connector_defs_from_dir};
 use wp_conf::sources::io::resolve_connectors_base_dir;
@@ -118,7 +119,7 @@ fn lint_side_rows_from(start: &Path, side: Side) -> Vec<LintRow> {
         Side::Sources => ConnectorScope::Source,
         Side::Sinks => ConnectorScope::Sink,
     };
-    match load_connector_defs_from_dir(&dir, scope) {
+    match load_connector_defs_from_dir(&dir, scope, &EnvDict::default()) {
         Ok(defs) => {
             for def in defs {
                 let hint = def

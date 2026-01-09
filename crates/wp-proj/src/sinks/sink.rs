@@ -61,7 +61,7 @@ impl Sinks {
         let sink_root = self.sink_root();
         let env_dict = EnvDict::new();
         let defaults = load_sink_defaults(&sink_root, &env_dict).err_conv()?;
-        let conn_map = load_connectors_for(sink_root.to_string_lossy().as_ref()).err_conv()?;
+        let conn_map = load_connectors_for(sink_root.to_string_lossy().as_ref(), &env_dict).err_conv()?;
         let mut rows = Vec::new();
 
         for (scope, dir) in [

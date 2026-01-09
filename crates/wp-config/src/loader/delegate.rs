@@ -1,5 +1,6 @@
 use crate::structure::ConfStdOperation;
 use orion_conf::error::OrionConfResult;
+use orion_variate::EnvDict;
 use std::marker::PhantomData;
 
 pub struct ConfDelegate<T: ConfStdOperation> {
@@ -21,7 +22,7 @@ impl<T: ConfStdOperation> ConfDelegate<T> {
         T::safe_clean(self.path.as_str())?;
         Ok(())
     }
-    pub fn load(&self) -> OrionConfResult<T> {
-        T::load(self.path.as_str())
+    pub fn load(&self, dict: &EnvDict) -> OrionConfResult<T> {
+        T::load(self.path.as_str(), dict)
     }
 }

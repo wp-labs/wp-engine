@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use orion_variate::EnvDict;
 use wp_error::RunResult;
 
 use crate::wpgen::core::clean_wpgen_output_file;
@@ -19,7 +20,7 @@ impl WpGenManager {
     }
 
     /// 数据清理（根据 wpgen.toml 配置中的 connect 字段确定数据位置）
-    pub fn clean_outputs(&self) -> RunResult<bool> {
+    pub fn clean_outputs(&self, dict: &EnvDict) -> RunResult<bool> {
         // 检查配置文件是否存在
         let config_path = self.work_root.join("conf").join("wpgen.toml");
         if !config_path.exists() {
@@ -32,6 +33,7 @@ impl WpGenManager {
             self.work_root.to_string_lossy().as_ref(),
             "wpgen.toml",
             true,
+            dict,
         ) {
             Ok(result) => {
                 if let Some(path) = result.path {
@@ -93,7 +95,9 @@ mod tests {
         assert!(output_file.exists());
 
         let manager = WpGenManager::new(case_path.path());
-        let cleaned = manager.clean_outputs().expect("clean outputs");
+        let cleaned = manager
+            .clean_outputs(&EnvDict::default())
+            .expect("clean outputs");
         assert!(cleaned, "expected wpgen data clean to report work done");
         assert!(
             !output_file.exists(),

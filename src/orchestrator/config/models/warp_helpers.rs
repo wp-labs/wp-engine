@@ -30,7 +30,7 @@ pub fn load_warp_engine_confs_with_dict(
         error_ctrl!("设置工作目录失败:, error={}", &err);
         panic!("设置工作目录失败");
     };
-    let main_conf = EngineConfig::load(&abs_root)
+    let main_conf = EngineConfig::load(&abs_root, dict)
         .err_conv()?
         .env_eval(dict)
         .conf_absolutize(&abs_root);

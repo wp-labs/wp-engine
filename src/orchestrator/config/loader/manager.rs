@@ -4,8 +4,9 @@ use crate::orchestrator::config::WPSRC_TOML;
 use crate::types::AnyResult;
 use futures_util::TryFutureExt;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
-use orion_conf::{ErrorOwe, ToStructError, TomlIO};
+use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError, TomlIO};
 use orion_error::{ErrorWith, UvsResFrom};
+use orion_variate::EnvDict;
 use std::cell::OnceCell;
 use std::path::{Path, PathBuf};
 use tokio::fs::create_dir_all;
@@ -98,9 +99,9 @@ impl WarpConf {
         self.work_root().to_string_lossy().to_string()
     }
     /// 加载引擎配置
-    pub fn load_engine_config(&self) -> OrionConfResult<EngineConfig> {
+    pub fn load_engine_config(&self, dict: &EnvDict) -> OrionConfResult<EngineConfig> {
         let path = self.config_path(ENGINE_CONF_FILE);
-        let conf = EngineConfig::load_toml(&path)
+        let conf = EngineConfig::env_load_toml(&path, dict)
             .owe_res()
             .with(&path)?
             .conf_absolutize(self.work_root());
@@ -108,9 +109,9 @@ impl WarpConf {
     }
 
     /// 清理工作目录中的配置文件
-    pub fn cleanup_work_directory(&self) -> AnyResult<()> {
+    pub fn cleanup_work_directory(&self, dict: &EnvDict) -> AnyResult<()> {
         let wp_conf =
-            EngineConfig::load_or_init(self.work_root())?.conf_absolutize(self.work_root());
+            EngineConfig::load_or_init(self.work_root(), dict)?.conf_absolutize(self.work_root());
         backup_clean(self.config_path_string(ENGINE_CONF_FILE))?;
         backup_clean(wp_conf.src_conf_of(WPSRC_TOML))?;
         // PUBLIC_ADM 废弃：不再清理 public.oml
@@ -136,12 +137,12 @@ impl WarpConf {
         ConfDelegate::<T>::new(path.as_str())
     }
     /// 尝试加载配置文件
-    pub fn try_load_config<T>(&self, file_name: &str) -> Option<T>
+    pub fn try_load_config<T>(&self, file_name: &str, dict: &EnvDict) -> Option<T>
     where
         T: ConfStdOperation,
     {
         let path = self.config_path_string(file_name);
-        T::try_load(path.as_str()).ok()?
+        T::try_load(path.as_str(), dict).ok()?
     }
 }
 

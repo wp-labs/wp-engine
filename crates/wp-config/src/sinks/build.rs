@@ -390,7 +390,7 @@ pub fn load_business_route_confs_with(
     reg: &dyn SinkFactoryLookup,
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<SinkRouteConf>> {
-    let conn_map = load_connectors_for(sink_root)?;
+    let conn_map = load_connectors_for(sink_root, dict)?;
     let routes = load_route_files_from(&business_dir(sink_root), dict)?;
     let defaults = load_sink_defaults(sink_root, dict)?;
     let mut out = Vec::new();
@@ -407,7 +407,7 @@ pub fn load_infra_route_confs(
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<crate::structure::SinkRouteConf>> {
     use super::io::{infra_dir, load_connectors_for, load_route_files_from, load_sink_defaults};
-    let conn_map = load_connectors_for(sink_root)?;
+    let conn_map = load_connectors_for(sink_root, dict)?;
     let routes = load_route_files_from(&infra_dir(sink_root), dict)?;
     let defaults = load_sink_defaults(sink_root, dict)?;
     let mut out = Vec::new();

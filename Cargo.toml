@@ -159,7 +159,8 @@ mockall = { workspace = true }
 orion_overload= { path = "crates/orion_overload" }
 orion_exp = { path = "crates/orion_exp" }
 orion-sec  =  {workspace = true }
-orion-variate=  {workspace = true }
+orion-variate =  {workspace = true }
+
 
 # --- Internal: Configuration & Knowledge ---
 wp_conf = { package = "wp-config", path = "crates/wp-config" }
@@ -347,9 +348,8 @@ similar = "2.7"
 rust-crypto = "0.2"
 
 # --- Configuration ---
-orion_conf = { version = "0.3", features = ["yaml", "toml"] }
-orion-sec  = { git = "https://github.com/galaxy-sec/orion-sec.git" , branch = "main"}
-
+orion_conf = { version = "0.4", features = ["yaml", "toml"] }
+orion-sec  = "0.3"
 orion-variate = "0.10"
 
 # --- Testing ---
@@ -389,8 +389,8 @@ wp_ctrl_api   = { package = "wp-ctrl-api",   git = "https://github.com/wp-labs/w
 wp_enrich_api = { package = "wp-enrich-api", git = "https://github.com/wp-labs/wp-advanced-api", tag = "v0.0.4-alpha" }
 
 # --- External: Infrastructure Libraries ---
-wp-log       = { package = "wp-log",       git = "https://github.com/wp-labs/wp-infras", branch=  "main" }
-wp-error     = { package = "wp-error",     git = "https://github.com/wp-labs/wp-infras", branch = "main" }
-wp-specs     = { package = "wp-specs",     git = "https://github.com/wp-labs/wp-infras", branch = "main" }
-wp_conf_base = { package = "wp-conf-base", git = "https://github.com/wp-labs/wp-infras", branch = "main" }
-wp-data-fmt  = { package = "wp-data-fmt",  git = "https://github.com/wp-labs/wp-infras", branch = "main" }
+wp-log       = { package = "wp-log",       git = "https://github.com/wp-labs/wp-infras", tag = "v0.7.3" }
+wp-error     = { package = "wp-error",     git = "https://github.com/wp-labs/wp-infras", tag = "v0.7.3" }
+wp-specs     = { package = "wp-specs",     git = "https://github.com/wp-labs/wp-infras", tag = "v0.7.3" }
+wp_conf_base = { package = "wp-conf-base", git = "https://github.com/wp-labs/wp-infras", tag = "v0.7.3" }
+wp-data-fmt  = { package = "wp-data-fmt",  git = "https://github.com/wp-labs/wp-infras", tag = "v0.7.3" }

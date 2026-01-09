@@ -4,7 +4,7 @@
 //! validation, initialization, and routing operations for data sources
 //! in the Warp Flow System.
 
-use orion_conf::TomlIO;
+use orion_conf::{EnvTomlLoad, TomlIO};
 use orion_error::{ErrorConv, ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
 use std::fs;
@@ -78,7 +78,7 @@ impl Sources {
         }
 
         // Parse and validate configuration
-        self.validate_wpsrc_config(&self.work_root, &wpsrc_path)?;
+        self.validate_wpsrc_config(&self.work_root, &wpsrc_path, &EnvDict::default())?;
 
         // Attempt to build specifications to ensure they are valid
         self.build_source_specs(&wpsrc_path)?;
@@ -87,18 +87,18 @@ impl Sources {
         Ok(())
     }
 
-    pub fn check_sources_config(&self) -> Result<bool, String> {
+    pub fn check_sources_config(&self, dict: &EnvDict) -> Result<bool, String> {
         let wpsrc_path = self.wpsrc_path();
         if !wpsrc_path.exists() {
             return Err("Configuration error: wpsrc.toml file does not exist".to_string());
         }
 
-        self.parse_config_only(&self.work_root, &wpsrc_path)
+        self.parse_config_only(&self.work_root, &wpsrc_path, dict)
             .map(|_| true)
             .map_err(|e| format!("Parse sources failed: {}", e))
     }
 
-    pub fn init(&self) -> RunResult<()> {
+    pub fn init(&self, dict: &EnvDict) -> RunResult<()> {
         let wpsrc_dir = self.sources_root();
         let wpsrc_path = wpsrc_dir.join(WPSRC_TOML);
 
@@ -106,7 +106,7 @@ impl Sources {
         self.ensure_directory_exists(&wpsrc_path)?;
 
         // Load existing configuration or create new one
-        let mut sources_config = self.load_or_create_config(&wpsrc_path)?;
+        let mut sources_config = self.load_or_create_config(&wpsrc_path, dict)?;
 
         // Add default sources if they don't exist
         self.add_default_sources(&mut sources_config)?;
@@ -120,11 +120,16 @@ impl Sources {
         Ok(())
     }
 
-    fn validate_wpsrc_config(&self, work_root: &Path, wpsrc_path: &Path) -> RunResult<()> {
+    fn validate_wpsrc_config(
+        &self,
+        work_root: &Path,
+        wpsrc_path: &Path,
+        dict: &EnvDict,
+    ) -> RunResult<()> {
         let parser = SourceConfigParser::new(work_root.to_path_buf());
 
         // Load configuration from TOML file
-        let sources_config = WarpSources::load_toml(wpsrc_path).err_conv()?;
+        let sources_config = WarpSources::env_load_toml(wpsrc_path, dict).err_conv()?;
 
         // Serialize configuration to validate structure
         let config_content = toml::to_string_pretty(&sources_config).map_err(|e| {
@@ -141,12 +146,17 @@ impl Sources {
         Ok(())
     }
 
-    fn parse_config_only(&self, work_root: &Path, wpsrc_path: &Path) -> RunResult<()> {
+    fn parse_config_only(
+        &self,
+        work_root: &Path,
+        wpsrc_path: &Path,
+        dict: &EnvDict,
+    ) -> RunResult<()> {
         let parser = SourceConfigParser::new(work_root.to_path_buf());
 
         // Load configuration from TOML file, or use empty config if file doesn't exist
         let sources_config = if wpsrc_path.exists() {
-            WarpSources::load_toml(wpsrc_path).map_err(|e| {
+            WarpSources::env_load_toml(wpsrc_path, dict).map_err(|e| {
                 RunReason::from_conf(format!("Failed to load wpsrc.toml: {}", e)).to_err()
             })?
         } else {
@@ -178,9 +188,9 @@ impl Sources {
     }
 
     /// Loads existing configuration or creates new empty one
-    fn load_or_create_config(&self, config_path: &Path) -> RunResult<WarpSources> {
+    fn load_or_create_config(&self, config_path: &Path, dict: &EnvDict) -> RunResult<WarpSources> {
         if config_path.exists() {
-            WarpSources::load_toml(config_path).map_err(|e| {
+            WarpSources::env_load_toml(config_path, dict).map_err(|e| {
                 RunReason::from_conf(format!("Failed to load existing config: {}", e)).to_err()
             })
         } else {

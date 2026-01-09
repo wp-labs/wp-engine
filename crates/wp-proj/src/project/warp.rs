@@ -8,6 +8,7 @@ use super::{Connectors, Oml, ProjectPaths, Sinks, Sources, Wpl, init::PrjScope};
 use crate::{
     models::knowledge::Knowledge, sinks::clean_outputs, wparse::WParseManager, wpgen::WpGenManager,
 };
+use orion_variate::EnvDict;
 use wp_conf::engine::EngineConfig;
 use wp_error::run_error::RunResult;
 
@@ -50,7 +51,7 @@ impl WarpProject {
         let abs_root = normalize_work_root(work_root);
         let paths = ProjectPaths::from_root(&abs_root);
         let eng_conf = Arc::new(
-            EngineConfig::load_or_init(&abs_root)
+            EngineConfig::load_or_init(&abs_root, &EnvDict::default())
                 .expect("load engine config")
                 .conf_absolutize(&abs_root),
         );
@@ -153,7 +154,7 @@ impl WarpProject {
         }
 
         //  清理 wpgen 生成数据（委托给 WPgenManager）
-        if let Ok(wpgen_cleaned) = self.wpgen_manager.clean_outputs() {
+        if let Ok(wpgen_cleaned) = self.wpgen_manager.clean_outputs(&EnvDict::default()) {
             cleaned_any |= wpgen_cleaned;
         }
 

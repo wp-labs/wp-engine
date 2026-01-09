@@ -1,5 +1,6 @@
 use crate::fsutils::{count_lines_file, resolve_path};
 use crate::types::Ctx;
+use orion_variate::EnvDict;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use wp_conf::connectors::{ParamMap, param_value_from_toml};
@@ -32,7 +33,7 @@ type SrcConnectorRec = wp_conf::sources::SourceConnector;
 // 删除本地封装，调用点直接使用配置层公共定位
 
 fn load_connectors_map(base_dir: &std::path::Path) -> Option<BTreeMap<String, SrcConnectorRec>> {
-    wp_conf::sources::load_connectors_for(base_dir).ok()
+    wp_conf::sources::load_connectors_for(base_dir, &EnvDict::default()).ok()
 }
 
 fn merge_params(base: &ParamMap, override_tbl: &toml::value::Table, allow: &[String]) -> ParamMap {

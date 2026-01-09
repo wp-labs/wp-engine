@@ -1,7 +1,8 @@
 use super::defs::ConnectorTomlFile;
-use orion_conf::TomlIO;
+use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,10 +26,11 @@ fn collect_connector_files(dir: &Path) -> OrionConfResult<Vec<PathBuf>> {
 pub fn load_connector_defs_from_dir(
     dir: &Path,
     scope: ConnectorScope,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<ConnectorDef>> {
     let mut map: BTreeMap<String, ConnectorDef> = BTreeMap::new();
     for fp in collect_connector_files(dir)? {
-        let file: ConnectorTomlFile = ConnectorTomlFile::load_toml(&fp)?;
+        let file: ConnectorTomlFile = ConnectorTomlFile::env_load_toml(&fp, dict)?;
         for mut def in file.connectors {
             let origin = Some(fp.display().to_string());
             if map.contains_key(&def.id) {
