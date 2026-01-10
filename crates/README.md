@@ -68,7 +68,7 @@
 [dependencies]
 wp_conf = { package = "wp-config", path = "crates/wp-config" }
 wpl     = { package = "wp-lang",   path = "crates/wp-lang" }
-wp_model_core  = { package = "wp-data-utils", path = "crates/wp-data-utils" }
+wp-model-core  = { package = "wp-data-utils", path = "crates/wp-data-utils" }
 wp_err  = { package = "wp-error",   path = "crates/wp-error" }
 ```
 

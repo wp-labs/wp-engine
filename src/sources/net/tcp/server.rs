@@ -9,9 +9,9 @@ use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
 use wp_connector_api::{ControlEvent, CtrlRx, SourceError, SourceReason, SourceResult};
 
-use crate::sources::tcp::framing::{default_channel_capacity, FramingMode, STOP_CHANNEL_CAPACITY};
-use crate::sources::tcp::zc::types::BatchConfig;
 use crate::sources::tcp::MessageBatch;
+use crate::sources::tcp::framing::{FramingMode, STOP_CHANNEL_CAPACITY, default_channel_capacity};
+use crate::sources::tcp::zc::types::BatchConfig;
 
 use super::connection::ConnectionManager;
 

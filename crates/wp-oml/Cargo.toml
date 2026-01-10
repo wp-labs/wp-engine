@@ -15,7 +15,7 @@ orion_conf= { workspace = true }
 wp_knowledge = { package = "wp-knowledge", path = "../wp-knowledge" }
 wp_parser = { package = "wp-parser", path = "../wp-parser" }
 orion_exp = { path = "../orion_exp" }
-wp_model_core = { workspace = true  }
+wp-model-core = { workspace = true  }
 wp_data_model= { workspace = true  }
 wp-data-fmt= { workspace=true }
 wp-error = { workspace = true }

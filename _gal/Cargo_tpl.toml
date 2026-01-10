@@ -111,7 +111,7 @@ orion-error = { workspace = true }
 wp-error = { workspace = true }
 wp-log = { workspace = true }
 orion_conf = { workspace = true }
-wp_conf_base = {workspace = true }
+wp-conf-base = {workspace = true }
 
 # --- Time & Date ---
 chrono = { workspace = true }
@@ -172,13 +172,13 @@ wpl = { package = "wp-lang", path = "crates/wp-lang" }
 oml = { package = "wp-oml", path = "crates/wp-oml", features = ["oml-diag"] }
 
 # --- Internal: Data & Stats ---
-#wp_model_core = { package = "wp-data-utils", path = "crates/wp-data-utils" }
+#wp-model-core = { package = "wp-data-utils", path = "crates/wp-data-utils" }
 wp_stat = { package = "wp-stats", path = "crates/wp-stats" }
 
 # --- External: API Layer ---
-wp_connector_api = { workspace = true }
-wp_parse_api = { workspace = true }
-wp_model_core = { workspace = true }
+wp-connector-api = { workspace = true }
+wp-parse-api = { workspace = true }
+wp-model-core = { workspace = true }
 wp_data_model = { workspace = true }
 wp_ctrl_api = { workspace = true }
 wp_enrich_api = { workspace = true }
@@ -380,9 +380,9 @@ wp_stats = { package = "wp-stats", path = "./crates/wp-stats" }
 
 
 # --- External: Open API (Public Interfaces) ---
-wp_connector_api =  "0.7"
-wp_parse_api     =  "0.7"
-wp_model_core    =  "0.7"
+wp-connector-api =  "0.7"
+wp-parse-api     =  "0.7"
+wp-model-core    =  "0.7"
 
 # --- External: Advanced API (Enterprise Features) ---
 wp_ctrl_api   = { package = "wp-ctrl-api",   git = "{{GIT_REPO_SVR}}/wp-advanced-api", tag = "{{ADV_API_VER}}" }
@@ -392,5 +392,5 @@ wp_enrich_api = { package = "wp-enrich-api", git = "{{GIT_REPO_SVR}}/wp-advanced
 wp-log       =  "0.1"
 wp-error     =  "0.7"
 wp-specs     =  "0.7"
-wp_conf_base =  "0.1"
+wp-conf-base =  "0.1"
 wp-data-fmt  =  "0.1"

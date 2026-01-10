@@ -11,7 +11,7 @@ name = "wp_stat"
 
 [dependencies]
 orion_overload = { path = "../orion_overload" }
-wp_model_core = { workspace = true }
+wp-model-core = { workspace = true }
 wp-log = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }

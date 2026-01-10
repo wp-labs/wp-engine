@@ -1,5 +1,4 @@
 use super::instance::SinkInstanceConf;
-use crate::structure::ErrorOwe;
 use crate::structure::FlexGroup;
 use orion_conf::{
     ToStructError,
@@ -7,8 +6,6 @@ use orion_conf::{
 };
 use orion_error::UvsValidationFrom;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use wp_error::config_error::ConfError;
 use wp_model_core::model::fmt_def::TextFmt;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -20,11 +17,6 @@ pub struct SinkRouteConf {
 impl SinkRouteConf {
     pub fn append_sink(&mut self, sink: SinkInstanceConf) {
         self.sink_group.append(sink);
-    }
-    pub fn load_from(path: &PathBuf) -> Result<Self, ConfError> {
-        let content = std::fs::read_to_string(path).owe_conf()?;
-        let conf: Self = toml::from_str(&content).owe_conf()?;
-        Ok(conf)
     }
 }
 

@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
-use orion_conf::{EnvTomlLoad, TomlIO};
 use orion_error::{ToStructError, UvsValidationFrom};
 use orion_variate::{EnvDict, EnvEvalable};
 use wp_conf::connectors::{

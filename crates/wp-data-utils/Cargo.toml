@@ -17,7 +17,7 @@ serde_derive = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 lru = { workspace = true }
 derive_builder = { workspace = true }
-wp_model_core = { workspace = true }
+wp-model-core = { workspace = true }
 
 
 [dev-dependencies]

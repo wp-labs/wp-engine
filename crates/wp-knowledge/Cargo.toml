@@ -16,7 +16,7 @@ orion-error= { workspace = true }
 wp-error = { workspace = true }
 wp-log = { workspace = true }
 wp-specs = { workspace = true }
-wp_model_core = { workspace = true }
+wp-model-core = { workspace = true }
 wp_data_model = { workspace = true }
 wp-data-fmt= { workspace=true }
 #wpl = { package = "wp-lang", path = "../wp-lang", default-features = false }

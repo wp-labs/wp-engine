@@ -17,10 +17,10 @@ serde_json = { workspace = true }
 toml = { workspace = true }
 wildmatch = { workspace = true }
 wp-cli-core = { path = "../wp-cli-core" }
-wp_connector_api = { workspace = true }
+wp-connector-api = { workspace = true }
 wp-knowledge = { path = "../wp-knowledge", package = "wp-knowledge" }
 wp-conf = { path = "../wp-config", package = "wp-config" }
-wp_model_core = { path = "../wp-data-utils", package = "wp-data-utils" }
+wp-model-core = { path = "../wp-data-utils", package = "wp-data-utils" }
 wp-engine = { path = "../..", package = "wp-engine" }
 wp-error = { workspace = true }
 wp-log = { workspace = true }

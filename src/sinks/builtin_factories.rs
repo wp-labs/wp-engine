@@ -163,6 +163,7 @@ pub fn make_blackhole_sink() -> Box<dyn wp_connector_api::AsyncSink> {
 mod tests {
     use super::*;
     use wp_connector_api::{AsyncRawDataSink, AsyncRecordSink, SinkFactory};
+    use wp_model_core::model::DataRecord;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn file_factory_supports_fmt_param() -> anyhow::Result<()> {
@@ -189,7 +190,7 @@ mod tests {
         let init = FileFactory.build(&spec, &ctx).await?;
         // write one record as JSON via record sink
         let mut sink = init.sink;
-        let rec = wp_model_core::model::DataRecord::default();
+        let rec = DataRecord::default();
         AsyncRecordSink::sink_record(sink.as_mut(), &rec).await?;
         AsyncRawDataSink::sink_str(sink.as_mut(), "\n").await?; // ensure newline flush
         AsyncRawDataSink::sink_str(sink.as_mut(), "").await?;

@@ -10,7 +10,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 walkdir = { workspace = true }
 toml = { workspace = true }
-wp_model_core = { package = "wp-data-utils", path = "../wp-data-utils" }
+wp-model-core = { package = "wp-data-utils", path = "../wp-data-utils" }
 wp-data-fmt= { workspace=true }
 wp_conf = { package = "wp-config", path = "../wp-config" }
 chrono = { workspace = true }

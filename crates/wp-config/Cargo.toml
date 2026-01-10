@@ -19,14 +19,14 @@ derive_more = { workspace = true }
 wp_knowledge = { package = "wp-knowledge", path = "../wp-knowledge" }
 orion_exp = { path = "../orion_exp" }
 orion_overload= { path = "../orion_overload" }
-wp_model_core = { workspace =true  }
+wp-model-core = { workspace =true  }
 wp_data_model = { workspace =true  }
 wp-error =  { workspace = true }
 wp-log =  { workspace = true }
 wpl = { package = "wp-lang", path = "../wp-lang" }
 wp-specs =  { workspace = true }
-wp_conf_base = { workspace = true }
-wp_connector_api ={ workspace=true }
+wp-conf-base = { workspace = true }
+wp-connector-api ={ workspace=true }
 async-trait = { workspace = true }
 wp_parser = { package = "wp-parser", path = "../wp-parser" }
 log = { workspace = true }
