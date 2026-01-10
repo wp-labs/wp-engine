@@ -1,6 +1,5 @@
 use crate::fsutils::{count_lines_file, resolve_path};
 use crate::types::Ctx;
-use orion_conf::EnvTomlLoad;
 use orion_variate::EnvDict;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -58,7 +57,7 @@ pub fn total_input_from_wpsrc(
     dict: &EnvDict,
 ) -> Option<u64> {
     let content = read_wpsrc_toml(work_root, engine_conf)?;
-    let toml_val: toml::Value = toml::Value::env_parse_toml(&content, dict).ok()?;
+    let toml_val: toml::Value = toml::from_str(&content).ok()?;
     let mut sum = 0u64;
     if let Some(arr) = toml_val.get("sources").and_then(|v| v.as_array()) {
         // load connectors once
@@ -139,7 +138,7 @@ pub fn list_file_sources_with_lines(
     dict: &EnvDict,
 ) -> Option<SrcLineReport> {
     let content = read_wpsrc_toml(work_root, eng_conf)?;
-    let toml_val: toml::Value = toml::Value::env_parse_toml(&content, dict).ok()?;
+    let toml_val: toml::Value = toml::from_str(&content).ok()?;
     let mut items = Vec::new();
     let mut total = 0u64;
     if let Some(arr) = toml_val.get("sources").and_then(|v| v.as_array()) {
