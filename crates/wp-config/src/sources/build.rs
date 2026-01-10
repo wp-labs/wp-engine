@@ -1,7 +1,8 @@
 use super::types::WpSourcesConfig;
 use crate::sources::load_connectors_for;
 use crate::sources::types::SourceConnector;
-use crate::structure::SourceInstanceConf;
+use crate::structure::{SourceInstanceConf, Validate};
+use crate::loader::traits::ConfigLoader;
 use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
@@ -146,6 +147,47 @@ pub fn validate_specs_with_factory(
         }
     }
     Ok(())
+}
+
+// ============================================================================
+// ConfigLoader trait implementation for unified loading interface
+// ============================================================================
+
+impl ConfigLoader for Vec<SourceInstanceConf> {
+    fn config_type_name() -> &'static str {
+        "Sources"
+    }
+
+    fn load_from_str(content: &str, base: &Path, dict: &EnvDict) -> OrionConfResult<Self> {
+        // 解析 TOML 并进行环境变量替换
+        let src_conf: WpSourcesConfig = WpSourcesConfig::env_parse_toml(content, dict)
+            .owe_conf()
+            .want("parse sources")?
+            .env_eval(dict);
+
+        // 加载 connectors
+        let cnn_dict = load_connectors_for(base, dict)?;
+
+        // 构建 SourceInstanceConf 列表
+        build_source_instances(src_conf, &cnn_dict)
+    }
+
+    fn validate(&self) -> OrionConfResult<()> {
+        for source in self.iter() {
+            source.validate()?;
+        }
+        Ok(())
+    }
+}
+
+// 保留原有函数作为兼容层
+#[deprecated(since = "1.8.0", note = "请使用 Vec::<SourceInstanceConf>::load_from_str()")]
+pub fn load_sources_from_str_deprecated(
+    config_str: &str,
+    start: &Path,
+    dict: &EnvDict,
+) -> OrionConfResult<Vec<SourceInstanceConf>> {
+    Vec::<SourceInstanceConf>::load_from_str(config_str, start, dict)
 }
 
 #[cfg(test)]
@@ -346,4 +388,131 @@ type = "dummy"
             .to_string();
         assert!(err.contains("plugin validate failed"));
     }
+
+    // ========================================================================
+    // ConfigLoader trait tests
+    // ========================================================================
+
+    #[test]
+    fn config_loader_load_from_str_works() {
+        use crate::loader::traits::ConfigLoader;
+
+        let base = tmp_dir("src_cfg_loader");
+        let cdir = base.join("connectors").join("source.d");
+        fs::create_dir_all(&cdir).unwrap();
+
+        // 创建一个 connector 配置
+        fs::write(
+            cdir.join("dummy.toml"),
+            r#"[[connectors]]
+id = "dummy_conn"
+type = "dummy"
+allow_override = ["a", "b"]
+[connectors.params]
+a = "default_a"
+"#,
+        )
+        .unwrap();
+
+        // 使用 ConfigLoader trait 加载 sources
+        let sources_toml = r#"
+[[sources]]
+key = "test_source"
+connect = "dummy_conn"
+[sources.params]
+a = "custom_a"
+"#;
+
+        let result = Vec::<SourceInstanceConf>::load_from_str(
+            sources_toml,
+            &base,
+            &EnvDict::default(),
+        );
+
+        assert!(result.is_ok(), "应该成功加载");
+        let sources = result.unwrap();
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].name(), &"test_source".to_string());
+    }
+
+    #[test]
+    fn config_loader_load_from_path_works() {
+        use crate::loader::traits::ConfigLoader;
+
+        let base = tmp_dir("src_cfg_path");
+        let cdir = base.join("connectors").join("source.d");
+        fs::create_dir_all(&cdir).unwrap();
+
+        // 创建 connector 配置
+        fs::write(
+            cdir.join("conn.toml"),
+            r#"[[connectors]]
+id = "conn1"
+type = "dummy"
+[connectors.params]
+"#,
+        )
+        .unwrap();
+
+        // 创建 sources 配置文件
+        let sources_file = base.join("sources.toml");
+        fs::write(
+            &sources_file,
+            r#"
+[[sources]]
+key = "src1"
+connect = "conn1"
+"#,
+        )
+        .unwrap();
+
+        // 使用 load_from_path
+        let result = Vec::<SourceInstanceConf>::load_from_path(&sources_file, &EnvDict::default());
+
+        assert!(result.is_ok(), "load_from_path 应该成功");
+        let sources = result.unwrap();
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].name(), &"src1".to_string());
+    }
+
+    #[test]
+    fn config_loader_validation_called() {
+        use crate::loader::traits::ConfigLoader;
+
+        let base = tmp_dir("src_cfg_validate");
+        let cdir = base.join("connectors").join("source.d");
+        fs::create_dir_all(&cdir).unwrap();
+
+        fs::write(
+            cdir.join("conn.toml"),
+            r#"[[connectors]]
+id = "conn1"
+type = "dummy"
+[connectors.params]
+"#,
+        )
+        .unwrap();
+
+        // 创建一个无效的 source（空 name）
+        let invalid_file = base.join("invalid.toml");
+        fs::write(
+            &invalid_file,
+            r#"
+[[sources]]
+key = ""
+connect = "conn1"
+"#,
+        )
+        .unwrap();
+
+        // 使用 load_from_path（会自动调用验证）
+        let result = Vec::<SourceInstanceConf>::load_from_path(
+            &invalid_file,
+            &EnvDict::default(),
+        );
+
+        // 应该验证失败
+        assert!(result.is_err(), "空 name 应该验证失败");
+    }
 }
+
