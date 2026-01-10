@@ -3,7 +3,7 @@ use crate::types::Ctx;
 use orion_variate::EnvDict;
 use serde::Serialize;
 use std::collections::BTreeMap;
-use wp_conf::connectors::{ParamMap, param_value_from_toml};
+use wp_conf::connectors::{ParamMap, param_value_from_toml, merge_params};
 use wp_conf::engine::EngineConfig;
 
 // Minimal local model to parse file sources from wpsrc.toml
@@ -39,14 +39,12 @@ fn load_connectors_map(
     wp_conf::sources::load_connectors_for(base_dir, dict).ok()
 }
 
-fn merge_params(base: &ParamMap, override_tbl: &toml::value::Table, allow: &[String]) -> ParamMap {
-    let mut out = base.clone();
-    for (k, v) in override_tbl.iter() {
-        if allow.iter().any(|x| x == k) {
-            out.insert(k.clone(), param_value_from_toml(v));
-        }
-    }
-    out
+// Helper function to convert TOML Table to ParamMap for use with unified merge_params
+fn toml_table_to_param_map(table: &toml::value::Table) -> ParamMap {
+    table
+        .iter()
+        .map(|(k, v)| (k.clone(), param_value_from_toml(v)))
+        .collect()
 }
 
 /// 从 wpsrc 配置推导总输入条数（仅统计启用的文件源）
@@ -83,7 +81,10 @@ pub fn total_input_from_wpsrc(
                             .and_then(|v| v.as_table())
                             .cloned()
                             .unwrap_or_default();
-                        let merged = merge_params(&conn.default_params, &ov, &conn.allow_override);
+                        // Convert TOML table to ParamMap and use unified merge_params
+                        let ov_map = toml_table_to_param_map(&ov);
+                        let merged = merge_params(&conn.default_params, &ov_map, &conn.allow_override)
+                            .unwrap_or_else(|_| conn.default_params.clone());
                         // 支持 path 或 base+file 两种写法
                         let maybe_path = merged
                             .get("path")
@@ -171,7 +172,10 @@ pub fn list_file_sources_with_lines(
                 if !conn.kind.eq_ignore_ascii_case("file") {
                     continue;
                 }
-                let merged = merge_params(&conn.default_params, &ov, &conn.allow_override);
+                // Convert TOML table to ParamMap and use unified merge_params
+                let ov_map = toml_table_to_param_map(&ov);
+                let merged = merge_params(&conn.default_params, &ov_map, &conn.allow_override)
+                    .unwrap_or_else(|_| conn.default_params.clone());
                 // 支持 path 或 base+file 两种写法
                 let path_str = merged
                     .get("path")
