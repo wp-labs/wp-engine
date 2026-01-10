@@ -233,7 +233,8 @@ mod tests {
                 .is_err()
         );
         assert!(check_to_result(project.sources_c().check()).is_err());
-        assert!(check_to_result(project.wpl().check()).is_err());
+        // WPL check should return Miss status (Ok) when files don't exist, consistent with OML
+        assert!(check_to_result(project.wpl().check()).is_ok());
         assert!(check_to_result(project.oml().check()).is_ok());
 
         // 连接器检查可能会通过，因为它只检查目录结构
@@ -306,9 +307,17 @@ mod tests {
             input_sources_result
         ); // 也应该失败
 
-        // 修复后：WPL 和 OML 检查在文件不存在时应该返回失败
-        assert!(check_to_result(project.wpl().check()).is_err());
-        assert!(check_to_result(project.oml().check()).is_err());
+        // WPL 和 OML 检查在文件不存在时应该返回 Miss 状态（不是错误）
+        assert_eq!(
+            project.wpl().check().unwrap(),
+            crate::types::CheckStatus::Miss,
+            "WPL should return Miss when files don't exist"
+        );
+        assert_eq!(
+            project.oml().check().unwrap(),
+            crate::types::CheckStatus::Miss,
+            "OML should return Miss when files don't exist"
+        );
 
         println!(
             "Minimal structure - config: {:?}",
@@ -466,8 +475,12 @@ mod tests {
             std::path::Path::new(&oml_path_oml).exists()
         );
 
-        // 修复后：OML检查现在应该正确失败，因为文件不存在
-        assert!(check_to_result(project.oml().check()).is_err());
+        // OML检查应该返回 Miss 状态（不是错误），因为文件不存在
+        assert_eq!(
+            project.oml().check().unwrap(),
+            crate::types::CheckStatus::Miss,
+            "OML should return Miss when files don't exist"
+        );
 
         println!(
             "With WPL - wpl: {:?}",

@@ -1,16 +1,19 @@
 mod options;
 mod report;
+mod types;
+
 pub use options::{CheckComponent, CheckComponents, CheckOptions};
+pub use types::{Cell, ConnectorCounts, Row, SourceBreakdown};
+
 use report::{build_detail_table, component_cells};
 use std::path::PathBuf;
 
 use super::warp::WarpProject;
-use super::{Cell, ConnectorCounts, Row, SourceBreakdown};
 use crate::types::CheckStatus;
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;
 use orion_variate::EnvDict;
-use wp_cli_core::connectors::{sinks as sink_connectors, sources as source_connectors};
+use wp_cli_core::business::connectors::{sinks as sink_connectors, sources as source_connectors};
 use wp_engine::facade::config::{self as cfg_face, ENGINE_CONF_FILE};
 use wp_error::run_error::RunResult;
 

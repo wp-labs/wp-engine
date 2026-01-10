@@ -24,7 +24,6 @@ wp-model-core = { path = "../wp-data-utils", package = "wp-data-utils" }
 wp-engine = { path = "../..", package = "wp-engine" }
 wp-error = { workspace = true }
 wp-log = { workspace = true }
-wpcnt_lib = { package = "wp-cli-utils", path = "../wp-cli-utils" }
 wpl = { package = "wp-lang", path = "../wp-lang" }
 
 [dev-dependencies]

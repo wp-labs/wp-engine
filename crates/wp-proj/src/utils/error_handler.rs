@@ -1,40 +1,100 @@
+//! # 统一的错误处理工具
+//!
+//! 本模块提供 wp-proj 的标准错误处理模式和工具函数。
+//!
+//! ## 错误处理标准
+//!
+//! ### 1. 统一返回类型
+//!
+//! 所有可能失败的函数应返回 `RunResult<T>`：
+//!
+//! ```rust,ignore
+//! use wp_error::run_error::RunResult;
+//!
+//! pub fn check(&self) -> RunResult<CheckStatus> {
+//!     // 实现...
+//! }
+//! ```
+//!
+//! ### 2. 错误转换模式
+//!
+//! **模式 A: 使用 `.err_conv()`（推荐）**
+//!
+//! 对于实现了 `ErrorConv` trait 的类型（如 orion-error 家族的错误）：
+//!
+//! ```rust,ignore
+//! use orion_error::ErrorConv;
+//!
+//! let config = WarpSources::env_load_toml(path, dict).err_conv()?;
+//! ```
+//!
+//! **模式 B: 使用 `.map_err()` 提供上下文**
+//!
+//! 对于标准库错误或需要自定义错误消息的场景：
+//!
+//! ```rust,ignore
+//! use wp_error::run_error::RunReason;
+//!
+//! let content = fs::read_to_string(&path).map_err(|e| {
+//!     RunReason::from_conf(format!("Failed to read file {:?}: {}", path, e)).to_err()
+//! })?;
+//! ```
+//!
+//! **模式 C: 使用 `ErrorHandler` 辅助函数**
+//!
+//! 对于常见操作（文件检查、目录创建等）：
+//!
+//! ```rust,ignore
+//! use wp_proj::utils::error_handler::ErrorHandler;
+//!
+//! ErrorHandler::check_file_exists(&path, "配置文件")?;
+//! ErrorHandler::safe_write_file(&path, content)?;
+//! ```
+//!
+//! ### 3. 错误消息格式
+//!
+//! - **配置错误**：`"配置错误: <描述>"`
+//! - **文件操作**：`"Failed to <operation>: <path>, error: <detail>"`
+//! - **验证错误**：`"<component> 验证失败: <issue>"`
+//!
+//! ### 4. 避免的模式
+//!
+//! ❌ 使用 `.unwrap()` 或 `.expect()` 在生产代码中
+//!
+//! ❌ 返回 `Result<T, String>` 而不是 `RunResult<T>`
+//!
+//! ❌ 忽略错误或使用 `.ok()`
+//!
+//! ## 使用示例
+//!
+//! ```rust,no_run
+//! use wp_proj::utils::error_handler::ErrorHandler;
+//! # use std::path::PathBuf;
+//! # use wp_error::run_error::RunResult;
+//!
+//! # fn demo() -> RunResult<()> {
+//! let path = PathBuf::from("./conf/sample.toml");
+//!
+//! // 检查文件是否存在
+//! let _ = ErrorHandler::check_file_exists(&path, "配置文件");
+//!
+//! // 安全的文件操作
+//! ErrorHandler::safe_write_file(&path, "content")?;
+//!
+//! // 创建统一格式的错误
+//! ErrorHandler::config_error("配置项缺失")?;
+//! # Ok(())
+//! # }
+//! # let _ = demo();
+//! ```
+
 use orion_error::{ToStructError, UvsConfFrom};
 use std::path::Path;
 use wp_error::run_error::{RunReason, RunResult};
 
-/// # 统一的错误处理工具
-///
 /// `ErrorHandler` 提供一致的错误处理策略和错误信息格式，统一各模块的错误处理方式。
 ///
-/// ## 主要功能
-///
-/// - 提供统一的错误创建和格式化接口
-/// - 安全的文件操作包装，避免直接使用 `unwrap()`
-/// - 一致的错误信息格式，便于调试和用户理解
-/// - 支持验证错误和配置错误的快速创建
-///
-/// ## 使用示例
-///
-/// ```rust,no_run
-/// use wp_proj::utils::error_handler::ErrorHandler;
-/// # use std::path::PathBuf;
-/// # use wp_error::run_error::RunResult;
-///
-/// # fn demo() -> RunResult<()> {
-/// let path = PathBuf::from("./conf/sample.toml");
-///
-/// // 检查文件是否存在
-/// let _ = ErrorHandler::check_file_exists(&path, "配置文件");
-///
-/// // 安全的文件操作
-/// ErrorHandler::safe_write_file(&path, "content")?;
-///
-/// // 创建统一格式的错误
-/// ErrorHandler::config_error("配置项缺失")?;
-/// # Ok(())
-/// # }
-/// # let _ = demo();
-/// ```
+/// 详细的错误处理标准和最佳实践请参见模块级文档。
 pub struct ErrorHandler;
 
 #[allow(dead_code)]

@@ -3,10 +3,10 @@ use std::path::{Path, PathBuf};
 
 use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
-use orion_error::{ToStructError, UvsValidationFrom};
+use orion_error::UvsValidationFrom;
 use orion_variate::{EnvDict, EnvEvalable};
 use wp_conf::connectors::{
-    ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table,
+    ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table, merge_params,
 };
 use wp_conf::engine::EngineConfig;
 use wp_conf::sources::{SourceConnector, WpSourcesConfig, find_connectors_dir};
@@ -41,23 +41,6 @@ fn resolve_wpsrc_path(work_root: &str, eng_conf: &EngineConfig) -> OrionConfResu
 fn load_connectors_map(base_dir: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
     let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source, &EnvDict::default())?;
     Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
-}
-
-/// Merge per-source overrides onto connector defaults, honoring the connector whitelist.
-fn merge_params(base: &ParamMap, ov: &ParamMap, allow: &[String]) -> OrionConfResult<ParamMap> {
-    let mut out = base.clone();
-    for (k, v) in ov.iter() {
-        if !allow.iter().any(|x| x == k) {
-            return ConfIOReason::from_validation(format!(
-                "override '{}' not allowed; whitelist: [{}]",
-                k,
-                allow.join(", ")
-            ))
-            .err_result();
-        }
-        out.insert(k.clone(), v.clone());
-    }
-    Ok(out)
 }
 
 /// Best-effort visualization of params without guessing semantics.

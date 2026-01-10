@@ -1,4 +1,4 @@
-use crate::types::Row;
+use super::super::types::Row;
 
 pub fn print_rows(rows: &[Row], total: u64) {
     for it in rows {
@@ -17,7 +17,6 @@ pub fn print_rows(rows: &[Row], total: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::Row;
 
     #[test]
     fn test_print_rows_format() {

@@ -1,6 +1,6 @@
-use crate::pretty::helpers::{basis_cn, bg_fail, bg_pass, bg_warn, color_err, color_warn, fmt_f};
-use crate::stats::StatsFile;
-use crate::types::{GroupAccum, ValidateReport};
+use super::helpers::{basis_cn, bg_fail, bg_pass, bg_warn, color_err, color_warn, fmt_f};
+use super::super::stats::stats::StatsFile;
+use crate::utils::types::{GroupAccum, ValidateReport};
 use comfy_table::{
     Cell, CellAlignment, ContentArrangement, Row as CRow, Table, presets::ASCII_MARKDOWN,
 };
@@ -11,7 +11,7 @@ pub fn print_validate_report(rep: &ValidateReport) {
     let warn_count = rep
         .items
         .iter()
-        .filter(|it| matches!(it.severity, crate::types::Severity::Warn))
+        .filter(|it| matches!(it.severity, super::super::types::Severity::Warn))
         .count();
     if fail {
         let errs = rep
@@ -20,7 +20,7 @@ pub fn print_validate_report(rep: &ValidateReport) {
             .filter(|it| {
                 matches!(
                     it.severity,
-                    crate::types::Severity::Error | crate::types::Severity::Panic
+                    super::super::types::Severity::Error | super::super::types::Severity::Panic
                 )
             })
             .count();
@@ -36,9 +36,9 @@ pub fn print_validate_report(rep: &ValidateReport) {
     // Always print WARN/ERROR/PANIC as prompts (WARN are hints, do not fail)
     for it in &rep.items {
         let sev = match it.severity {
-            crate::types::Severity::Warn => color_warn("WARN"),
-            crate::types::Severity::Error => color_err("ERROR"),
-            crate::types::Severity::Panic => color_err("PANIC"),
+            super::super::types::Severity::Warn => color_warn("WARN"),
+            super::super::types::Severity::Error => color_err("ERROR"),
+            super::super::types::Severity::Panic => color_err("PANIC"),
         };
         if let Some(s) = &it.sink {
             println!("[{}] group='{}' sink='{}' - {}", sev, it.group, s, it.msg);
@@ -54,7 +54,7 @@ pub fn print_validate_headline(rep: &ValidateReport) {
     let warn_count = rep
         .items
         .iter()
-        .filter(|it| matches!(it.severity, crate::types::Severity::Warn))
+        .filter(|it| matches!(it.severity, super::super::types::Severity::Warn))
         .count();
     if fail {
         let errs = rep
@@ -63,7 +63,7 @@ pub fn print_validate_headline(rep: &ValidateReport) {
             .filter(|it| {
                 matches!(
                     it.severity,
-                    crate::types::Severity::Error | crate::types::Severity::Panic
+                    super::super::types::Severity::Error | super::super::types::Severity::Panic
                 )
             })
             .count();
@@ -531,7 +531,7 @@ pub fn print_validate_tables_verbose(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{GroupAccum, SinkAccum};
+    use crate::utils::types::{GroupAccum, SinkAccum};
     use wp_conf::structure::SinkExpectOverride;
     use wp_conf::structure::{Basis, GroupExpectSpec};
 

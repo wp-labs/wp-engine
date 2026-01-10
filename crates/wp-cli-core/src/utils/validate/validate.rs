@@ -1,5 +1,5 @@
-use crate::stats::StatsFile;
-use crate::types::{GroupAccum, Severity, ValidateItem, ValidateReport};
+use super::super::stats::stats::StatsFile;
+use super::super::types::{GroupAccum, Severity, ValidateItem, ValidateReport};
 use wp_conf::structure::{Basis, ExpectMode};
 
 pub fn validate_groups(groups: &[GroupAccum], total_override: Option<u64>) -> ValidateReport {
@@ -255,7 +255,7 @@ fn to_sev(mode: &ExpectMode) -> Severity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{GroupAccum, SinkAccum};
+    use super::super::super::types::{GroupAccum, SinkAccum};
     use wp_conf::structure::SinkExpectOverride;
     use wp_conf::structure::{Basis, GroupExpectSpec};
 
@@ -426,7 +426,7 @@ mod tests {
         let g = mk_group("default", ge, sinks);
         let stats = StatsFile {
             total_input: 1000,
-            groups: vec![crate::stats::GroupStat {
+            groups: vec![super::super::super::stats::stats::GroupStat {
                 name: "default".into(),
                 input: 100,
                 sinks: vec![],

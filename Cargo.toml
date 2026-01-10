@@ -53,7 +53,6 @@ members = [
 
     # --- CLI & Tools ---
     "crates/wp-cli-core",       # CLI shared infrastructure
-    "crates/wp-cli-utils",      # CLI utilities
     "crates/wp-proj",           # Project management utilities
     "crates/wp-stats",          # Statistics collection
 ]
@@ -368,7 +367,6 @@ libfuzzer-sys = "0.4"
 orion_overload = { path = "./crates/orion_overload" }
 orion_exp = { path = "./crates/orion_exp" }
 wp_cli_core = { package = "wp-cli-core", path = "./crates/wp-cli-core" }
-wp_cli_utils = { package = "wp-cli-utils", path = "./crates/wp-cli-utils" }
 wp_config = { package = "wp-config", path = "./crates/wp-config" }
 wp_data_model = { package = "wp-data-utils", path = "./crates/wp-data-utils" }
 wp_knowledge = { package = "wp-knowledge", path = "./crates/wp-knowledge" }

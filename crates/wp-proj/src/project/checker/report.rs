@@ -1,4 +1,5 @@
-use super::{Cell, Row, options::CheckComponents};
+use super::options::CheckComponents;
+use super::types::{Cell, Row};
 use comfy_table::{Cell as TCell, ContentArrangement, Table, presets::UTF8_FULL};
 
 pub fn build_detail_table(rows: &[Row], comps: &CheckComponents) -> Table {

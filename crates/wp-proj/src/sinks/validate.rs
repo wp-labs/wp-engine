@@ -5,10 +5,10 @@ use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
-use wpcnt_lib as wlib;
+use wp_cli_core as wlib;
 
 pub struct ValidateContext {
-    pub groups: Vec<wlib::types::GroupAccum>,
+    pub groups: Vec<wlib::GroupAccum>,
     pub stats: Option<wlib::StatsFile>,
     pub input_from_sources: Option<u64>,
 }
@@ -22,11 +22,11 @@ pub fn prepare_validate_context(
     let ctx = build_ctx(&cm.work_root_path(), filters);
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;
-    let (_rows, groups, _total) = wp_cli_core::obs::validate::build_groups_v2(&sink_root, &ctx)
+    let (_rows, groups, _total) = wp_cli_core::business::observability::build_groups_v2(&sink_root, &ctx)
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     let stats = stats_file.and_then(|p| wlib::load_stats_file(Path::new(p)));
     let input_from_sources =
-        wlib::total_input_from_wpsrc(Path::new(&cm.work_root_path()), &main, &ctx, dict)
+        wp_cli_core::total_input_from_wpsrc(Path::new(&cm.work_root_path()), &main, &ctx, dict)
             .filter(|n| *n > 0);
     Ok(ValidateContext {
         groups,

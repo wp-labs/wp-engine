@@ -6,12 +6,20 @@ use wp_engine::facade::config::WPARSE_RULE_FILE;
 use wp_error::run_error::{RunReason, RunResult};
 use wpl::WplCode;
 
-use crate::utils::{config_path::ConfigPathResolver, error_handler::ErrorHandler};
+use crate::traits::{Checkable, Component, HasExamples};
+use crate::types::CheckStatus;
+use crate::utils::{PathResolvable, TemplateInitializer};
 
 #[derive(Clone)]
 pub struct Wpl {
     work_root: PathBuf,
     eng_conf: Arc<EngineConfig>,
+}
+
+impl PathResolvable for Wpl {
+    fn work_root(&self) -> &Path {
+        &self.work_root
+    }
 }
 
 impl Wpl {
@@ -27,13 +35,7 @@ impl Wpl {
     }
 
     fn rule_root(&self) -> PathBuf {
-        let raw = self.eng_conf.rule_root();
-        let candidate = Path::new(raw);
-        if candidate.is_absolute() {
-            candidate.to_path_buf()
-        } else {
-            self.work_root.join(candidate)
-        }
+        self.resolve_path(self.eng_conf.rule_root())
     }
 
     /// Initialize WPL with example content for the specified project directory
@@ -63,23 +65,18 @@ impl Wpl {
     /// Create example WPL files in the specified project directory
     fn create_example_files(&self, _work_root: &Path) -> RunResult<()> {
         let wpl_dir = self.rule_root();
+        let initializer = TemplateInitializer::new(wpl_dir.clone());
 
-        // Create WPL directory
-        ConfigPathResolver::ensure_dir_exists(&wpl_dir)?;
-
-        // Create example WPL file
+        // Prepare file contents
         let example_wpl_content = include_str!("../example/wpl/nginx/parse.wpl");
-        let parse_wpl_path = wpl_dir.join("parse.wpl");
-        ConfigPathResolver::write_file_with_dir(&parse_wpl_path, example_wpl_content)?;
-
-        // Create sample data file
         let sample_data = Self::get_sample_data();
-        let sample_data_path = wpl_dir.join("sample.dat");
-        ConfigPathResolver::write_file_with_dir(&sample_data_path, sample_data)?;
+
+        // Write all files using the initializer
+        initializer.write_files(&[("parse.wpl", example_wpl_content), ("sample.dat", sample_data)])?;
 
         println!("Created example WPL files:");
-        println!("  - {:?}", parse_wpl_path);
-        println!("  - {:?}", sample_data_path);
+        println!("  - {:?}", wpl_dir.join("parse.wpl"));
+        println!("  - {:?}", wpl_dir.join("sample.dat"));
 
         Ok(())
     }
@@ -89,7 +86,7 @@ impl Wpl {
         include_str!("../example/wpl/nginx/sample.dat")
     }
 
-    pub fn check(&self) -> RunResult<()> {
+    pub fn check(&self) -> RunResult<CheckStatus> {
         let rule_root = self.rule_root();
         let rules =
             wp_conf::utils::find_conf_files(rule_root.to_string_lossy().as_ref(), WPARSE_RULE_FILE)
@@ -108,10 +105,11 @@ impl Wpl {
                     for fp in wpl_files {
                         let raw = std::fs::read_to_string(&fp).unwrap_or_default();
                         if raw.trim().is_empty() {
-                            return ErrorHandler::config_error(format!(
+                            return Err(RunReason::from_conf(format!(
                                 "配置错误: WPL文件为空: {:?}",
                                 fp
-                            ));
+                            ))
+                            .to_err());
                         }
                         let code = WplCode::build(fp.clone(), raw.as_str()).map_err(|e| {
                             RunReason::from_conf(format!("build wpl failed: {:?}: {}", fp, e))
@@ -122,20 +120,20 @@ impl Wpl {
                                 .to_err()
                         })?;
                     }
-                    return Ok(());
+                    return Ok(CheckStatus::Suc);
                 }
             }
         }
 
         // 检查是否有任何WPL规则文件存在
         if rules.is_empty() {
-            return ErrorHandler::config_error("配置错误: 未找到任何WPL规则文件 (*.wpl)");
+            return Ok(CheckStatus::Miss);
         }
 
         for fp in rules {
             let raw = std::fs::read_to_string(&fp).unwrap_or_default();
             if raw.trim().is_empty() {
-                return ErrorHandler::config_error(format!("配置错误: WPL文件为空: {:?}", fp));
+                return Err(RunReason::from_conf(format!("配置错误: WPL文件为空: {:?}", fp)).to_err());
             }
             let code = WplCode::build(fp.clone(), raw.as_str()).map_err(|e| {
                 RunReason::from_conf(format!("build wpl failed: {:?}: {}", fp, e)).to_err()
@@ -144,6 +142,27 @@ impl Wpl {
                 RunReason::from_conf(format!("parse wpl failed: {:?}: {}", fp, e)).to_err()
             })?;
         }
-        Ok(())
+        Ok(CheckStatus::Suc)
+    }
+}
+
+// Trait implementations for unified component interface
+impl Component for Wpl {
+    fn component_name(&self) -> &'static str {
+        "WPL"
+    }
+}
+
+impl Checkable for Wpl {
+    fn check(&self) -> RunResult<CheckStatus> {
+        // Delegate to the existing check implementation
+        Wpl::check(self)
+    }
+}
+
+impl HasExamples for Wpl {
+    fn init_with_examples(&self) -> RunResult<()> {
+        // Delegate to the existing init_with_examples implementation
+        Wpl::init_with_examples(self)
     }
 }

@@ -1,29 +1,33 @@
 use anyhow::Result;
 use orion_variate::EnvDict;
 use std::path::Path;
+use crate::utils::types::{Ctx, Row, GroupAccum};
+
+// Use business layer function
+use crate::business::observability::process_group;
 
 /// Build groups and rows for sinks, used by validators. Caller supplies sink_root and ctx.
 pub fn build_groups_v2(
     sink_root: &Path,
-    ctx: &wpcnt_lib::types::Ctx,
+    ctx: &Ctx,
 ) -> Result<(
-    Vec<wpcnt_lib::types::Row>,
-    Vec<wpcnt_lib::types::GroupAccum>,
+    Vec<Row>,
+    Vec<GroupAccum>,
     u64,
 )> {
-    use wpcnt_lib as wlib;
     let mut rows = Vec::new();
     let mut groups = Vec::new();
     let mut total = 0u64;
     let env_dict = EnvDict::new();
+
     for conf in
         wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
     {
         let g = conf.sink_group;
-        if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
-        let gacc = wlib::process_group(
+        let gacc = process_group(
             g.name(),
             g.expect().clone(),
             g.sinks().clone(),
@@ -38,10 +42,10 @@ pub fn build_groups_v2(
         wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
     {
         let g = conf.sink_group;
-        if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
-        let gacc = wlib::process_group(
+        let gacc = process_group(
             g.name(),
             g.expect().clone(),
             g.sinks().clone(),
@@ -137,12 +141,12 @@ tol   = 0.0
         // create file with 2 lines
         fs::write(root.join("o1.dat"), b"a\nb\n").unwrap();
 
-        let ctx = wpcnt_lib::types::Ctx::new(root.to_string_lossy().to_string());
+        let ctx = crate::utils::types::Ctx::new(root.to_string_lossy().to_string());
         let (_rows, groups, total) = build_groups_v2(&sink_root, &ctx).expect("groups");
         assert!(!groups.is_empty() && total > 0);
 
         // denom uses TotalInput (from defaults); we pass override as total from rows
-        let rep = wpcnt_lib::validate::validate_groups(&groups, Some(total));
+        let rep = crate::utils::validate::validate_groups(&groups, Some(total));
         assert!(!rep.has_error_fail());
     }
 }

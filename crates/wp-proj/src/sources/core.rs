@@ -10,7 +10,7 @@ use orion_variate::EnvDict;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use wp_cli_core::connectors::sources as sources_core;
+use wp_cli_core::business::connectors::sources as sources_core;
 use wp_conf::sources::types::{SourceItem, WarpSources};
 use wp_conf::{engine::EngineConfig, sources::build::load_source_instances_from_file};
 use wp_engine::facade::config::WPSRC_TOML;
@@ -19,6 +19,10 @@ use wp_error::run_error::{RunReason, RunResult};
 
 // Re-export modules and types
 pub use super::source_builder::source_builders;
+
+use crate::traits::{Checkable, Component, HasStatistics};
+use crate::types::CheckStatus;
+use crate::utils::PathResolvable;
 
 /// Constants for default source configurations
 pub const DEFAULT_FILE_SOURCE_KEY: &str = "file_1";
@@ -38,6 +42,12 @@ pub struct Sources {
     eng_conf: Arc<EngineConfig>,
 }
 
+impl PathResolvable for Sources {
+    fn work_root(&self) -> &Path {
+        &self.work_root
+    }
+}
+
 impl Sources {
     /// Creates a new Sources instance
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
@@ -52,20 +62,14 @@ impl Sources {
     }
 
     fn sources_root(&self) -> PathBuf {
-        let raw = self.eng_conf.src_root();
-        let candidate = Path::new(raw);
-        if candidate.is_absolute() {
-            candidate.to_path_buf()
-        } else {
-            self.work_root.join(candidate)
-        }
+        self.resolve_path(self.eng_conf.src_root())
     }
 
     fn wpsrc_path(&self) -> PathBuf {
         self.sources_root().join(WPSRC_TOML)
     }
 
-    pub fn check(&self) -> RunResult<()> {
+    pub fn check(&self) -> RunResult<CheckStatus> {
         let wpsrc_path = self.wpsrc_path();
 
         // Verify configuration file exists
@@ -84,7 +88,7 @@ impl Sources {
         self.build_source_specs(&wpsrc_path)?;
 
         println!("✓ Sources configuration validation passed");
-        Ok(())
+        Ok(CheckStatus::Suc)
     }
 
     pub fn check_sources_config(&self, dict: &EnvDict) -> Result<bool, String> {
@@ -284,6 +288,27 @@ impl Sources {
 
         println!("{}", table);
         println!("total: {}", rows.len());
+    }
+}
+
+// Trait implementations for unified component interface
+impl Component for Sources {
+    fn component_name(&self) -> &'static str {
+        "Sources"
+    }
+}
+
+impl Checkable for Sources {
+    fn check(&self) -> RunResult<CheckStatus> {
+        // Delegate to the existing check implementation
+        Sources::check(self)
+    }
+}
+
+impl HasStatistics for Sources {
+    fn has_statistics(&self) -> bool {
+        // Sources has statistics capabilities via the stat module
+        self.wpsrc_path().exists()
     }
 }
 

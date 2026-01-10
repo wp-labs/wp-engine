@@ -1,7 +1,16 @@
-use crate::fsutils::{count_lines_file, is_match, resolve_path};
-use crate::types::{Ctx, GroupAccum, Row, SinkAccum};
-// no direct use; rely on SinkUseConf methods via fully-qualified paths in arguments
+//! Sink group processing business logic
+//!
+//! This module provides functions for processing sink groups and
+//! collecting line count statistics.
 
+use anyhow::Result;
+use orion_variate::EnvDict;
+use std::path::Path;
+use wp_conf::sinks::{load_business_route_confs, load_infra_route_confs};
+use crate::utils::fs::{count_lines_file, is_match, resolve_path};
+use crate::utils::types::{Ctx, GroupAccum, Row, SinkAccum};
+
+/// Process a sink group and collect line count statistics
 pub fn process_group(
     group_name: &str,
     expect: Option<wp_conf::structure::GroupExpectSpec>,
@@ -95,6 +104,7 @@ pub struct ResolvedSinkLite {
     pub params: toml::value::Table,
 }
 
+/// V2 version of process_group using resolved sink information
 pub fn process_group_v2(
     group_name: &str,
     expect: Option<wp_conf::structure::GroupExpectSpec>,
@@ -174,4 +184,68 @@ pub fn process_group_v2(
         }
     }
     gacc
+}
+
+/// Collect sink statistics from both business and infra configurations
+///
+/// This function validates that the sink directory exists, loads both business
+/// and infra route configurations, and processes all matching groups.
+///
+/// # Arguments
+/// * `sink_root` - Path to the sink root directory (should contain business.d/ and/or infra.d/)
+/// * `ctx` - Processing context with filters and options
+///
+/// # Returns
+/// A tuple of (rows, total) where rows contains per-sink statistics and total is the sum of all lines
+pub fn collect_sink_statistics(
+    sink_root: &Path,
+    ctx: &Ctx,
+) -> Result<(Vec<Row>, u64)> {
+    // Validate that sink directories exist
+    if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
+        anyhow::bail!(
+            "缺少 sinks 配置目录：在 '{}' 下未发现 business.d/ 或 infra.d/",
+            sink_root.display()
+        );
+    }
+
+    let mut rows = Vec::new();
+    let mut total = 0u64;
+    let env_dict = EnvDict::new();
+
+    // Process business route configurations
+    for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
+        let g = conf.sink_group;
+        if !is_match(g.name().as_str(), &ctx.group_filters) {
+            continue;
+        }
+        let _ = process_group(
+            g.name(),
+            g.expect().clone(),
+            g.sinks().clone(),
+            false, // framework = false for business
+            ctx,
+            &mut rows,
+            &mut total,
+        );
+    }
+
+    // Process infra route configurations
+    for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
+        let g = conf.sink_group;
+        if !is_match(g.name().as_str(), &ctx.group_filters) {
+            continue;
+        }
+        let _ = process_group(
+            g.name(),
+            g.expect().clone(),
+            g.sinks().clone(),
+            true, // framework = true for infra
+            ctx,
+            &mut rows,
+            &mut total,
+        );
+    }
+
+    Ok((rows, total))
 }
