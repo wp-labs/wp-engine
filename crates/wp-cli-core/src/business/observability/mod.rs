@@ -14,6 +14,7 @@ pub use sources::{
 };
 pub use sinks::{
     ResolvedSinkLite,
+    collect_sink_statistics,
     process_group,
     process_group_v2,
 };

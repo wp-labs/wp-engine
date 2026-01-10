@@ -46,7 +46,7 @@ pub fn stat_sink_files(filters: &SinkStatFilters<'_>, dict: &EnvDict) -> RunResu
     let ctx = build_ctx(&cm.work_root_path(), filters);
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;
-    let (rows, total) = wp_cli_core::obs::stat::stat_sink_file(&sink_root, &ctx)
+    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx)
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     Ok(SinkStatResult { rows, total })
 }
@@ -57,10 +57,20 @@ pub fn stat_file_combined(
 ) -> RunResult<CombinedStatResult> {
     let (cm, main) = config::load_warp_engine_confs(filters.work_root, dict)?;
     let ctx = build_ctx(&cm.work_root_path(), filters);
-    //ensure_sink_dirs(&sink_root, main.sink_root())?;
-    let (src, rows, total) =
-        wp_cli_core::obs::stat::stat_file_combined(&cm.work_root_path(), &main, &ctx, dict)
-            .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
+
+    // Collect source statistics
+    let src = wp_cli_core::list_file_sources_with_lines(
+        Path::new(&cm.work_root_path()),
+        &main,
+        &ctx,
+        dict,
+    );
+
+    // Collect sink statistics
+    let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
+    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx)
+        .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
+
     Ok(CombinedStatResult {
         src,
         sink: SinkStatResult { rows, total },

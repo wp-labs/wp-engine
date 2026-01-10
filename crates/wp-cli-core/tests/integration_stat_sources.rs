@@ -4,10 +4,11 @@
 // correctly across the full call chain.
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use orion_variate::EnvDict;
 use tempfile::TempDir;
-use wp_cli_core::obs::stat;
+use wpcnt_lib::types::Ctx;
+use wp_cli_core::list_file_sources_with_lines;
 use wp_conf::engine::EngineConfig;
 
 /// Helper to create a test environment with source configuration
@@ -72,11 +73,15 @@ fn test_stat_src_file_counts_all_enabled_sources() {
     let (_temp, root) = create_source_env();
     let eng_conf = EngineConfig::init(root.to_str().unwrap());
     let dict = EnvDict::new();
+    let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let result = stat::stat_src_file(root.to_str().unwrap(), &eng_conf, &dict);
+    let report = list_file_sources_with_lines(
+        Path::new(root.to_str().unwrap()),
+        &eng_conf,
+        &ctx,
+        &dict,
+    );
 
-    assert!(result.is_ok(), "stat_src_file should succeed");
-    let report = result.unwrap();
     assert!(report.is_some(), "Should return a report");
 
     let report = report.unwrap();
@@ -98,9 +103,14 @@ fn test_stat_src_file_individual_source_counts() {
     let (_temp, root) = create_source_env();
     let eng_conf = EngineConfig::init(root.to_str().unwrap());
     let dict = EnvDict::new();
+    let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let result = stat::stat_src_file(root.to_str().unwrap(), &eng_conf, &dict);
-    let report = result.unwrap().unwrap();
+    let report = list_file_sources_with_lines(
+        Path::new(root.to_str().unwrap()),
+        &eng_conf,
+        &ctx,
+        &dict,
+    ).unwrap();
 
     // Check individual source counts
     let source1 = report.items.iter().find(|i| i.key == "test_source_1").unwrap();
@@ -150,10 +160,17 @@ params_override = { path = "nonexistent.log" }
 
     let eng_conf = EngineConfig::init(root.to_str().unwrap());
     let dict = EnvDict::new();
-    let result = stat::stat_src_file(root.to_str().unwrap(), &eng_conf, &dict);
+    let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    assert!(result.is_ok(), "Should not fail when file is missing");
-    let report = result.unwrap().unwrap();
+    let report = list_file_sources_with_lines(
+        Path::new(root.to_str().unwrap()),
+        &eng_conf,
+        &ctx,
+        &dict,
+    );
+
+    assert!(report.is_some(), "Should return a report even when file is missing");
+    let report = report.unwrap();
 
     assert_eq!(report.items.len(), 1);
     assert_eq!(report.items[0].lines, None, "Missing file should have None lines");
@@ -197,10 +214,17 @@ params_override = { base = "data", file = "test.log" }
 
     let eng_conf = EngineConfig::init(root.to_str().unwrap());
     let dict = EnvDict::new();
-    let result = stat::stat_src_file(root.to_str().unwrap(), &eng_conf, &dict);
+    let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    assert!(result.is_ok());
-    let report = result.unwrap().unwrap();
+    let report = list_file_sources_with_lines(
+        Path::new(root.to_str().unwrap()),
+        &eng_conf,
+        &ctx,
+        &dict,
+    );
+
+    assert!(report.is_some());
+    let report = report.unwrap();
 
     assert_eq!(report.items[0].lines, Some(2), "Should count lines from base+file path");
     assert!(report.items[0].path.contains("data"));
@@ -220,11 +244,17 @@ fn test_stat_src_file_with_empty_wpsrc() {
 
     let eng_conf = EngineConfig::init(root.to_str().unwrap());
     let dict = EnvDict::new();
-    let result = stat::stat_src_file(root.to_str().unwrap(), &eng_conf, &dict);
+    let ctx = Ctx::new(root.to_string_lossy().to_string());
+
+    let report = list_file_sources_with_lines(
+        Path::new(root.to_str().unwrap()),
+        &eng_conf,
+        &ctx,
+        &dict,
+    );
 
     // Should either return None or empty report
-    assert!(result.is_ok());
-    if let Some(report) = result.unwrap() {
+    if let Some(report) = report {
         assert_eq!(report.items.len(), 0, "Empty wpsrc should have no items");
         assert_eq!(report.total_enabled_lines, 0);
     }

@@ -1,5 +1,7 @@
 use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
+use std::path::Path;
+use wpcnt_lib::types::Ctx;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 
@@ -28,14 +30,16 @@ pub fn stat_file_sources(work_root: &str, dict: &EnvDict) -> RunResult<SourceSta
     // Resolve the actual work root path
     let resolved = cm.work_root_path();
 
-    // Gather statistics from file sources
-    let report = wp_cli_core::obs::stat::stat_src_file(&resolved, &main, dict).map_err(|e| {
-        RunReason::from_conf(format!(
-            "Failed to collect source statistics from '{}': {}",
-            resolved, e
-        ))
-        .to_err()
-    })?;
+    // Create context for source statistics collection
+    let ctx = Ctx::new(resolved.clone());
+
+    // Gather statistics from file sources using business layer
+    let report = wp_cli_core::list_file_sources_with_lines(
+        Path::new(&resolved),
+        &main,
+        &ctx,
+        dict,
+    );
 
     // Return the statistics result
     Ok(SourceStatResult {

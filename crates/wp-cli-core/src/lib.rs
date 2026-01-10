@@ -6,6 +6,7 @@ pub mod obs;
 
 // Re-export business functions for convenience
 pub use business::observability::{
+    collect_sink_statistics,
     list_file_sources_with_lines,
     total_input_from_wpsrc,
     process_group,
