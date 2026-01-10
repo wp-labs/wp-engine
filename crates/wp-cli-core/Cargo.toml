@@ -18,3 +18,6 @@ orion_conf = { workspace = true, features = ["toml"]}
 wp-knowledge = { path = "../wp-knowledge", package = "wp-knowledge" }
 serde = { workspace = true }
 toml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
