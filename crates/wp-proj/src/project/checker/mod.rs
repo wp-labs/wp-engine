@@ -20,9 +20,10 @@ pub fn check_with(
     project: &WarpProject,
     opts: &CheckOptions,
     comps: &CheckComponents,
+    dict: &EnvDict,
 ) -> RunResult<()> {
     let (targets, default_root) = resolve_targets(project, opts);
-    let rows = collect_rows(project, &targets, &default_root, opts, comps);
+    let rows = collect_rows(project, &targets, &default_root, opts, comps, dict);
     let stats = summarize_components(&rows, comps);
 
     render_output(&rows, &stats, opts, comps);
@@ -66,6 +67,7 @@ fn collect_rows(
     default_root: &str,
     opts: &CheckOptions,
     comps: &CheckComponents,
+    dict: &EnvDict,
 ) -> Vec<Row> {
     let mut rows = Vec::new();
     for work in targets.iter() {
@@ -74,7 +76,7 @@ fn collect_rows(
         } else {
             work.to_string_lossy().to_string()
         };
-        let row = evaluate_target(project, &wrs, opts, comps);
+        let row = evaluate_target(project, &wrs, opts, comps, dict);
         rows.push(row);
     }
     rows
@@ -85,11 +87,12 @@ fn evaluate_target(
     wrs: &str,
     opts: &CheckOptions,
     comps: &CheckComponents,
+    dict: &EnvDict,
 ) -> Row {
     let mut row = Row::new(wrs.to_string());
 
     if comps.engine {
-        row.conf = match cfg_face::load_warp_engine_confs(&wrs) {
+        row.conf = match cfg_face::load_warp_engine_confs(&wrs, dict) {
             Ok((cm, _)) => {
                 row.conf_detail = Some(cm.config_path_string(ENGINE_CONF_FILE));
                 Cell::success()
@@ -104,7 +107,10 @@ fn evaluate_target(
     }
 
     if comps.sources {
-        let sources_parse = project.sources_c().check_sources_config(&EnvDict::default()).map(|_| ());
+        let sources_parse = project
+            .sources_c()
+            .check_sources_config(&EnvDict::default())
+            .map(|_| ());
         let sources_runtime = project
             .sources_c()
             .check()
@@ -133,7 +139,7 @@ fn evaluate_target(
 
     if comps.connectors {
         row.connectors = Cell::from_result(project.connectors().check(&wrs).map(|_| ()));
-        match collect_connector_counts(&wrs) {
+        match collect_connector_counts(&wrs, dict) {
             Ok(stats) => row.connector_counts = Some(stats),
             Err(_e) => {
                 row.connector_counts = None;
@@ -376,14 +382,19 @@ fn has_failures(rows: &[Row], comps: &CheckComponents) -> bool {
 
 /// 默认检查配置的便捷函数
 #[allow(dead_code)]
-pub fn check_with_default(project: &WarpProject, opts: &CheckOptions) -> RunResult<()> {
-    check_with(project, opts, &CheckComponents::default())
+pub fn check_with_default(
+    project: &WarpProject,
+    opts: &CheckOptions,
+    dict: &EnvDict,
+) -> RunResult<()> {
+    check_with(project, opts, &CheckComponents::default(), dict)
 }
 
-fn collect_connector_counts(work_root: &str) -> Result<ConnectorCounts, String> {
-    let (_cm, main) = cfg_face::load_warp_engine_confs(work_root).map_err(|e| e.to_string())?;
-    let src_rows =
-        source_connectors::list_connectors(work_root, &main, &EnvDict::default()).map_err(|e| e.to_string())?;
+fn collect_connector_counts(work_root: &str, dict: &EnvDict) -> Result<ConnectorCounts, String> {
+    let (_cm, main) =
+        cfg_face::load_warp_engine_confs(work_root, dict).map_err(|e| e.to_string())?;
+    let src_rows = source_connectors::list_connectors(work_root, &main, &EnvDict::default())
+        .map_err(|e| e.to_string())?;
     let src_defs = src_rows.len();
     let src_refs: usize = src_rows.iter().map(|row| row.refs).sum();
 

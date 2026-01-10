@@ -1,3 +1,4 @@
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use wp_engine::facade::config::load_warp_engine_confs;
 use wp_error::run_error::RunResult;
@@ -15,22 +16,6 @@ use super::error_handler::ErrorHandler;
 /// - 自动创建目录和文件的辅助功能
 /// - 避免在各模块中重复编写相同的路径解析逻辑
 ///
-/// ## 使用示例
-///
-/// ```rust,no_run
-/// use wp_proj::utils::config_path::ConfigPathResolver;
-/// # use wp_error::run_error::RunResult;
-///
-/// # fn demo() -> RunResult<()> {
-/// // 获取 WPL 模型目录路径
-/// let wpl_path = ConfigPathResolver::resolve_model_path("./project", "wpl")?;
-///
-/// // 安全写入文件（自动创建目录）
-/// ConfigPathResolver::write_file_with_dir(&wpl_path.join("config.wpl"), "content")?;
-/// # Ok(())
-/// # }
-/// # let _ = demo();
-/// ```
 pub struct SpecConfPath;
 impl SpecConfPath {
     pub fn topology(work_root: PathBuf, sub: &str) -> RunResult<PathBuf> {
@@ -50,10 +35,14 @@ pub struct ConfigPathResolver;
 
 impl ConfigPathResolver {
     /// 获取模型目录路径（兼容性方法）
-    pub fn resolve_model_path(work_root: &str, model_type: &str) -> RunResult<PathBuf> {
+    pub fn resolve_model_path(
+        work_root: &str,
+        model_type: &str,
+        dict: &EnvDict,
+    ) -> RunResult<PathBuf> {
         let fallback = format!("models/{}", model_type);
 
-        match load_warp_engine_confs(work_root) {
+        match load_warp_engine_confs(work_root, dict) {
             Ok((conf_manager, main_conf)) => {
                 let work_root_path = conf_manager.work_root_path();
                 let model_root = match model_type {
@@ -101,8 +90,12 @@ mod tests {
     #[test]
     fn resolve_model_path_falls_back_without_config() {
         let temp = temp_workdir();
-        let path = ConfigPathResolver::resolve_model_path(temp.path().to_str().unwrap(), "wpl")
-            .expect("resolve path");
+        let path = ConfigPathResolver::resolve_model_path(
+            temp.path().to_str().unwrap(),
+            "wpl",
+            &EnvDict::default(),
+        )
+        .expect("resolve path");
         assert!(path.ends_with("models/wpl"));
         assert!(path.starts_with(temp.path()));
     }
@@ -111,8 +104,12 @@ mod tests {
     fn resolve_model_path_uses_config_when_available() {
         let temp = temp_workdir();
         write_basic_wparse_config(temp.path());
-        let path = ConfigPathResolver::resolve_model_path(temp.path().to_str().unwrap(), "sinks")
-            .expect("resolve path");
+        let path = ConfigPathResolver::resolve_model_path(
+            temp.path().to_str().unwrap(),
+            "sinks",
+            &EnvDict::default(),
+        )
+        .expect("resolve path");
         assert_eq!(path, temp.path().join("models/sinks"));
     }
 

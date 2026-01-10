@@ -1,5 +1,6 @@
-use orion_conf::UvsConfFrom;
+use orion_conf::{EnvTomlLoad, UvsConfFrom};
 use orion_error::ToStructError;
+use orion_variate::EnvDict;
 use wp_error::run_error::{RunReason, RunResult};
 
 #[derive(Clone)]
@@ -19,6 +20,7 @@ use anyhow::Result;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
+use wp_knowledge::loader::KnowDbConf;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TableCheck {
@@ -179,15 +181,13 @@ pub fn init(work_root: &str, full: bool) -> Result<()> {
 }
 
 /// Check knowledge config and table files; returns structured table-level status.
-pub fn check(work_root: &str) -> Result<CheckReport> {
-    use wp_knowledge::loader::KnowDbConf;
+pub fn check(work_root: &str, dict: &EnvDict) -> Result<CheckReport> {
     let wr = PathBuf::from(work_root);
     let conf_path = wr.join("models/knowledge/knowdb.toml");
     if !conf_path.exists() {
         anyhow::bail!("knowdb config not found: {}", conf_path.display());
     }
-    let txt = std::fs::read_to_string(&conf_path)?;
-    let conf: KnowDbConf = toml::from_str(&txt)?;
+    let conf: KnowDbConf = KnowDbConf::env_load_toml(&conf_path, dict)?;
     if conf.version != 2 {
         anyhow::bail!("knowdb.version must be 2");
     }

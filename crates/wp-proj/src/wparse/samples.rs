@@ -1,14 +1,15 @@
 use crate::res::simple_ins_run_res;
 use glob::glob;
 use orion_error::{ErrorOwe, ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::{Path, PathBuf};
 use wp_engine::facade::config::load_warp_engine_confs;
 use wp_engine::facade::kit::engine_proc_file;
 use wp_error::run_error::{RunReason, RunResult};
 
-pub fn parse_wpl_samples(work_root: &str) -> RunResult<()> {
-    let jobs = discover_sample_jobs(work_root)?;
+pub fn parse_wpl_samples(work_root: &str, dict: &EnvDict) -> RunResult<()> {
+    let jobs = discover_sample_jobs(work_root, dict)?;
     if jobs.is_empty() {
         return Err(RunReason::from_conf("未在 wpl 目录中找到 sample.dat").to_err());
     }
@@ -38,8 +39,8 @@ fn parse_single_run<P: AsRef<Path> + Clone>(data_path: P, rule_file: P) -> RunRe
     Ok(())
 }
 
-fn discover_sample_jobs(work_root: &str) -> RunResult<Vec<SampleJob>> {
-    let (cm, main) = load_warp_engine_confs(work_root)
+fn discover_sample_jobs(work_root: &str, dict: &EnvDict) -> RunResult<Vec<SampleJob>> {
+    let (cm, main) = load_warp_engine_confs(work_root, dict)
         .map_err(|e| RunReason::from_conf(format!("加载 wparse.toml 失败: {}", e)).to_err())?;
     let rule_root = Path::new(main.rule_root());
     let wpl_root = if rule_root.is_absolute() {

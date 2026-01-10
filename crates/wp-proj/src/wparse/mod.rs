@@ -1,3 +1,5 @@
+use orion_variate::EnvDict;
+
 use crate::utils::LogHandler;
 
 pub mod samples;
@@ -23,7 +25,7 @@ impl WParseManager {
     }
 
     /// 清理 WParse 相关数据
-    pub fn clean_data(&self) -> wp_error::run_error::RunResult<bool> {
+    pub fn clean_data(&self, dict: &EnvDict) -> wp_error::run_error::RunResult<bool> {
         let mut did_clean_any = false;
 
         // 1. 清理 .run 目录
@@ -41,7 +43,7 @@ impl WParseManager {
         }
 
         // 2. 使用 WpEngine 的 load_main 清理日志文件
-        match LogHandler::clean_logs_via_config(&self.work_root) {
+        match LogHandler::clean_logs_via_config(&self.work_root, dict) {
             Ok(log_cleaned) => {
                 if log_cleaned {
                     did_clean_any = true;
@@ -119,8 +121,9 @@ mod tests {
         let log_dir = temp.path().join("data/logs");
         std::fs::create_dir_all(&log_dir).unwrap();
         std::fs::write(log_dir.join("wp.log"), "line").unwrap();
+        let dict = EnvDict::default();
 
-        let cleaned = manager.clean_data().expect("clean data");
+        let cleaned = manager.clean_data(&dict).expect("clean data");
         assert!(cleaned);
         assert!(!run_dir.exists());
     }

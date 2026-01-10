@@ -17,7 +17,8 @@ async fn test_res() -> RunResult<()> {
     // Ensure built-in sinks are registered for Factory path (file/null/test_rescue)
     crate::sinks::register_builtin_sinks();
 
-    let (conf_manager, main_conf) = load_warp_engine_confs("./tests/instance")?;
+    let (conf_manager, main_conf) =
+        load_warp_engine_confs("./tests/instance", &EnvDict::default())?;
 
     let dict = EnvDict::new();
     let _data_src = conf_manager.load_source_config(&dict)?;

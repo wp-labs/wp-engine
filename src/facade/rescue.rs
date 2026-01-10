@@ -12,7 +12,7 @@ use wp_stat::{StatRequires, StatStage};
 
 use crate::facade::args::{ParseArgs, resolve_run_work_root};
 use crate::orchestrator::config::loader::WarpConf;
-use crate::orchestrator::config::models::{load_warp_engine_confs_with_dict, stat_reqs_from};
+use crate::orchestrator::config::models::{load_warp_engine_confs, stat_reqs_from};
 use crate::orchestrator::engine::recovery::recover_main;
 use crate::resources::core::manager::ResManager;
 use crate::runtime::sink::act_sink::SinkService;
@@ -33,10 +33,8 @@ pub struct WpRescueApp {
 impl WpRescueApp {
     /// 从 CLI 参数构建应用上下文
     pub fn try_from(args: ParseArgs, val_dict: EnvDict) -> Result<Self, wp_error::RunError> {
-        let (conf_manager, main_conf) = load_warp_engine_confs_with_dict(
-            resolve_run_work_root(&args.work_root)?.as_str(),
-            &val_dict,
-        )?;
+        let (conf_manager, main_conf) =
+            load_warp_engine_confs(resolve_run_work_root(&args.work_root)?.as_str(), &val_dict)?;
         let run_args = args.completion_from(&main_conf)?;
         let stat_reqs = stat_reqs_from(main_conf.stat_conf());
         log_init(main_conf.log_conf()).err_conv()?;

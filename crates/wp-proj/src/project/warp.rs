@@ -145,21 +145,21 @@ impl WarpProject {
     // ========== 配置管理方法 ==========
 
     /// 清理项目数据目录（委托给各个专门的模块处理）
-    pub fn data_clean(&self) -> RunResult<()> {
+    pub fn data_clean(&self, dict: &EnvDict) -> RunResult<()> {
         let mut cleaned_any = false;
 
         //  清理 sinks 输出数据
-        if let Ok(sink_cleaned) = clean_outputs(self.work_root()) {
+        if let Ok(sink_cleaned) = clean_outputs(self.work_root(), dict) {
             cleaned_any |= sink_cleaned;
         }
 
         //  清理 wpgen 生成数据（委托给 WPgenManager）
-        if let Ok(wpgen_cleaned) = self.wpgen_manager.clean_outputs(&EnvDict::default()) {
+        if let Ok(wpgen_cleaned) = self.wpgen_manager.clean_outputs(dict) {
             cleaned_any |= wpgen_cleaned;
         }
 
         //  清理 wparse 相关临时数据（委托给 WParseManager）
-        if let Ok(wparse_cleaned) = self.wparse_manager.clean_data() {
+        if let Ok(wparse_cleaned) = self.wparse_manager.clean_data(dict) {
             cleaned_any |= wparse_cleaned;
         }
 

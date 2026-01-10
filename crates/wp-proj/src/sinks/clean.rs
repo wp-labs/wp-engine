@@ -1,9 +1,10 @@
 use orion_error::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use std::path::Path;
 use wp_error::run_error::{RunReason, RunResult};
 
 /// 清理 sinks 输出数据
-pub fn clean_outputs(work_root: &str) -> RunResult<bool> {
+pub fn clean_outputs(work_root: &str, dict: &EnvDict) -> RunResult<bool> {
     let conf_manager = wp_engine::facade::config::WarpConf::new(work_root);
     let main_path = conf_manager.config_path_string(wp_engine::facade::config::ENGINE_CONF_FILE);
 
@@ -12,7 +13,7 @@ pub fn clean_outputs(work_root: &str) -> RunResult<bool> {
         return Ok(false);
     }
 
-    let (_, main_conf) = wp_engine::facade::config::load_warp_engine_confs(work_root)
+    let (_, main_conf) = wp_engine::facade::config::load_warp_engine_confs(work_root, dict)
         .map_err(|e| RunReason::from_conf(format!("Failed to load config: {}", e)).to_err())?;
 
     let sink_root = Path::new(&conf_manager.work_root_path()).join(main_conf.sink_root());

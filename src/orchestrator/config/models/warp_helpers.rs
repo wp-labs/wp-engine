@@ -13,14 +13,8 @@ use wp_knowledge::facade;
 use wp_log::conf::LogConf;
 use wp_stat::{StatReq, StatRequires, StatStage, StatTarget};
 
-/// Load main configuration and return configuration manager and engine config
-pub fn load_warp_engine_confs(work_root: &str) -> RunResult<(WarpConf, EngineConfig)> {
-    let dict = EnvDict::new();
-    load_warp_engine_confs_with_dict(work_root, &dict)
-}
-
 /// Load configuration using a supplied EnvDict for templating overrides
-pub fn load_warp_engine_confs_with_dict(
+pub fn load_warp_engine_confs(
     work_root: &str,
     dict: &EnvDict,
 ) -> RunResult<(WarpConf, EngineConfig)> {

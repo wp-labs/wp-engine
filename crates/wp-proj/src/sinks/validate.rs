@@ -2,6 +2,7 @@ use std::path::Path;
 
 use super::stat::{SinkStatFilters, build_ctx, ensure_sink_dirs};
 use orion_conf::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 use wpcnt_lib as wlib;
@@ -15,8 +16,9 @@ pub struct ValidateContext {
 pub fn prepare_validate_context(
     filters: &SinkStatFilters<'_>,
     stats_file: Option<&str>,
+    dict: &EnvDict,
 ) -> RunResult<ValidateContext> {
-    let (cm, main) = config::load_warp_engine_confs(filters.work_root)?;
+    let (cm, main) = config::load_warp_engine_confs(filters.work_root, dict)?;
     let ctx = build_ctx(&cm.work_root_path(), filters);
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;

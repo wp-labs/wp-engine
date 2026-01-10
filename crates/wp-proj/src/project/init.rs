@@ -1,6 +1,6 @@
 use super::warp::{WarpProject, normalize_work_root};
 use crate::utils::error_handler::ErrorHandler;
-use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError, TomlIO};
+use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError};
 use orion_error::{UvsConfFrom, UvsValidationFrom};
 use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
@@ -97,7 +97,8 @@ impl WarpProject {
 
     pub(crate) fn load_components(&mut self, mode: PrjScope) -> RunResult<()> {
         if mode.enable_conf() {
-            let eng_conf = Self::load_engine_config_only(self.work_root_path(), &EnvDict::default())?;
+            let eng_conf =
+                Self::load_engine_config_only(self.work_root_path(), &EnvDict::default())?;
             self.replace_engine_conf(eng_conf);
             Self::load_wpgen_config_only(self.work_root_path(), &EnvDict::default())?;
         }

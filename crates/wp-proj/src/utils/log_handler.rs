@@ -1,3 +1,4 @@
+use orion_variate::EnvDict;
 use std::path::Path;
 use wp_engine::facade::config::load_warp_engine_confs;
 use wp_error::run_error::RunResult;
@@ -18,9 +19,9 @@ impl LogHandler {
     }
 
     /// 从工作目录加载配置并清理日志
-    pub fn clean_logs_via_config<P: AsRef<Path>>(work_root: P) -> RunResult<bool> {
+    pub fn clean_logs_via_config<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> RunResult<bool> {
         let work_root = work_root.as_ref();
-        match load_warp_engine_confs(work_root.to_string_lossy().as_ref()) {
+        match load_warp_engine_confs(work_root.to_string_lossy().as_ref(), dict) {
             Ok((_, main_conf)) => {
                 let log_conf = main_conf.log_conf();
                 Self::clean_logs(log_conf, work_root)

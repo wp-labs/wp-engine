@@ -1,4 +1,5 @@
 use orion_conf::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 
@@ -18,9 +19,9 @@ pub struct SourceStatResult {
 /// This module provides functionality to analyze and gather statistics
 /// from file-based data sources configured in the project.
 ///
-pub fn stat_file_sources(work_root: &str) -> RunResult<SourceStatResult> {
+pub fn stat_file_sources(work_root: &str, dict: &EnvDict) -> RunResult<SourceStatResult> {
     // Load engine configuration to get source settings
-    let (cm, main) = config::load_warp_engine_confs(work_root).map_err(|e| {
+    let (cm, main) = config::load_warp_engine_confs(work_root, dict).map_err(|e| {
         RunReason::from_conf(format!("Failed to load engine config: {}", e)).to_err()
     })?;
 

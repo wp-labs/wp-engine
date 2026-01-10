@@ -2,6 +2,7 @@ use comfy_table::{Cell as TCell, Table};
 use oml::core::ConfADMExt;
 use oml::language::ObjModel;
 use orion_error::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use serde_json::json;
 use wildmatch::WildMatch;
 use wp_conf::utils::find_conf_files;
@@ -183,8 +184,8 @@ pub fn expand_route_rows(
     out
 }
 
-pub fn collect_oml_models(work_root: &str) -> RunResult<Vec<OmlRule>> {
-    let oml_root = ConfigPathResolver::resolve_model_path(work_root, "oml")?;
+pub fn collect_oml_models(work_root: &str, dict: &EnvDict) -> RunResult<Vec<OmlRule>> {
+    let oml_root = ConfigPathResolver::resolve_model_path(work_root, "oml", dict)?;
     let root_str = oml_root
         .to_str()
         .ok_or_else(|| RunReason::from_conf("invalid oml root path").to_err())?;

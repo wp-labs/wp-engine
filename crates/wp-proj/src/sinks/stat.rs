@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use orion_conf::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 use wpcnt_lib as wlib;
@@ -40,8 +41,8 @@ pub struct CombinedStatResult {
     pub sink: SinkStatResult,
 }
 
-pub fn stat_sink_files(filters: &SinkStatFilters<'_>) -> RunResult<SinkStatResult> {
-    let (cm, main) = config::load_warp_engine_confs(filters.work_root)?;
+pub fn stat_sink_files(filters: &SinkStatFilters<'_>, dict: &EnvDict) -> RunResult<SinkStatResult> {
+    let (cm, main) = config::load_warp_engine_confs(filters.work_root, dict)?;
     let ctx = build_ctx(&cm.work_root_path(), filters);
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;
@@ -50,8 +51,11 @@ pub fn stat_sink_files(filters: &SinkStatFilters<'_>) -> RunResult<SinkStatResul
     Ok(SinkStatResult { rows, total })
 }
 
-pub fn stat_file_combined(filters: &SinkStatFilters<'_>) -> RunResult<CombinedStatResult> {
-    let (cm, main) = config::load_warp_engine_confs(filters.work_root)?;
+pub fn stat_file_combined(
+    filters: &SinkStatFilters<'_>,
+    dict: &EnvDict,
+) -> RunResult<CombinedStatResult> {
+    let (cm, main) = config::load_warp_engine_confs(filters.work_root, dict)?;
     let ctx = build_ctx(&cm.work_root_path(), filters);
     //ensure_sink_dirs(&sink_root, main.sink_root())?;
     let (src, rows, total) =

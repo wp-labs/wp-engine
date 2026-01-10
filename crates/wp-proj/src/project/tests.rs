@@ -223,8 +223,15 @@ mod tests {
         let project = WarpProject::bare(&work);
 
         // load_main should succeed (engine config auto-initialized)
-        assert!(wp_engine::facade::config::load_warp_engine_confs(&work).is_ok());
-        assert!(project.sources_c().check_sources_config(&EnvDict::default()).is_err());
+        assert!(
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default()).is_ok()
+        );
+        assert!(
+            project
+                .sources_c()
+                .check_sources_config(&EnvDict::default())
+                .is_err()
+        );
         assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.wpl().check()).is_err());
         assert!(check_to_result(project.oml().check()).is_ok());
@@ -277,8 +284,9 @@ mod tests {
         );
 
         // 配置检查现在应该通过
+
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
@@ -304,7 +312,7 @@ mod tests {
 
         println!(
             "Minimal structure - config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
@@ -336,7 +344,7 @@ mod tests {
 
         // 配置和 sources 现在都应该通过
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
@@ -362,7 +370,7 @@ mod tests {
 
         println!(
             "With sources - config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
@@ -396,7 +404,7 @@ mod tests {
         // 调试各个检查
         println!(
             "DEBUG with_wpl - check_config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
@@ -430,7 +438,7 @@ mod tests {
 
         // 配置、sources 和 WPL 应该通过
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
@@ -489,7 +497,7 @@ mod tests {
         println!("DEBUG: Testing complete project checks");
         println!(
             "check_config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
@@ -512,7 +520,9 @@ mod tests {
         );
 
         // 调试：检查实际的src_conf_of路径
-        if let Ok((_, main)) = wp_engine::facade::config::load_warp_engine_confs(&work) {
+        if let Ok((_, main)) =
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+        {
             let actual_path =
                 PathBuf::from(main.src_conf_of(wp_engine::facade::config::WPSRC_TOML));
             println!("check_sources_config looking for: {:?}", actual_path);
@@ -562,7 +572,7 @@ mod tests {
         }
 
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work)
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
@@ -599,7 +609,8 @@ mod tests {
             std::fs::read_to_string(&config_path).unwrap_or_default()
         );
 
-        let load_result = wp_engine::facade::config::load_warp_engine_confs(&work);
+        let load_result =
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default());
         println!("Invalid config load result is_ok: {}", load_result.is_ok());
         assert!(load_result.is_err());
 
@@ -654,7 +665,7 @@ mod tests {
         let comps = CheckComponents::default();
 
         // 实际上检查可能通过（由于检查逻辑不一致），但会显示详细信息
-        let result = checker::check_with(&project, &args, &comps);
+        let result = checker::check_with(&project, &args, &comps, &EnvDict::default());
         // assert!(result.is_err());  // 暂时注释，因为实际行为可能不同
 
         println!("Integration test result: {:?}", result);
@@ -674,7 +685,7 @@ mod tests {
         let comps = CheckComponents::default().with_only([CheckComponent::Engine]);
 
         // 仅检查 engine，其他检查被跳过，应当成功
-        assert!(checker::check_with(&project, &opts, &comps).is_ok());
+        assert!(checker::check_with(&project, &opts, &comps, &EnvDict::default()).is_ok());
 
         cleanup_test_dir(&work);
     }
