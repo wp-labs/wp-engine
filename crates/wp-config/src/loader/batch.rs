@@ -5,8 +5,8 @@
 //! # 示例
 //!
 //! ```no_run
-//! use wp_config::loader::batch::load_all_from_dir;
-//! use wp_config::structure::source::instance::SourceInstanceConf;
+//! use wp_conf::loader::batch::load_all_from_dir;
+//! use wp_conf::structure::SourceInstanceConf;
 //! use orion_variate::EnvDict;
 //! use std::path::Path;
 //!
@@ -47,8 +47,8 @@ use orion_error::{ToStructError, UvsValidationFrom};
 ///
 /// # 示例
 /// ```no_run
-/// # use wp_config::loader::batch::load_all_from_dir;
-/// # use wp_config::structure::source::instance::SourceInstanceConf;
+/// # use wp_conf::loader::batch::load_all_from_dir;
+/// # use wp_conf::structure::SourceInstanceConf;
 /// # use orion_variate::EnvDict;
 /// # use std::path::Path;
 /// let sources = load_all_from_dir::<Vec<SourceInstanceConf>>(
@@ -118,8 +118,8 @@ pub fn load_all_from_dir<T: ConfigLoader>(
 ///
 /// # 示例
 /// ```no_run
-/// # use wp_config::loader::batch::load_from_paths;
-/// # use wp_config::structure::source::instance::SourceInstanceConf;
+/// # use wp_conf::loader::batch::load_from_paths;
+/// # use wp_conf::structure::SourceInstanceConf;
 /// # use orion_variate::EnvDict;
 /// # use std::path::PathBuf;
 /// let paths = vec![
