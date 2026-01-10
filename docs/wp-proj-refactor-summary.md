@@ -2,14 +2,14 @@
 
 **完成日期**: 2026-01-10
 **分支**: `refactor/wp-proj-improvements`
-**总提交数**: 4 个独立提交
+**总提交数**: 5 个独立提交
 **测试通过率**: 100% (63 个单元测试 + 9 个文档测试)
 
 ---
 
 ## 执行摘要
 
-本次重构成功完成了 wp-proj crate 的前三个阶段（共五个阶段），显著改善了代码质量、可维护性和一致性。
+本次重构成功完成了 wp-proj crate 的前四个阶段（共五个阶段），显著改善了代码质量、可维护性和一致性。
 
 ### 核心成果
 
@@ -174,57 +174,71 @@ ErrorHandler::safe_write_file(&path, content)?;
 
 ---
 
-## 剩余阶段建议
+### 🏗️ Stage 4: 清理模块结构
 
-### 🔄 Stage 4: 清理模块结构 (预计 1-2 小时)
+**提交**: `refactor(wp-proj-stage-4): 合并 check 和 checker 模块以消除职责重叠`
 
-#### 建议任务
+#### 成果
 
-**1. 合并 check 模块**
+**1. 模块结构优化**
 
-当前状态：
+**问题识别**：
 ```
 project/
-├── check/              - 类型定义 (186 行)
-│   ├── check_types.rs
-│   └── mod.rs
-└── checker/            - 检查逻辑 (684 行)
-    ├── mod.rs
-    ├── options.rs
-    └── report.rs
+├── check/              - 仅类型定义（186 行）
+│   ├── mod.rs         - 只导出 check_types
+│   └── check_types.rs - Cell, Row, ConnectorCounts, SourceBreakdown
+└── checker/            - 检查逻辑（684 行）
+    ├── mod.rs          - 主检查逻辑
+    ├── options.rs      - 检查选项
+    └── report.rs       - 报告生成
 ```
 
-**建议方案**：
+**改进方案**：
 ```
 project/
-└── checker/            - 统一的检查模块
-    ├── mod.rs          - 主要检查逻辑
+└── checker/            - 统一的检查系统
+    ├── mod.rs          - 主检查逻辑 + 重新导出
     ├── types.rs        - 类型定义（原 check_types.rs）
     ├── options.rs      - 检查选项
     └── report.rs       - 报告生成
 ```
 
-**2. 创建 Manager Trait**
+**2. 实施步骤**
 
-```rust
-pub trait ComponentManager {
-    fn work_root(&self) -> &Path;
-    fn eng_conf(&self) -> &EngineConfig;
-    fn config_path(&self) -> PathBuf;
-    fn clean_data(&self) -> RunResult<()>;
-}
-```
+- 将 `project/check/check_types.rs` 移动到 `project/checker/types.rs`
+- 更新 `checker/mod.rs`：导入并重新导出 `types` 模块
+- 更新 `checker/report.rs`：使用 `super::types::*`
+- 更新 `project/mod.rs`：从 `checker` 统一导出所有类型
+- 删除 `project/check/` 目录
 
-实现者：
-- WParseManager
-- WpGenManager
+**3. 清理未使用导入**
 
-**收益**：
-- 消除模块职责重叠
-- 统一 Manager 接口
-- 更清晰的代码组织
+- 移除 `connectors/core.rs` 中未使用的 `Checkable`, `CheckStatus`, `RunReason`
+- 移除 `checker/mod.rs` 中未使用的 `types::*` glob 导入
+
+#### 量化改进
+
+- **模块数量**: 从 2 个减少到 1 个（-50%）
+- **职责清晰度**: 消除了模块职责重叠
+- **维护成本**: 降低了理解和维护的复杂度
+- **编译警告**: 从 4 个减少到 0 个
+
+#### ComponentManager trait 评估
+
+原计划创建 `ComponentManager` trait 统一 `WParseManager` 和 `WpGenManager`。
+
+**评估结果**：决定**不实施**
+
+**原因**：
+1. 使用场景单一：仅在 `WarpProject::data_clean()` 一处使用
+2. 方法名不同：`clean_outputs()` vs `clean_data()`
+3. 无多态需求：不需要通过 trait 对象使用
+4. 收益有限：引入抽象层的成本大于收益
 
 ---
+
+## 剩余阶段建议
 
 ### 📚 Stage 5: 解耦和文档 (预计 2 小时)
 
@@ -296,6 +310,7 @@ use wp_cli_core::business::connectors::sinks;
 ```bash
 git log --oneline refactor/wp-proj-improvements
 
+9aa30af1 refactor(wp-proj-stage-4): 合并 check 和 checker 模块以消除职责重叠
 e5baeaaa refactor(wp-proj-stage-3): 文档化标准错误处理模式
 02fa8b92 refactor(wp-proj-stage-2b): 为 I/O 和 Connectors 组件实现 traits
 be67a69c refactor(wp-proj-stage-2a): create Component trait system and implement for models
@@ -339,27 +354,26 @@ git checkout -b refactor/wp-proj-improvements develop/1.8
 
 如果对当前改进满意，可以：
 
-1. 审查所有 4 个提交
+1. 审查所有 5 个提交
 2. 运行完整测试套件
 3. 合并到 develop/1.8
-4. 未来根据需要完成 Stage 4-5
+4. 未来根据需要完成 Stage 5
 
 ### 选项 B: 继续完成剩余阶段
 
 如果希望完整执行计划：
 
-1. 完成 Stage 4: 清理模块结构 (1-2 小时)
-2. 完成 Stage 5: 解耦和文档 (2 小时)
-3. 全面测试和审查
-4. 合并到 develop/1.8
+1. 完成 Stage 5: 解耦和文档 (2 小时)
+2. 全面测试和审查
+3. 合并到 develop/1.8
 
 ### 选项 C: 部分采纳
 
 可以选择性地：
 
 1. 仅合并 Stage 1-2（核心抽象）
-2. 仅合并 Stage 1-3（当前所有）
-3. 推迟 Stage 4-5 到未来迭代
+2. 仅合并 Stage 1-4（当前所有）
+3. 推迟 Stage 5 到未来迭代
 
 ---
 
@@ -375,11 +389,6 @@ git checkout -b refactor/wp-proj-improvements develop/1.8
 
 ### 剩余阶段风险
 
-**Stage 4**: 🟡 中等
-- 涉及模块重组
-- 可能影响导入路径
-- 需要更新所有引用
-
 **Stage 5**: 🟡 中等
 - 涉及外部依赖解耦
 - 可能需要较大重构
@@ -389,15 +398,16 @@ git checkout -b refactor/wp-proj-improvements develop/1.8
 
 ## 结论
 
-本次重构已成功完成核心目标的 60%（3/5 阶段），显著改善了 wp-proj crate 的代码质量：
+本次重构已成功完成核心目标的 80%（4/5 阶段），显著改善了 wp-proj crate 的代码质量：
 
 ✅ **消除了代码重复**（-75%）
 ✅ **建立了统一抽象层**（Component trait 体系）
 ✅ **标准化了错误处理**（文档 + 最佳实践）
+✅ **优化了模块结构**（消除职责重叠）
 ✅ **保持了 100% 测试通过率**
 ✅ **提供了清晰的回滚路径**
 
-剩余的 Stage 4-5 是"锦上添花"的改进，可以根据实际需求和时间安排决定是否继续。当前的改进已经为未来的开发和维护奠定了坚实基础。
+剩余的 Stage 5 是"锦上添花"的改进，可以根据实际需求和时间安排决定是否继续。当前的改进已经为未来的开发和维护奠定了坚实基础。
 
 ---
 
