@@ -7,10 +7,16 @@
 //! - **config_path**: 统一的配置路径解析，支持回退机制
 //! - **error_handler**: 统一的错误处理策略和错误信息格式化
 //! - **log_handler**: 通用的日志处理，基于 WpEngine LogConf 对象
+//! - **path_resolver**: 路径解析 trait，用于将相对路径转换为绝对路径
+//! - **template_init**: 模板文件初始化辅助工具
 
 pub mod config_path;
 pub mod error_handler;
 pub mod log_handler;
+pub mod path_resolver;
+pub mod template_init;
 
 // Re-export 主要类型以方便使用
 pub use log_handler::LogHandler;
+pub use path_resolver::PathResolvable;
+pub use template_init::TemplateInitializer;

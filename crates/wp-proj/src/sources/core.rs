@@ -20,6 +20,8 @@ use wp_error::run_error::{RunReason, RunResult};
 // Re-export modules and types
 pub use super::source_builder::source_builders;
 
+use crate::utils::PathResolvable;
+
 /// Constants for default source configurations
 pub const DEFAULT_FILE_SOURCE_KEY: &str = "file_1";
 pub const DEFAULT_FILE_SOURCE_PATH: &str = "gen.dat";
@@ -38,6 +40,12 @@ pub struct Sources {
     eng_conf: Arc<EngineConfig>,
 }
 
+impl PathResolvable for Sources {
+    fn work_root(&self) -> &Path {
+        &self.work_root
+    }
+}
+
 impl Sources {
     /// Creates a new Sources instance
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
@@ -52,13 +60,7 @@ impl Sources {
     }
 
     fn sources_root(&self) -> PathBuf {
-        let raw = self.eng_conf.src_root();
-        let candidate = Path::new(raw);
-        if candidate.is_absolute() {
-            candidate.to_path_buf()
-        } else {
-            self.work_root.join(candidate)
-        }
+        self.resolve_path(self.eng_conf.src_root())
     }
 
     fn wpsrc_path(&self) -> PathBuf {

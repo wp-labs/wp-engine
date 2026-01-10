@@ -7,12 +7,18 @@ use wp_engine::facade::generator::fetch_oml_data;
 use wp_error::run_error::{RunReason, RunResult};
 
 use crate::types::CheckStatus;
-use crate::utils::{config_path::ConfigPathResolver, error_handler::ErrorHandler};
+use crate::utils::{error_handler::ErrorHandler, PathResolvable, TemplateInitializer};
 
 #[derive(Clone)]
 pub struct Oml {
     work_root: PathBuf,
     eng_conf: Arc<EngineConfig>,
+}
+
+impl PathResolvable for Oml {
+    fn work_root(&self) -> &Path {
+        &self.work_root
+    }
 }
 
 impl Oml {
@@ -28,13 +34,7 @@ impl Oml {
     }
 
     fn oml_root(&self) -> PathBuf {
-        let raw = self.eng_conf.oml_root();
-        let candidate = Path::new(raw);
-        if candidate.is_absolute() {
-            candidate.to_path_buf()
-        } else {
-            self.work_root.join(candidate)
-        }
+        self.resolve_path(self.eng_conf.oml_root())
     }
 
     /// Initialize OML with example content for the specified project directory
@@ -54,16 +54,10 @@ impl Oml {
     /// Create example OML files in the specified project directory
     fn create_example_files(&self, _work_root: &Path) -> RunResult<()> {
         let oml_dir = self.oml_root();
+        let initializer = TemplateInitializer::new(oml_dir.clone());
 
-        // Create OML directory
-        ConfigPathResolver::ensure_dir_exists(&oml_dir)?;
-
-        // Create example OML file (single concrete file is enough for glob patterns)
+        // Prepare file contents
         let example_oml_content = include_str!("../example/oml/nginx.oml");
-        let oml_file_path = oml_dir.join("example.oml");
-        ConfigPathResolver::write_file_with_dir(&oml_file_path, example_oml_content)?;
-
-        // Create knowdb.toml file
         let knowdb_content = r#"# OML Knowledge Database Configuration
 # This file defines the OML models available for use
 
@@ -73,12 +67,13 @@ file = "example.oml"
 description = "Example OML model for demonstration purposes"
 rule = "/example/*"
 "#;
-        let knowdb_path = oml_dir.join("knowdb.toml");
-        ConfigPathResolver::write_file_with_dir(&knowdb_path, knowdb_content)?;
+
+        // Write all files using the initializer
+        initializer.write_files(&[("example.oml", example_oml_content), ("knowdb.toml", knowdb_content)])?;
 
         println!("Created example OML files:");
-        println!("  - {:?}", oml_file_path);
-        println!("  - {:?}", knowdb_path);
+        println!("  - {:?}", oml_dir.join("example.oml"));
+        println!("  - {:?}", oml_dir.join("knowdb.toml"));
 
         Ok(())
     }

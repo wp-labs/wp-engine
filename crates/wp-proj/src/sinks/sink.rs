@@ -13,12 +13,18 @@ use wp_conf::structure::SinkInstanceConf;
 use wp_connector_api::ParamMap;
 use wp_error::run_error::RunResult;
 
-use crate::utils::config_path::ConfigPathResolver;
+use crate::utils::{config_path::ConfigPathResolver, PathResolvable};
 
 #[derive(Clone, Default)]
 pub struct Sinks {
     work_root: PathBuf,
     eng_conf: Arc<EngineConfig>,
+}
+
+impl PathResolvable for Sinks {
+    fn work_root(&self) -> &Path {
+        &self.work_root
+    }
 }
 
 impl Sinks {
@@ -34,13 +40,7 @@ impl Sinks {
     }
 
     fn sink_root(&self) -> PathBuf {
-        let raw = self.eng_conf.sink_root();
-        let candidate = Path::new(raw);
-        if candidate.is_absolute() {
-            candidate.to_path_buf()
-        } else {
-            self.work_root.join(candidate)
-        }
+        self.resolve_path(self.eng_conf.sink_root())
     }
 
     // 校验路由（严格）
