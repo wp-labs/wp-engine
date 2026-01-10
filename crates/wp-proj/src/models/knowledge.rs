@@ -1,6 +1,6 @@
-use wp_error::run_error::{RunReason, RunResult};
-use orion_error::{ToStructError, UvsConfFrom};
+use wp_error::run_error::RunResult;
 use crate::traits::Component;
+use crate::utils::error_conv::ResultExt;
 
 // 重新导出 wp-cli-core 的类型，保持向后兼容
 pub use wp_cli_core::knowdb::{CheckReport, CleanReport, TableCheck};
@@ -38,7 +38,7 @@ impl Knowledge {
     /// ```
     pub fn init(&self, work_root: &str) -> RunResult<()> {
         wp_cli_core::knowdb::init(work_root, false)
-            .map_err(|e| RunReason::from_conf(format!("知识库初始化失败: {}", e)).to_err())
+            .to_run_err("知识库初始化失败")
     }
 
     /// 检查知识库状态
@@ -56,7 +56,7 @@ impl Knowledge {
     /// - tables: 每个表的详细检查结果
     pub fn check(&self, work_root: &str) -> RunResult<CheckReport> {
         wp_cli_core::knowdb::check(work_root)
-            .map_err(|e| RunReason::from_conf(format!("知识库检查失败: {}", e)).to_err())
+            .to_run_err("知识库检查失败")
     }
 
     /// 清理知识库数据
@@ -73,7 +73,7 @@ impl Knowledge {
     /// - not_found_models: models 目录是否不存在
     pub fn clean(&self, work_root: &str) -> RunResult<CleanReport> {
         wp_cli_core::knowdb::clean(work_root)
-            .map_err(|e| RunReason::from_conf(format!("知识库清理失败: {}", e)).to_err())
+            .to_run_err("知识库清理失败")
     }
 }
 
