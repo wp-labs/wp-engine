@@ -142,9 +142,10 @@ pub async fn rule_exec_direct_core(
         wp_conf::structure::SinkInstanceConf,
     ),
     rate_limit_rps: usize,
+    dict: &EnvDict,
 ) -> RunResult<()> {
     let g = prepared.0.gen_conf.clone();
     // stat_print 目前只用于日志输出控制；此处不额外处理
     let _ = stat_print;
-    run_rule_direct(rule_root, &g, &prepared.1, rate_limit_rps).await
+    run_rule_direct(rule_root, &g, &prepared.1, rate_limit_rps, dict).await
 }

@@ -179,8 +179,9 @@ pub fn init_thread_cloned_from_knowdb(
     root: &Path,
     knowdb_conf: &Path,
     authority_uri: &str,
+    dict: &orion_variate::EnvDict,
 ) -> KnowledgeResult<()> {
-    let tables = crate::loader::build_authority_from_knowdb(root, knowdb_conf, authority_uri)?;
+    let tables = crate::loader::build_authority_from_knowdb(root, knowdb_conf, authority_uri, dict)?;
     // 使用只读 URI 暴露给线程克隆
     let ro_uri = if let Some(rest) = authority_uri.strip_prefix("file:") {
         let path_part = rest.split('?').next().unwrap_or(rest);

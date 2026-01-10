@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 use once_cell::sync::OnceCell;
+use orion_variate::EnvDict;
+use wp_config::test_support::ForTest;
 use wp_knowledge::facade as kdb;
 
 fn workspace_root() -> PathBuf {
@@ -20,7 +22,7 @@ fn ensure_packaged_knowdb_initialized() -> PathBuf {
         }
         let _ = std::fs::remove_file(&authority_file);
         let authority_uri = format!("file:{}?mode=rwc&uri=true", authority_file.display());
-        kdb::init_thread_cloned_from_knowdb(&root_clone, &conf_path, &authority_uri)
+        kdb::init_thread_cloned_from_knowdb(&root_clone, &conf_path, &authority_uri, &EnvDict::test_default())
             .expect("init knowdb v2");
     });
     root

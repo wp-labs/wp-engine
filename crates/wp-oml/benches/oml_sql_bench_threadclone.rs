@@ -2,8 +2,10 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use oml::core::DataTransformer;
 use oml::language::ObjModel;
 use oml::parser::oml_parse;
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::PathBuf;
+use wp_conf::test_support::ForTest;
 use wp_knowledge::facade as kdb;
 use wp_model_core::cache::FieldQueryCache;
 use wp_model_core::model::{DataField, DataRecord};
@@ -70,7 +72,7 @@ enabled = true
             "file:{}/wp_bench_authority.sqlite?mode=rwc&uri=true",
             root.display()
         );
-        kdb::init_thread_cloned_from_knowdb(&root, &root.join("conf/knowdb.toml"), &auth_uri)
+        kdb::init_thread_cloned_from_knowdb(&root, &root.join("conf/knowdb.toml"), &auth_uri, &EnvDict::test_default())
             .expect("init thread-cloned provider");
     });
 }

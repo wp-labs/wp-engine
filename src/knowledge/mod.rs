@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use orion_variate::EnvDict;
 
 #[derive(Clone, Debug)]
 pub struct KnowdbHandler {
@@ -8,15 +9,17 @@ pub struct KnowdbHandler {
     conf: Arc<PathBuf>,
     authority_uri: Arc<String>,
     initialized: Arc<AtomicBool>,
+    dict: Arc<EnvDict>,
 }
 
 impl KnowdbHandler {
-    pub fn new(root: &Path, conf: &Path, authority_uri: &str) -> Self {
+    pub fn new(root: &Path, conf: &Path, authority_uri: &str, dict: &EnvDict) -> Self {
         Self {
             root: Arc::new(root.to_path_buf()),
             conf: Arc::new(conf.to_path_buf()),
             authority_uri: Arc::new(authority_uri.to_string()),
             initialized: Arc::new(AtomicBool::new(false)),
+            dict: Arc::new(dict.clone()),
         }
     }
 
@@ -32,6 +35,7 @@ impl KnowdbHandler {
             &self.root,
             &self.conf,
             &self.authority_uri,
+            &self.dict,
         ) {
             Ok(_) => {
                 self.initialized.store(true, Ordering::SeqCst);

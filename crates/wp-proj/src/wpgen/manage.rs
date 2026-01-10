@@ -76,7 +76,7 @@ impl WpGenManager {
 #[cfg(test)]
 mod tests {
     use orion_error::TestAssertWithMsg;
-    use wp_conf::test_support::TestCasePath;
+    use wp_conf::test_support::{ForTest, TestCasePath};
 
     use super::*;
     use crate::project::{WarpProject, init::PrjScope};
@@ -96,7 +96,7 @@ mod tests {
 
         let manager = WpGenManager::new(case_path.path());
         let cleaned = manager
-            .clean_outputs(&EnvDict::default())
+            .clean_outputs(&EnvDict::test_default())
             .expect("clean outputs");
         assert!(cleaned, "expected wpgen data clean to report work done");
         assert!(

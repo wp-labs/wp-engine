@@ -208,12 +208,14 @@ async fn load_engine_res(
             Path::new(conf_manager.work_root_path().as_str()),
             &knowdb_path,
             &authority_uri,
+            env_dict,
         ) {
             Ok(_) => {
                 let handler = crate::knowledge::KnowdbHandler::new(
                     Path::new(conf_manager.work_root_path().as_str()),
                     &knowdb_path,
                     &authority_uri,
+                    env_dict,
                 );
                 handler.mark_initialized();
                 knowdb_handler = Some(handler);

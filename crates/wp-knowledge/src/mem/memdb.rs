@@ -662,7 +662,7 @@ mod tests {
         let mut buffer = Vec::with_capacity(10240);
         f.read_to_end(&mut buffer).expect("read conf file error");
         let conf_data = String::from_utf8(buffer)?;
-        let dict = EnvDict::default();
+        let dict = EnvDict::new();
         let conf: T = T::env_parse_toml(conf_data.as_str(), &dict)?;
         Ok(conf)
     }

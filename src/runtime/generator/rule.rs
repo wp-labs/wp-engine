@@ -10,6 +10,7 @@ use crate::runtime::generator::types::GenGRA;
 use crate::runtime::supervisor::monitor::ActorMonitor;
 use crate::sinks::SinkBackendType;
 use orion_error::{ErrorOwe, ErrorWith, UvsReason};
+use orion_variate::EnvDict;
 use tokio::task::JoinHandle;
 use wp_conf::stat::StatConf;
 use wp_conf::structure::SinkInstanceConf;
@@ -52,6 +53,7 @@ pub async fn run_rule_direct(
     gar: &GenGRA,
     out_conf: &SinkInstanceConf,
     rate_limit_rps: usize,
+    dict: &EnvDict,
 ) -> RunResult<()> {
     // 全局限速目标（构建期提示）：生成器直连路径在构建 sink 前设置；0 表示无限速。
     crate::sinks::set_global_rate_limit_rps(gar.gen_speed);
@@ -62,7 +64,7 @@ pub async fn run_rule_direct(
         gar.parallel,
         gar.total_line
     );
-    let units = crate::core::generator::rules::load_gen_confs(rule_root)
+    let units = crate::core::generator::rules::load_gen_confs(rule_root, dict)
         .owe_rule()
         .want("load rule")?;
     info_ctrl!("run_rule_direct: loaded {} rule units", units.len());

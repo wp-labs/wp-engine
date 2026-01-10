@@ -112,7 +112,7 @@ fn evaluate_target(
     if comps.sources {
         let sources_check = project
             .sources_c()
-            .check()
+            .check(dict)
             .map_err(|e| e.reason().to_string())
             .map(|_| ());
         let check_cell = Cell::from_result(sources_check);
@@ -156,7 +156,7 @@ fn evaluate_target(
         row.sinks = Cell::from_result(
             project
                 .sinks_c()
-                .check()
+                .check(dict)
                 .map_err(|e| e.reason().to_string())
                 .map(|_| ()),
         );
@@ -171,7 +171,7 @@ fn evaluate_target(
         row.wpl = Cell::from_result(
             project
                 .wpl()
-                .check()
+                .check(dict)
                 .map_err(|e| e.reason().to_string())
                 .map(|_| ()),
         );
@@ -183,7 +183,7 @@ fn evaluate_target(
     }
 
     if comps.oml {
-        row.oml = match project.oml().check() {
+        row.oml = match project.oml().check(dict) {
             Ok(check_status) => match check_status {
                 CheckStatus::Suc => Cell::success(),
                 CheckStatus::Miss => Cell::success_with_message("OML 文件缺失".to_string()),
@@ -392,7 +392,7 @@ pub fn check_with_default(
 fn collect_connector_counts(work_root: &str, dict: &EnvDict) -> Result<ConnectorCounts, String> {
     let (_cm, main) =
         cfg_face::load_warp_engine_confs(work_root, dict).map_err(|e| e.to_string())?;
-    let src_rows = source_connectors::list_connectors(work_root, &main, &EnvDict::default())
+    let src_rows = source_connectors::list_connectors(work_root, &main, dict)
         .map_err(|e| e.to_string())?;
     let src_defs = src_rows.len();
     let src_refs: usize = src_rows.iter().map(|row| row.refs).sum();

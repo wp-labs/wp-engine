@@ -69,7 +69,7 @@ pub trait Component {
 /// }
 ///
 /// impl Checkable for MyCheckableComponent {
-///     fn check(&self) -> RunResult<CheckStatus> {
+///     fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
 ///         Ok(CheckStatus::Suc)
 ///     }
 /// }
@@ -77,12 +77,16 @@ pub trait Component {
 pub trait Checkable: Component {
     /// Checks the component's configuration and state.
     ///
+    /// # Parameters
+    ///
+    /// - `dict` - Environment variable dictionary for configuration parsing
+    ///
     /// # Returns
     ///
     /// - `Ok(CheckStatus::Suc)` - Component is properly configured
     /// - `Ok(CheckStatus::Miss)` - Component configuration is missing
     /// - `Err(RunError)` - Component has configuration errors
-    fn check(&self) -> RunResult<CheckStatus>;
+    fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus>;
 }
 
 /// Trait for components that support initialization with examples.

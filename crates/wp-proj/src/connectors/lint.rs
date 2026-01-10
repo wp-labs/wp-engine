@@ -112,14 +112,14 @@ fn validate_connector(
     (sev, msg, first_err)
 }
 
-fn lint_side_rows_from(start: &Path, side: Side) -> Vec<LintRow> {
+fn lint_side_rows_from(start: &Path, side: Side, dict: &EnvDict) -> Vec<LintRow> {
     let dir = resolve_dir(side, start);
     let mut rows: Vec<LintRow> = Vec::new();
     let scope = match side {
         Side::Sources => ConnectorScope::Source,
         Side::Sinks => ConnectorScope::Sink,
     };
-    match load_connector_defs_from_dir(&dir, scope, &EnvDict::default()) {
+    match load_connector_defs_from_dir(&dir, scope, dict) {
         Ok(defs) => {
             for def in defs {
                 let hint = def
@@ -154,16 +154,18 @@ fn lint_side_rows_from(start: &Path, side: Side) -> Vec<LintRow> {
     rows
 }
 
-pub fn lint_rows_from_root<P: AsRef<Path>>(work_root: P) -> Vec<LintRow> {
+pub fn lint_rows_from_root<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> Vec<LintRow> {
     let start = work_root.as_ref();
     let mut rows = Vec::new();
-    rows.extend(lint_side_rows_from(start, Side::Sources));
-    rows.extend(lint_side_rows_from(start, Side::Sinks));
+    rows.extend(lint_side_rows_from(start, Side::Sources, dict));
+    rows.extend(lint_side_rows_from(start, Side::Sinks, dict));
     rows
 }
 
 #[cfg(test)]
 mod tests {
+    use orion_variate::EnvDict;
+    use wp_conf::test_support::ForTest;
     use wp_connector_api::ParamMap;
 
     use super::*;
@@ -206,7 +208,7 @@ mod tests {
             "[[connectors]]\nid = \"http\"\ntype = \"http\"\n",
         );
 
-        let rows = lint_rows_from_root(root.to_str().unwrap());
+        let rows = lint_rows_from_root(root.to_str().unwrap(), &EnvDict::test_default());
         assert_eq!(rows.len(), 2);
         assert!(
             rows.iter()

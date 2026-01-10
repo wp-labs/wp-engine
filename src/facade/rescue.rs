@@ -63,12 +63,14 @@ impl WpRescueApp {
                 Path::new(self.conf_manager.work_root_path().as_str()),
                 &knowdb_path,
                 &authority_uri,
+                &self.val_dict,
             ) {
                 Ok(_) => {
                     let handler = crate::knowledge::KnowdbHandler::new(
                         Path::new(self.conf_manager.work_root_path().as_str()),
                         &knowdb_path,
                         &authority_uri,
+                        &self.val_dict,
                     );
                     handler.mark_initialized();
                     knowdb_handler = Some(handler);

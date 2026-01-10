@@ -154,7 +154,7 @@ pub fn init(work_root: &str, full: bool) -> Result<()> {
     Ok(())
 }
 
-pub fn check(work_root: &str) -> Result<CheckReport> {
+pub fn check(work_root: &str, dict: &EnvDict) -> Result<CheckReport> {
     use wp_knowledge::loader::KnowDbConf;
     let wr = PathBuf::from(work_root);
     let conf_path = wr.join("models/knowledge/knowdb.toml");
@@ -162,8 +162,7 @@ pub fn check(work_root: &str) -> Result<CheckReport> {
         anyhow::bail!("knowdb config not found: {}", conf_path.display());
     }
     let txt = std::fs::read_to_string(&conf_path)?;
-    let dict = EnvDict::default();
-    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&txt, &dict)?;
+    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&txt, dict)?;
     if conf.version != 2 {
         anyhow::bail!("knowdb.version must be 2");
     }

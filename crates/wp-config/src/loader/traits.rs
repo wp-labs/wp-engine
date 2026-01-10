@@ -8,28 +8,6 @@
 //! - **可扩展**: 易于添加新的配置类型
 //! - **可测试**: 统一的接口便于编写测试
 //!
-//! # 示例
-//!
-//! ```no_run
-//! use wp_conf::loader::traits::ConfigLoader;
-//! use wp_conf::structure::SourceInstanceConf;
-//! use orion_variate::EnvDict;
-//! use std::path::Path;
-//!
-//! // 从文件加载
-//! let sources = Vec::<SourceInstanceConf>::load_from_path(
-//!     Path::new("config/sources.toml"),
-//!     &EnvDict::default(),
-//! )?;
-//!
-//! // 从字符串加载
-//! let content = std::fs::read_to_string("config/sources.toml")?;
-//! let sources = Vec::<SourceInstanceConf>::load_from_str(
-//!     &content,
-//!     Path::new("config"),
-//!     &EnvDict::default(),
-//! )?;
-//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 use orion_conf::error::{ConfIOReason, OrionConfResult};
@@ -214,8 +192,10 @@ mod tests {
 
     #[test]
     fn config_loader_error_on_missing_file() {
-        let result =
-            TestConfig::load_from_path(Path::new("/nonexistent/file.toml"), &EnvDict::test_default());
+        let result = TestConfig::load_from_path(
+            Path::new("/nonexistent/file.toml"),
+            &EnvDict::test_default(),
+        );
         assert!(result.is_err(), "不存在的文件应该返回错误");
     }
 }

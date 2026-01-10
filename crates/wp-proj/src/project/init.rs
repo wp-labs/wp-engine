@@ -98,20 +98,20 @@ impl WarpProject {
     pub(crate) fn load_components(&mut self, mode: PrjScope) -> RunResult<()> {
         if mode.enable_conf() {
             let eng_conf =
-                Self::load_engine_config_only(self.work_root_path(), &EnvDict::default())?;
+                Self::load_engine_config_only(self.work_root_path(), &self.dict)?;
             self.replace_engine_conf(eng_conf);
-            Self::load_wpgen_config_only(self.work_root_path(), &EnvDict::default())?;
+            Self::load_wpgen_config_only(self.work_root_path(), &self.dict)?;
         }
         if mode.enable_connector() {
             self.connectors().check(self.work_root()).map(|_| ())?;
         }
         if mode.enable_topology() {
-            self.sinks_c().check()?;
-            self.sources_c().check()?;
+            self.sinks_c().check(&self.dict)?;
+            self.sources_c().check(&self.dict)?;
         }
         if mode.enable_model() {
-            self.wpl().check()?;
-            let _ = self.oml().check()?;
+            self.wpl().check(&self.dict)?;
+            let _ = self.oml().check(&self.dict)?;
         }
         Ok(())
     }
@@ -124,7 +124,7 @@ impl WarpProject {
 
         if mode.enable_conf() {
             // wparse/wpgen 主配置初始化（如不存在则复制示例文件）
-            let eng_conf = Self::init_engine_config(self.work_root_path(), &EnvDict::default())?;
+            let eng_conf = Self::init_engine_config(self.work_root_path(), &self.dict)?;
             self.replace_engine_conf(eng_conf);
             Self::init_wpgen_config(self.work_root_path())?;
         }
@@ -137,7 +137,7 @@ impl WarpProject {
             // 输出接收器骨架初始化
             self.sinks_c().init()?;
             // 输入源和连接器补齐
-            self.sources_c().init(&EnvDict::default())?;
+            self.sources_c().init(&self.dict)?;
             // 知识库目录骨架初始化
         }
 
@@ -271,6 +271,7 @@ impl WarpProject {
 mod tests {
     use super::*;
     use std::path::Path;
+    use wp_conf::test_support::ForTest;
     const CONNECTORS_DIR: &str = "connectors";
     const CONNECTORS_SOURCE_DIR: &str = "connectors/source.d";
     const CONNECTORS_SINK_DIR: &str = "connectors/sink.d";
@@ -379,7 +380,7 @@ mod tests {
         let work_root = temp_dir.path();
 
         // 创建项目并使用 Full 模式初始化
-        WarpProject::init(work_root, PrjScope::Full)
+        WarpProject::init(work_root, PrjScope::Full, &EnvDict::test_default())
             .expect("Full mode initialization should succeed");
 
         // 验证创建的目录和文件
@@ -478,7 +479,7 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let work_root = temp_dir.path();
 
-        WarpProject::init(work_root, PrjScope::Normal)
+        WarpProject::init(work_root, PrjScope::Normal, &EnvDict::test_default())
             .expect("Normal mode initialization should succeed");
 
         // 验证配置目录
@@ -557,7 +558,7 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let work_root = temp_dir.path();
 
-        WarpProject::init(work_root, PrjScope::Conf)
+        WarpProject::init(work_root, PrjScope::Conf, &EnvDict::test_default())
             .expect("Conf mode initialization should succeed");
 
         // 验证配置目录
@@ -593,7 +594,7 @@ mod tests {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         let work_root = temp_dir.path();
 
-        WarpProject::init(work_root, PrjScope::Data)
+        WarpProject::init(work_root, PrjScope::Data, &EnvDict::test_default())
             .expect("Data mode initialization should succeed");
 
         // Data 模式会创建基础数据目录以及最小配置（engine 默认）

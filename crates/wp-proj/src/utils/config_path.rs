@@ -86,6 +86,7 @@ impl ConfigPathResolver {
 mod tests {
     use super::*;
     use crate::test_utils::{temp_workdir, write_basic_wparse_config};
+    use wp_conf::test_support::ForTest;
 
     #[test]
     fn resolve_model_path_falls_back_without_config() {
@@ -93,7 +94,7 @@ mod tests {
         let path = ConfigPathResolver::resolve_model_path(
             temp.path().to_str().unwrap(),
             "wpl",
-            &EnvDict::default(),
+            &EnvDict::test_default(),
         )
         .expect("resolve path");
         assert!(path.ends_with("models/wpl"));
@@ -107,7 +108,7 @@ mod tests {
         let path = ConfigPathResolver::resolve_model_path(
             temp.path().to_str().unwrap(),
             "sinks",
-            &EnvDict::default(),
+            &EnvDict::test_default(),
         )
         .expect("resolve path");
         assert_eq!(path, temp.path().join("models/sinks"));

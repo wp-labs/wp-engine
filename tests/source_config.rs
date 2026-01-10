@@ -11,6 +11,7 @@
 use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Once;
+use wp_conf::test_support::ForTest;
 use wp_engine::facade::test_helpers as fth;
 static INIT: Once = Once::new();
 fn init_runtime() {
@@ -364,7 +365,7 @@ connect = "{}"
 params_override = {{ }}
 "#,
             FILE_SOURCE_KEY, FILE_CONNECTOR_ID
-        ))
+        ), &EnvDict::test_default())
         .expect("Failed to validate configuration");
 
     // Validate specifications
@@ -393,7 +394,7 @@ fn validate_only_succeeds_without_connectors() {
 
     let parser = create_config_parser(test_dir);
     let specs = parser
-        .parse_and_validate_only(&source_config)
+        .parse_and_validate_only(&source_config, &EnvDict::test_default())
         .expect("Validate-only should succeed without connectors");
 
     assert_eq!(specs.len(), 1, "Expected exactly 1 specification");
@@ -589,7 +590,7 @@ connect = "{}"
 params_override = {{ }}
 "#,
             "test_missing_file", FILE_CONNECTOR_ID
-        ))
+        ), &EnvDict::test_default())
         .expect("Validation should succeed even with missing files");
 
     assert_eq!(specs.len(), 1, "Expected exactly 1 specification");
@@ -621,7 +622,7 @@ fn configuration_handles_empty_parameters_correctly() {
 
     let parser = create_config_parser(test_dir);
     let specs = parser
-        .parse_and_validate_only(&source_config)
+        .parse_and_validate_only(&source_config, &EnvDict::test_default())
         .expect("Validation should succeed with empty parameters");
 
     assert_eq!(specs.len(), 1, "Expected exactly 1 specification");
@@ -646,7 +647,7 @@ fn configuration_handles_disabled_sources() {
 
     let parser = create_config_parser(test_dir);
     let specs = parser
-        .parse_and_validate_only(&source_config)
+        .parse_and_validate_only(&source_config, &EnvDict::test_default())
         .expect("Validation should succeed for disabled sources");
 
     // Disabled sources should be filtered out (0 specs expected)

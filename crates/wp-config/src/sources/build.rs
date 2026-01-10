@@ -13,9 +13,11 @@ use std::sync::Arc;
 use wp_connector_api::ParamMap;
 
 /// 仅解析并执行最小校验（不进行实际构建，不触发 I/O）
-pub fn parse_and_validate_only(config_str: &str) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
-    let dict = EnvDict::default();
-    let wrapper: WpSourcesConfig = WpSourcesConfig::env_parse_toml(config_str, &dict)
+pub fn parse_and_validate_only(
+    config_str: &str,
+    dict: &EnvDict,
+) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
+    let wrapper: WpSourcesConfig = WpSourcesConfig::env_parse_toml(config_str, dict)
         .owe_conf()
         .want("parse sources v2")?;
     let mut out: Vec<wp_specs::CoreSourceSpec> = Vec::new();
@@ -224,7 +226,7 @@ connect = "conn1"
 [connectors]
 "#;
         // 最小解析：不校验 connectors（仅返回 name/tags）
-        let _ = parse_and_validate_only(raw).expect("parse");
+        let _ = parse_and_validate_only(raw, &EnvDict::test_default()).expect("parse");
     }
 
     #[test]

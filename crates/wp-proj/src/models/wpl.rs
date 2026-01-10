@@ -93,7 +93,7 @@ impl Wpl {
         include_str!("../example/wpl/nginx/sample.dat")
     }
 
-    pub fn check(&self) -> RunResult<CheckStatus> {
+    pub fn check(&self, _dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         let rule_root = self.rule_root();
         let rules =
             wp_conf::utils::find_conf_files(rule_root.to_string_lossy().as_ref(), WPARSE_RULE_FILE)
@@ -163,9 +163,9 @@ impl Component for Wpl {
 }
 
 impl Checkable for Wpl {
-    fn check(&self) -> RunResult<CheckStatus> {
+    fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         // Delegate to the existing check implementation
-        Wpl::check(self)
+        Wpl::check(self, dict)
     }
 }
 

@@ -84,7 +84,7 @@ impl GenRuleUnit {
         Ok(result)
     }
 }
-pub fn load_gen_confs(path: &str) -> ConfResult<Vec<GenRuleUnit>> {
+pub fn load_gen_confs(path: &str, dict: &EnvDict) -> ConfResult<Vec<GenRuleUnit>> {
     let files = find_group_conf(path, GEN_RULE_FILE, GEN_FIELD_FILE)?;
     if files.is_empty() {
         return Err(ConfError::from(ConfReason::NotFound(
@@ -121,8 +121,7 @@ pub fn load_gen_confs(path: &str) -> ConfResult<Vec<GenRuleUnit>> {
             let mut ctx = WithContext::want("loadd field gen rule");
             ctx.record("sec", sec.to_str().unwrap_or("unknow"));
             let toml = std::fs::read_to_string(sec).owe_conf().with(&ctx)?;
-            let dict = EnvDict::default();
-            let conf: FieldsGenRule = FieldsGenRule::env_parse_toml(toml.as_str(), &dict)
+            let conf: FieldsGenRule = FieldsGenRule::env_parse_toml(toml.as_str(), dict)
                 .owe_conf()
                 .with(&ctx)?;
             fields = conf.items;

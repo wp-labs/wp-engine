@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Once;
+use wp_conf::test_support::ForTest;
 use wp_engine::facade::test_helpers as fth;
 
 static INIT: Once = Once::new();
@@ -95,7 +96,7 @@ params_override = { }
 
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
     let specs = parser
-        .parse_and_validate_only(cfg)
+        .parse_and_validate_only(cfg, &EnvDict::test_default())
         .expect("validate-only failed");
     assert_eq!(specs.len(), 1);
     assert_eq!(specs[0].name, "file_unified");
@@ -117,7 +118,7 @@ tags = ["env:test"]
 "#;
     let parser = wp_engine::sources::SourceConfigParser::new(work.clone());
     let specs = parser
-        .parse_and_validate_only(cfg)
+        .parse_and_validate_only(cfg, &EnvDict::test_default())
         .expect("validate-only without connectors should succeed");
     assert_eq!(specs.len(), 1);
     assert_eq!(specs[0].name, "s1");

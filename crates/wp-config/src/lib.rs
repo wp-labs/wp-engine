@@ -54,6 +54,7 @@ pub use sinks::{ConnectorRec, DefaultsBody, RouteFile, RouteGroup, RouteSink, St
 pub use common::io_locate::find_connectors_base_dir;
 pub use common::paths;
 pub use cond::WarpConditionParser;
+pub use types::SafeDefault;
 
 // 重新导出 WildArray 类型以供外部使用
 pub use wp_specs::WildArray;

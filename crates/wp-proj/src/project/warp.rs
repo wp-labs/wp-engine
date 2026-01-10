@@ -28,6 +28,8 @@ pub struct WarpProject {
     // 项目路径管理器
     paths: ProjectPaths,
     eng_conf: Arc<EngineConfig>,
+    // 环境变量字典
+    pub(crate) dict: orion_variate::EnvDict,
     // 连接器管理
     connectors: Connectors,
     // 输出接收器管理
@@ -47,11 +49,11 @@ pub struct WarpProject {
 }
 
 impl WarpProject {
-    fn build(work_root: &Path) -> Self {
+    fn build(work_root: &Path, dict: &orion_variate::EnvDict) -> Self {
         let abs_root = normalize_work_root(work_root);
         let paths = ProjectPaths::from_root(&abs_root);
         let eng_conf = Arc::new(
-            EngineConfig::load_or_init(&abs_root, &EnvDict::default())
+            EngineConfig::load_or_init(&abs_root, dict)
                 .expect("load engine config")
                 .conf_absolutize(&abs_root),
         );
@@ -67,6 +69,7 @@ impl WarpProject {
         Self {
             paths,
             eng_conf,
+            dict: dict.clone(),
             connectors,
             sinks_c,
             sources_c,
@@ -79,22 +82,23 @@ impl WarpProject {
     }
 
     /// 静态初始化：创建并初始化完整项目
-    pub fn init<P: AsRef<Path>>(work_root: P, mode: PrjScope) -> RunResult<Self> {
-        let mut project = Self::build(work_root.as_ref());
+    pub fn init<P: AsRef<Path>>(work_root: P, mode: PrjScope, dict: &orion_variate::EnvDict) -> RunResult<Self> {
+        let mut project = Self::build(work_root.as_ref(), dict);
         project.init_components(mode)?;
         Ok(project)
     }
 
     /// 静态加载：基于现有结构执行校验加载
-    pub fn load<P: AsRef<Path>>(work_root: P, mode: PrjScope) -> RunResult<Self> {
-        let mut project = Self::build(work_root.as_ref());
+    pub fn load<P: AsRef<Path>>(work_root: P, mode: PrjScope, dict: &orion_variate::EnvDict) -> RunResult<Self> {
+        let mut project = Self::build(work_root.as_ref(), dict);
         project.load_components(mode)?;
         Ok(project)
     }
 
     #[cfg(test)]
     pub(crate) fn bare<P: AsRef<Path>>(work_root: P) -> Self {
-        Self::build(work_root.as_ref())
+        use wp_conf::test_support::ForTest;
+        Self::build(work_root.as_ref(), &orion_variate::EnvDict::test_default())
     }
 
     /// 获取工作根目录（向后兼容）

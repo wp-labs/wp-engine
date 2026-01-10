@@ -89,6 +89,7 @@ impl WParseManager {
 mod tests {
     use super::*;
     use crate::test_utils::{temp_workdir, write_basic_wparse_config};
+    use wp_conf::test_support::ForTest;
 
     #[test]
     fn manager_reports_paths_relative_to_work_root() {
@@ -121,7 +122,7 @@ mod tests {
         let log_dir = temp.path().join("data/logs");
         std::fs::create_dir_all(&log_dir).unwrap();
         std::fs::write(log_dir.join("wp.log"), "line").unwrap();
-        let dict = EnvDict::default();
+        let dict = EnvDict::test_default();
 
         let cleaned = manager.clean_data(&dict).expect("clean data");
         assert!(cleaned);

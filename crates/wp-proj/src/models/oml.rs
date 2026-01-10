@@ -86,7 +86,7 @@ rule = "/example/*"
         Ok(())
     }
 
-    pub fn check(&self) -> RunResult<CheckStatus> {
+    pub fn check(&self, _dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         let oml_root = self.oml_root();
         if !oml_root.exists() {
             return Ok(CheckStatus::Miss);
@@ -117,9 +117,9 @@ impl Component for Oml {
 }
 
 impl Checkable for Oml {
-    fn check(&self) -> RunResult<CheckStatus> {
+    fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         // Delegate to the existing check implementation
-        Oml::check(self)
+        Oml::check(self, dict)
     }
 }
 

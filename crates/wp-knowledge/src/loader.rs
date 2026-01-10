@@ -147,10 +147,11 @@ pub fn build_authority_from_knowdb(
     root: &Path,
     conf_path: &Path,
     authority_uri: &str,
+    dict: &EnvDict,
 ) -> KnowledgeResult<Vec<String>> {
     let mut opx = OperationContext::want("build authority from knowdb").with_auto_log();
     // 1) 解析配置与 base_dir
-    let (conf, conf_abs, base_dir) = parse_knowdb_conf(root, conf_path)?;
+    let (conf, conf_abs, base_dir) = parse_knowdb_conf(root, conf_path, dict)?;
     opx.record("conf", &conf_abs);
     opx.record("base_dir", &base_dir);
     // 2) 打开权威库
@@ -172,6 +173,7 @@ pub fn build_authority_from_knowdb(
 fn parse_knowdb_conf(
     root: &Path,
     conf_path: &Path,
+    dict: &EnvDict,
 ) -> KnowledgeResult<(KnowDbConf, PathBuf, PathBuf)> {
     let conf_abs = if conf_path.is_absolute() {
         conf_path.to_path_buf()
@@ -179,8 +181,7 @@ fn parse_knowdb_conf(
         root.join(conf_path)
     };
     let conf_txt = read_to_string(&conf_abs)?;
-    let dict = EnvDict::default();
-    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&conf_txt, &dict).owe_conf()?;
+    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&conf_txt, dict).owe_conf()?;
     if conf.version != 2 {
         return KnowledgeReason::from_conf("unsupported knowdb.version").err_result();
     }

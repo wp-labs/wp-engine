@@ -5,18 +5,6 @@
 //! # 示例
 //!
 //! ```no_run
-//! use wp_conf::loader::batch::load_all_from_dir;
-//! use wp_conf::structure::SourceInstanceConf;
-//! use orion_variate::EnvDict;
-//! use std::path::Path;
-//!
-//! // 从目录加载所有 .toml 文件
-//! let configs = load_all_from_dir::<Vec<SourceInstanceConf>>(
-//!     Path::new("config/sources"),
-//!     "*.toml",
-//!     &EnvDict::default(),
-//! )?;
-//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 use super::traits::ConfigLoader;
@@ -45,20 +33,6 @@ use std::path::{Path, PathBuf};
 /// - 目录不存在或无法读取
 /// - 任何配置文件加载失败
 ///
-/// # 示例
-/// ```no_run
-/// # use wp_conf::loader::batch::load_all_from_dir;
-/// # use wp_conf::structure::SourceInstanceConf;
-/// # use orion_variate::EnvDict;
-/// # use std::path::Path;
-/// let sources = load_all_from_dir::<Vec<SourceInstanceConf>>(
-///     Path::new("config/sources"),
-///     "*.toml",
-///     &EnvDict::default(),
-/// )?;
-///
-/// println!("加载了 {} 个配置文件", sources.len());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn load_all_from_dir<T: ConfigLoader>(
     dir: &Path,
@@ -109,23 +83,6 @@ pub fn load_all_from_dir<T: ConfigLoader>(
 /// # 错误
 /// 如果任何文件加载失败，返回第一个错误。
 ///
-/// # 示例
-/// ```no_run
-/// # use wp_conf::loader::batch::load_from_paths;
-/// # use wp_conf::structure::SourceInstanceConf;
-/// # use orion_variate::EnvDict;
-/// # use std::path::PathBuf;
-/// let paths = vec![
-///     PathBuf::from("config/source1.toml"),
-///     PathBuf::from("config/source2.toml"),
-/// ];
-///
-/// let sources = load_from_paths::<Vec<SourceInstanceConf>>(
-///     &paths,
-///     &EnvDict::default(),
-/// )?;
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
 pub fn load_from_paths<T: ConfigLoader>(
     paths: &[PathBuf],
     dict: &EnvDict,
@@ -196,7 +153,8 @@ mod tests {
         fs::write(temp.path().join("c.txt"), "ignored").unwrap();
 
         let configs =
-            load_all_from_dir::<TestConfig>(temp.path(), "*.toml", &EnvDict::test_default()).unwrap();
+            load_all_from_dir::<TestConfig>(temp.path(), "*.toml", &EnvDict::test_default())
+                .unwrap();
 
         assert_eq!(configs.len(), 2, "应该加载 2 个 .toml 文件");
     }

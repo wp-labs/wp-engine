@@ -49,7 +49,7 @@ impl Sinks {
     }
 
     // 校验路由（严格）
-    pub fn check(&self) -> RunResult<CheckStatus> {
+    pub fn check(&self, _dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref()).err_conv()?;
         Ok(CheckStatus::Suc)
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
@@ -194,9 +194,9 @@ impl Component for Sinks {
 }
 
 impl Checkable for Sinks {
-    fn check(&self) -> RunResult<CheckStatus> {
+    fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         // Delegate to the existing check implementation
-        Sinks::check(self)
+        Sinks::check(self, dict)
     }
 }
 

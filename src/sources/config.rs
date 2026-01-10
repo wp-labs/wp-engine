@@ -132,10 +132,11 @@ impl SourceConfigParser {
     pub fn parse_and_validate_only(
         &self,
         config_str: &str,
+        dict: &EnvDict,
     ) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
         // 轻量解析：不依赖 connectors、不做 Factory 校验，仅返回最小 CoreSourceSpec
         // 用途：快速检查 [[sources]] 基本结构，供 CLI 展示/索引构建。
-        wp_conf::sources::parse_and_validate_only(config_str)
+        wp_conf::sources::parse_and_validate_only(config_str, dict)
     }
 }
 

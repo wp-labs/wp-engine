@@ -96,7 +96,7 @@ pub fn validate_routes(work_root: &str) -> OrionConfResult<()> {
             .and_then(|p| p.parent())
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
-        let conn_map = load_sink_connectors(&sink_root)?;
+        let conn_map = load_sink_connectors(&sink_root, &env_dict)?;
         let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map)?;
 
@@ -172,10 +172,10 @@ pub fn list_connectors_usage(
     Vec<(String, String, String)>,
 )> {
     let wr = PathBuf::from(work_root);
-    let conn_map = load_sink_connectors(Path::new(work_root))?;
+    let env_dict = EnvDict::new();
+    let conn_map = load_sink_connectors(Path::new(work_root), &env_dict)?;
     let routes = load_routes(&wr)?;
     let mut usage: Vec<(String, String, String)> = Vec::new();
-    let env_dict = EnvDict::new();
     for rf in &routes {
         let sink_root = rf
             .path
@@ -183,7 +183,7 @@ pub fn list_connectors_usage(
             .and_then(|p| p.parent())
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
-        let conn_map_local = load_sink_connectors(&sink_root)?;
+        let conn_map_local = load_sink_connectors(&sink_root, &env_dict)?;
         let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map_local)?;
         let g = conf.sink_group;
@@ -232,7 +232,7 @@ pub fn route_table(
             .and_then(|p| p.parent())
             .unwrap_or_else(|| rf.path.parent().unwrap_or(&wr))
             .to_path_buf();
-        let conn_map_local = load_sink_connectors(&sink_root)?;
+        let conn_map_local = load_sink_connectors(&sink_root, &env_dict)?;
         let defaults = load_sink_defaults(sink_root.to_string_lossy().as_ref(), &env_dict)?;
         let conf = build_route_conf_from(&rf.inner, defaults.as_ref(), &conn_map_local)?;
         let g = conf.sink_group;
@@ -300,13 +300,13 @@ fn target_detail_of(s: &SinkInstanceConf) -> OrionConfResult<(String, String)> {
 }
 
 /// Load sink connectors (id -> connector) beneath the given work root.
-pub fn load_connectors_map(work_root: &str) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
-    load_sink_connectors(Path::new(work_root))
+pub fn load_connectors_map(work_root: &str, dict: &orion_variate::EnvDict) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
+    load_sink_connectors(Path::new(work_root), dict)
 }
 
-fn load_sink_connectors(start: &Path) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
+fn load_sink_connectors(start: &Path, dict: &orion_variate::EnvDict) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
     if let Some(dir) = find_connectors_base_dir(start) {
-        let defs = load_connector_defs_from_dir(&dir, ConnectorScope::Sink, &EnvDict::default())?;
+        let defs = load_connector_defs_from_dir(&dir, ConnectorScope::Sink, dict)?;
         Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
     } else {
         Ok(BTreeMap::new())

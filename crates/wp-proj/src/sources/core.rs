@@ -71,7 +71,7 @@ impl Sources {
         self.sources_root().join(WPSRC_TOML)
     }
 
-    pub fn check(&self) -> RunResult<CheckStatus> {
+    pub fn check(&self, dict: &EnvDict) -> RunResult<CheckStatus> {
         let wpsrc_path = self.wpsrc_path();
 
         // Verify configuration file exists
@@ -84,7 +84,7 @@ impl Sources {
         }
 
         // Parse and validate configuration
-        self.validate_wpsrc_config(self.work_root(), &wpsrc_path, &EnvDict::default())?;
+        self.validate_wpsrc_config(self.work_root(), &wpsrc_path, dict)?;
 
         // Attempt to build specifications to ensure they are valid
         self.build_source_specs(&wpsrc_path)?;
@@ -133,7 +133,7 @@ impl Sources {
 
         // Parse and validate the configuration content
         parser
-            .parse_and_validate_only(&config_content)
+            .parse_and_validate_only(&config_content, dict)
             .map_err(|e| {
                 RunReason::from_conf(format!("Sources config validation failed: {}", e)).to_err()
             })?;
@@ -258,9 +258,9 @@ impl Component for Sources {
 }
 
 impl Checkable for Sources {
-    fn check(&self) -> RunResult<CheckStatus> {
+    fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
         // Delegate to the existing check implementation
-        Sources::check(self)
+        Sources::check(self, dict)
     }
 }
 

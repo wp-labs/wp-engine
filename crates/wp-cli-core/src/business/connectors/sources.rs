@@ -38,8 +38,8 @@ fn resolve_wpsrc_path(work_root: &str, eng_conf: &EngineConfig) -> OrionConfResu
 }
 
 /// Load connectors map from `connectors/source.d` (dedup and validate ids).
-fn load_connectors_map(base_dir: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
-    let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source, &EnvDict::default())?;
+fn load_connectors_map(base_dir: &Path, dict: &EnvDict) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
+    let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source, dict)?;
     Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
 }
 
@@ -66,7 +66,7 @@ pub fn list_connectors(
             wpsrc_path.display()
         ))
     })?;
-    let conn_map = load_connectors_map(&conn_base)?;
+    let conn_map = load_connectors_map(&conn_base, dict)?;
     let wp_sources = WpSourcesConfig::env_load_toml(&wpsrc_path, dict)?;
 
     // Count how many times each connector id is referenced.
@@ -103,7 +103,7 @@ pub fn route_table(
             wpsrc_path.display()
         ))
     })?;
-    let conn_map = load_connectors_map(&conn_base)?;
+    let conn_map = load_connectors_map(&conn_base, dict)?;
     let wrapper = WpSourcesConfig::env_load_toml(&wpsrc_path, dict)?.env_eval(dict);
     let mut rows: Vec<RouteRow> = Vec::new();
     for src in wrapper.sources.into_iter() {
@@ -137,6 +137,7 @@ mod tests {
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
     use wp_conf::engine::EngineConfig;
+    use wp_conf::test_support::ForTest;
 
     fn tmp_dir(prefix: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
@@ -182,7 +183,7 @@ params_override = { path = "/x" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng, &EnvDict::default())
+        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng, &EnvDict::test_default())
             .expect("list");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, "c1");

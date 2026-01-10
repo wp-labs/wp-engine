@@ -8,6 +8,7 @@ use crate::connectors::{
 use crate::traits::Component;
 use crate::types::CheckStatus;
 use orion_error::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 
 use super::paths::ConnectorsPaths;
 use wp_error::run_error::{RunReason, RunResult};
@@ -24,7 +25,8 @@ impl Connectors {
     }
 
     pub fn lint_rows_from_root<P: AsRef<Path>>(&self, work_root: P) -> Vec<LintRow> {
-        lint_rows_from_root(work_root)
+        let dict = EnvDict::new();
+        lint_rows_from_root(work_root, &dict)
     }
 
     pub fn init_definition<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {

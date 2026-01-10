@@ -8,6 +8,10 @@ use std::fs;
 use std::path::PathBuf;
 #[cfg(test)]
 use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(test)]
+use wp_conf::test_support::ForTest;
+#[cfg(test)]
+use orion_variate::EnvDict;
 
 #[cfg(test)]
 /// 创建唯一的临时目录用于测试
@@ -224,18 +228,18 @@ mod tests {
 
         // load_main should succeed (engine config auto-initialized)
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default()).is_ok()
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default()).is_ok()
         );
-        assert!(check_to_result(project.sources_c().check()).is_err());
-        assert!(check_to_result(project.sources_c().check()).is_err());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
         // WPL check should return Miss status (Ok) when files don't exist, consistent with OML
-        assert!(check_to_result(project.wpl().check()).is_ok());
-        assert!(check_to_result(project.oml().check()).is_ok());
+        assert!(check_to_result(project.wpl().check(&EnvDict::test_default())).is_ok());
+        assert!(check_to_result(project.oml().check(&EnvDict::test_default())).is_ok());
 
         // 连接器检查可能会通过，因为它只检查目录结构
         let connectors_result = project.connectors().check(&work);
         // sinks 检查也可能通过，取决于实现
-        let sinks_result = check_to_result(project.sinks_c().check());
+        let sinks_result = check_to_result(project.sinks_c().check(&EnvDict::test_default()));
 
         println!("Empty dir - connectors: {:?}", connectors_result);
         println!("Empty dir - sinks: {:?}", sinks_result);
@@ -267,12 +271,12 @@ mod tests {
 
         // 详细调试检查逻辑
         println!("DEBUG minimal - Calling check_sources...");
-        let sources_result = check_to_result(project.sources_c().check());
+        let sources_result = check_to_result(project.sources_c().check(&EnvDict::test_default()));
         println!("DEBUG minimal - check_sources result: {:?}", sources_result);
 
         // 检查 input_sources
         println!("DEBUG minimal - Calling check_input_sources...");
-        let input_sources_result = check_to_result(project.sources_c().check());
+        let input_sources_result = check_to_result(project.sources_c().check(&EnvDict::test_default()));
         println!(
             "DEBUG minimal - check_input_sources result: {:?}",
             input_sources_result
@@ -281,7 +285,7 @@ mod tests {
         // 配置检查现在应该通过
 
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
@@ -303,29 +307,29 @@ mod tests {
 
         // WPL 和 OML 检查在文件不存在时应该返回 Miss 状态（不是错误）
         assert_eq!(
-            project.wpl().check().unwrap(),
+            project.wpl().check(&EnvDict::test_default()).unwrap(),
             crate::types::CheckStatus::Miss,
             "WPL should return Miss when files don't exist"
         );
         assert_eq!(
-            project.oml().check().unwrap(),
+            project.oml().check(&EnvDict::test_default()).unwrap(),
             crate::types::CheckStatus::Miss,
             "OML should return Miss when files don't exist"
         );
 
         println!(
             "Minimal structure - config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
         println!(
             "Minimal structure - sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
         println!(
             "Minimal structure - wpl: {:?}",
-            check_to_result(project.wpl().check())
+            check_to_result(project.wpl().check(&EnvDict::test_default()))
         );
 
         cleanup_test_dir(&work);
@@ -346,43 +350,43 @@ mod tests {
 
         // 配置和 sources 现在都应该通过
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(check_to_result(project.sources_c().check()).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
         // check_input_sources 在有连接器配置时应该通过
-        assert!(check_to_result(project.sources_c().check()).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
 
         // 注意：由于实现问题，WPL 和 OML 检查在文件不存在时可能返回 Ok(true)
         // 这是已知的一致性问题，不影响核心功能
-        // assert!(check_to_result(project.wpl().check()).is_err());
-        // assert!(check_to_result(project.oml().check()).is_err());
+        // assert!(check_to_result(project.wpl().check(&EnvDict::test_default())).is_err());
+        // assert!(check_to_result(project.oml().check(&EnvDict::test_default())).is_err());
 
         // 实际上，由于检查逻辑不一致，这些可能都返回 Ok(true)
         println!(
             "DEBUG: WPL check result: {:?}",
-            check_to_result(project.wpl().check())
+            check_to_result(project.wpl().check(&EnvDict::test_default()))
         );
         println!(
             "DEBUG: OML check result: {:?}",
-            check_to_result(project.oml().check())
+            check_to_result(project.oml().check(&EnvDict::test_default()))
         );
 
         println!(
             "With sources - config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
         println!(
             "With sources - sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
         println!(
             "With sources - input_sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
 
         cleanup_test_dir(&work);
@@ -405,17 +409,17 @@ mod tests {
         // 调试各个检查
         println!(
             "DEBUG with_wpl - check_config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
         println!(
             "DEBUG with_wpl - check_sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
         println!(
             "DEBUG with_wpl - check_input_sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
 
         // 调试：手动检查文件是否存在
@@ -434,24 +438,24 @@ mod tests {
 
         println!(
             "DEBUG with_wpl - check_wpl: {:?}",
-            check_to_result(project.wpl().check())
+            check_to_result(project.wpl().check(&EnvDict::test_default()))
         );
 
         // 配置、sources 和 WPL 应该通过
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(check_to_result(project.sources_c().check()).is_ok());
-        assert!(check_to_result(project.sources_c().check()).is_ok());
-        assert!(check_to_result(project.wpl().check()).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
+        assert!(check_to_result(project.wpl().check(&EnvDict::test_default())).is_ok());
 
         // 调试OML检查
         println!(
             "DEBUG: OML check result: {:?}",
-            check_to_result(project.oml().check())
+            check_to_result(project.oml().check(&EnvDict::test_default()))
         );
         // 检查OML文件是否存在
         let oml_path_toml = format!("{}/models/oml/knowdb.toml", work);
@@ -469,14 +473,14 @@ mod tests {
 
         // OML检查应该返回 Miss 状态（不是错误），因为文件不存在
         assert_eq!(
-            project.oml().check().unwrap(),
+            project.oml().check(&EnvDict::test_default()).unwrap(),
             crate::types::CheckStatus::Miss,
             "OML should return Miss when files don't exist"
         );
 
         println!(
             "With WPL - wpl: {:?}",
-            check_to_result(project.wpl().check())
+            check_to_result(project.wpl().check(&EnvDict::test_default()))
         );
 
         cleanup_test_dir(&work);
@@ -501,20 +505,20 @@ mod tests {
         println!("DEBUG: Testing complete project checks");
         println!(
             "check_config: {:?}",
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         );
         println!(
             "check_sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
         println!(
             "check_input_sources: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
-        println!("check_wpl: {:?}", check_to_result(project.wpl().check()));
-        println!("check_oml: {:?}", check_to_result(project.oml().check()));
+        println!("check_wpl: {:?}", check_to_result(project.wpl().check(&EnvDict::test_default())));
+        println!("check_oml: {:?}", check_to_result(project.oml().check(&EnvDict::test_default())));
 
         // 调试路径问题
         let manual_path = format!("{}/topology/sources/wpsrc.toml", work);
@@ -525,7 +529,7 @@ mod tests {
 
         // 调试：检查实际的src_conf_of路径
         if let Ok((_, main)) =
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
         {
             let actual_path =
                 PathBuf::from(main.src_conf_of(wp_engine::facade::config::WPSRC_TOML));
@@ -576,17 +580,17 @@ mod tests {
         }
 
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default())
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
                 .map(|_| ())
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
         // 注意：由于修复了检查逻辑，现在需要文件存在时才能通过
-        assert!(check_to_result(project.sources_c().check()).is_ok());
-        assert!(check_to_result(project.sources_c().check()).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_ok());
         // WPL和OML也需要处理路径问题
-        // assert!(check_to_result(project.wpl().check()).is_ok());
-        // assert!(check_to_result(project.oml().check()).is_ok());
+        // assert!(check_to_result(project.wpl().check(&EnvDict::test_default())).is_ok());
+        // assert!(check_to_result(project.oml().check(&EnvDict::test_default())).is_ok());
 
         println!("Complete project - all checks should pass");
 
@@ -614,7 +618,7 @@ mod tests {
         );
 
         let load_result =
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default());
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default());
         println!("Invalid config load result is_ok: {}", load_result.is_ok());
         assert!(load_result.is_err());
 
@@ -636,12 +640,12 @@ mod tests {
         let project = WarpProject::bare(&work);
 
         // check_sources 现在应该失败，因为文件内容无效
-        assert!(check_to_result(project.sources_c().check()).is_err());
-        assert!(check_to_result(project.sources_c().check()).is_err());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
+        assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
 
         println!(
             "Invalid sources - should fail: {:?}",
-            check_to_result(project.sources_c().check())
+            check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
 
         cleanup_test_dir(&work);
@@ -668,7 +672,7 @@ mod tests {
         let comps = CheckComponents::default();
 
         // 实际上检查可能通过（由于检查逻辑不一致），但会显示详细信息
-        let result = checker::check_with(&project, &args, &comps, &EnvDict::default());
+        let result = checker::check_with(&project, &args, &comps, &EnvDict::test_default());
         // assert!(result.is_err());  // 暂时注释，因为实际行为可能不同
 
         println!("Integration test result: {:?}", result);
@@ -688,7 +692,7 @@ mod tests {
         let comps = CheckComponents::default().with_only([CheckComponent::Engine]);
 
         // 仅检查 engine，其他检查被跳过，应当成功
-        assert!(checker::check_with(&project, &opts, &comps, &EnvDict::default()).is_ok());
+        assert!(checker::check_with(&project, &opts, &comps, &EnvDict::test_default()).is_ok());
 
         cleanup_test_dir(&work);
     }
@@ -713,10 +717,10 @@ mod tests {
 
         // 独立测试各个组件
         println!("Connectors check: {:?}", connectors.check(&work));
-        println!("Sinks check: {:?}", check_to_result(sinks.check()));
-        println!("Sources check: {:?}", check_to_result(sources.check()));
-        println!("WPL check: {:?}", check_to_result(wpl.check()));
-        println!("OML check: {:?}", check_to_result(oml.check()));
+        println!("Sinks check: {:?}", check_to_result(sinks.check(&EnvDict::test_default())));
+        println!("Sources check: {:?}", check_to_result(sources.check(&EnvDict::test_default())));
+        println!("WPL check: {:?}", check_to_result(wpl.check(&EnvDict::test_default())));
+        println!("OML check: {:?}", check_to_result(oml.check(&EnvDict::test_default())));
 
         cleanup_test_dir(&work);
     }
@@ -730,12 +734,12 @@ mod tests {
         let sources = Sources::new(&work, eng.clone());
 
         // 测试空目录
-        let result = check_to_result(sources.check());
+        let result = check_to_result(sources.check(&EnvDict::test_default()));
         println!("Empty directory sources check: {:?}", result);
 
         // 测试无效目录
         let invalid_sources = Sources::new("/nonexistent/directory", eng);
-        let invalid_result = check_to_result(invalid_sources.check());
+        let invalid_result = check_to_result(invalid_sources.check(&EnvDict::test_default()));
         println!("Invalid directory sources check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);
@@ -750,7 +754,7 @@ mod tests {
         let wpl = Wpl::new(&work, eng);
 
         // 测试空目录
-        let result = check_to_result(wpl.check());
+        let result = check_to_result(wpl.check(&EnvDict::test_default()));
         println!("Empty directory WPL check: {:?}", result);
 
         // 测试无效 WPL 文件
@@ -764,7 +768,7 @@ mod tests {
             return; // 如果无法创建文件，跳过这个测试
         }
 
-        let invalid_result = check_to_result(wpl.check());
+        let invalid_result = check_to_result(wpl.check(&EnvDict::test_default()));
         println!("Invalid WPL file check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);
@@ -779,7 +783,7 @@ mod tests {
         let oml = Oml::new(&work, eng);
 
         // 测试空目录
-        let result = check_to_result(oml.check());
+        let result = check_to_result(oml.check(&EnvDict::test_default()));
         println!("Empty directory OML check: {:?}", result);
 
         // 测试无效 OML 文件
@@ -789,7 +793,7 @@ mod tests {
         fs::create_dir_all(std::path::Path::new(&invalid_oml_path).parent().unwrap()).unwrap();
         fs::write(invalid_oml_path, "invalid oml content").unwrap();
 
-        let invalid_result = check_to_result(oml.check());
+        let invalid_result = check_to_result(oml.check(&EnvDict::test_default()));
         println!("Invalid OML file check: {:?}", invalid_result);
 
         cleanup_test_dir(&work);
@@ -798,16 +802,16 @@ mod tests {
     #[test]
     fn warp_project_static_init_and_load_conf() {
         let work = uniq_tmp_dir();
-        WarpProject::init(&work, PrjScope::Conf).expect("init conf project");
+        WarpProject::init(&work, PrjScope::Conf, &EnvDict::test_default()).expect("init conf project");
         assert!(std::path::Path::new(&format!("{}/conf/wparse.toml", work)).exists());
-        assert!(WarpProject::load(&work, PrjScope::Conf).is_ok());
+        assert!(WarpProject::load(&work, PrjScope::Conf, &EnvDict::test_default()).is_ok());
         cleanup_test_dir(&work);
     }
 
     #[test]
     fn warp_project_static_load_without_conf_fails() {
         let work = uniq_tmp_dir();
-        assert!(WarpProject::load(&work, PrjScope::Conf).is_err());
+        assert!(WarpProject::load(&work, PrjScope::Conf, &EnvDict::test_default()).is_err());
         cleanup_test_dir(&work);
     }
 }

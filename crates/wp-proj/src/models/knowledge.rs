@@ -46,6 +46,7 @@ impl Knowledge {
     ///
     /// # 参数
     /// - `work_root`: 项目根目录
+    /// - `dict`: 环境变量字典
     ///
     /// # 返回
     /// 返回检查报告，包含：
@@ -53,8 +54,8 @@ impl Knowledge {
     /// - ok: 通过检查的表数
     /// - fail: 未通过检查的表数
     /// - tables: 每个表的详细检查结果
-    pub fn check(&self, work_root: &str) -> RunResult<CheckReport> {
-        wp_cli_core::knowdb::check(work_root).to_run_err("知识库检查失败")
+    pub fn check(&self, work_root: &str, dict: &orion_variate::EnvDict) -> RunResult<CheckReport> {
+        wp_cli_core::knowdb::check(work_root, dict).to_run_err("知识库检查失败")
     }
 
     /// 清理知识库数据
@@ -83,7 +84,9 @@ impl Component for Knowledge {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use orion_variate::EnvDict;
     use tempfile::tempdir;
+    use wp_conf::test_support::ForTest;
 
     #[test]
     fn knowledge_component_name() {
@@ -118,7 +121,7 @@ mod tests {
         kb.init(temp.path().to_str().unwrap()).unwrap();
 
         // 再检查
-        let report = kb.check(temp.path().to_str().unwrap()).unwrap();
+        let report = kb.check(temp.path().to_str().unwrap(), &EnvDict::test_default()).unwrap();
         assert!(report.total > 0, "应该有至少一个表");
         assert_eq!(report.ok, report.total, "所有表应该通过检查");
     }
@@ -148,7 +151,7 @@ mod tests {
         let kb = Knowledge::new();
 
         // 使用无效路径触发错误
-        let result = kb.check("/nonexistent/path/that/does/not/exist");
+        let result = kb.check("/nonexistent/path/that/does/not/exist", &EnvDict::test_default());
         assert!(result.is_err(), "应该返回 RunResult 错误");
 
         let err = result.unwrap_err();
