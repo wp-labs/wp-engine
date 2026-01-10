@@ -3,16 +3,17 @@ use crate::orchestrator::config::WPSRC_TOML;
 use crate::orchestrator::config::sources_types::{DataEncoding, FileSourceConf, SourceConfig};
 use orion_conf::ErrorWith;
 use orion_error::ErrorOwe;
+use orion_variate::EnvDict;
 use std::path::PathBuf;
 use wp_conf::engine::EngineConfig;
 use wp_error::run_error::RunResult;
 
 impl WarpConf {
     /// 加载源配置并构建所有已启用的源（仅解析，不连接）
-    pub fn load_source_config(&self) -> RunResult<Vec<SourceConfig>> {
+    pub fn load_source_config(&self, dict: &EnvDict) -> RunResult<Vec<SourceConfig>> {
         use crate::sources::config::SourceConfigParser;
 
-        let wp_conf = EngineConfig::load_or_init(self.work_root())
+        let wp_conf = EngineConfig::load_or_init(self.work_root(), dict)
             .owe_conf()?
             .conf_absolutize(self.work_root());
         let path = PathBuf::from(wp_conf.src_conf_of(WPSRC_TOML));

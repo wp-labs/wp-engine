@@ -1,7 +1,8 @@
 use super::warp::{WarpProject, normalize_work_root};
 use crate::utils::error_handler::ErrorHandler;
-use orion_conf::{ErrorOwe, ToStructError, TomlIO};
+use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError, TomlIO};
 use orion_error::{UvsConfFrom, UvsValidationFrom};
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use wp_conf::paths::{OUT_FILE_PATH, RESCURE_FILE_PATH, SRC_FILE_PATH};
@@ -96,9 +97,9 @@ impl WarpProject {
 
     pub(crate) fn load_components(&mut self, mode: PrjScope) -> RunResult<()> {
         if mode.enable_conf() {
-            let eng_conf = Self::load_engine_config_only(self.work_root_path())?;
+            let eng_conf = Self::load_engine_config_only(self.work_root_path(), &EnvDict::default())?;
             self.replace_engine_conf(eng_conf);
-            Self::load_wpgen_config_only(self.work_root_path())?;
+            Self::load_wpgen_config_only(self.work_root_path(), &EnvDict::default())?;
         }
         if mode.enable_connector() {
             self.connectors()
@@ -124,7 +125,7 @@ impl WarpProject {
 
         if mode.enable_conf() {
             // wparse/wpgen 主配置初始化（如不存在则复制示例文件）
-            let eng_conf = Self::init_engine_config(self.work_root_path())?;
+            let eng_conf = Self::init_engine_config(self.work_root_path(), &EnvDict::default())?;
             self.replace_engine_conf(eng_conf);
             Self::init_wpgen_config(self.work_root_path())?;
         }
@@ -137,7 +138,7 @@ impl WarpProject {
             // 输出接收器骨架初始化
             self.sinks_c().init()?;
             // 输入源和连接器补齐
-            self.sources_c().init()?;
+            self.sources_c().init(&EnvDict::default())?;
             // 知识库目录骨架初始化
         }
 
@@ -176,7 +177,7 @@ impl WarpProject {
     }
 
     /// 初始化 wparse 主配置（wparse.toml）
-    fn init_engine_config<P: AsRef<Path>>(work_root: P) -> RunResult<EngineConfig> {
+    fn init_engine_config<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> RunResult<EngineConfig> {
         use std::fs;
 
         let work_root = work_root.as_ref();
@@ -193,13 +194,16 @@ impl WarpProject {
                 eprintln!("Warning: Failed to write wparse.toml");
             }
         }
-        let conf = EngineConfig::load_toml(&engine_config_path)
+        let conf = EngineConfig::env_load_toml(&engine_config_path, dict)
             .owe_conf()?
             .conf_absolutize(&abs_root);
         Ok(conf)
     }
 
-    fn load_engine_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<EngineConfig> {
+    fn load_engine_config_only<P: AsRef<Path>>(
+        work_root: P,
+        dict: &EnvDict,
+    ) -> RunResult<EngineConfig> {
         let work_root = work_root.as_ref();
         let abs_root = normalize_work_root(work_root);
         let engine_config_path = abs_root.join(CONF_WPARSE_FILE);
@@ -210,13 +214,13 @@ impl WarpProject {
             ))
             .err_result();
         }
-        let conf = EngineConfig::load_toml(&engine_config_path)
+        let conf = EngineConfig::env_load_toml(&engine_config_path, dict)
             .owe_conf()?
             .conf_absolutize(&abs_root);
         Ok(conf)
     }
 
-    fn load_wpgen_config_only<P: AsRef<Path>>(work_root: P) -> RunResult<()> {
+    fn load_wpgen_config_only<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> RunResult<()> {
         let work_root = work_root.as_ref();
         let abs_root = normalize_work_root(work_root);
         let wpgen_config_path = abs_root.join(CONF_WPGEN_FILE);
@@ -227,7 +231,7 @@ impl WarpProject {
             ))
             .err_result();
         }
-        WpGenConfig::load_toml(&wpgen_config_path).owe_conf()?;
+        WpGenConfig::env_load_toml(&wpgen_config_path, dict).owe_conf()?;
         Ok(())
     }
 

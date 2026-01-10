@@ -19,7 +19,8 @@ async fn test_res() -> RunResult<()> {
 
     let (conf_manager, main_conf) = load_warp_engine_confs("./tests/instance")?;
 
-    let _data_src = conf_manager.load_source_config()?;
+    let dict = EnvDict::new();
+    let _data_src = conf_manager.load_source_config(&dict)?;
     let stat_reqs = stat_reqs_from(main_conf.stat_conf());
 
     let env_dict = EnvDict::new();

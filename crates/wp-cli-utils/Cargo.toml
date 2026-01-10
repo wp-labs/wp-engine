@@ -15,6 +15,7 @@ wp-data-fmt= { workspace=true }
 wp_conf = { package = "wp-config", path = "../wp-config" }
 chrono = { workspace = true }
 comfy-table = { workspace = true }
+orion-variate = { workspace = true }
 
 [lib]
 name = "wp_cli_utils"

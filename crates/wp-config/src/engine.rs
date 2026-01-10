@@ -1,5 +1,5 @@
-use orion_conf::{ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
-use orion_variate::EnvEvaluable;
+use orion_conf::{EnvTomlLoad, ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
+use orion_variate::{EnvDict, EnvEvaluable};
 use serde_derive::{Deserialize, Serialize};
 use std::{fs::create_dir_all, path::Path};
 use wp_error::error_handling::RobustnessMode;
@@ -278,11 +278,11 @@ impl EngineConfig {
         self
     }
 
-    pub fn load_or_init<P: AsRef<Path>>(work_root: P) -> OrionConfResult<Self> {
+    pub fn load_or_init<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> OrionConfResult<Self> {
         use crate::constants::ENGINE_CONF_FILE;
         let engine_conf_path = work_root.as_ref().join("conf").join(ENGINE_CONF_FILE);
         if engine_conf_path.exists() {
-            EngineConfig::load_toml(&engine_conf_path)
+            EngineConfig::env_load_toml(&engine_conf_path, dict)
         } else {
             if let Some(parent) = engine_conf_path.parent() {
                 create_dir_all(parent)
@@ -295,10 +295,10 @@ impl EngineConfig {
             Ok(conf)
         }
     }
-    pub fn load<P: AsRef<Path>>(work_root: P) -> OrionConfResult<Self> {
+    pub fn load<P: AsRef<Path>>(work_root: P, dict: &EnvDict) -> OrionConfResult<Self> {
         use crate::constants::ENGINE_CONF_FILE;
         let engine_conf_path = work_root.as_ref().join("conf").join(ENGINE_CONF_FILE);
-        EngineConfig::load_toml(&engine_conf_path)
+        EngineConfig::env_load_toml(&engine_conf_path, dict)
             .want("load engine config")
             .with(ENGINE_CONF_FILE)
     }

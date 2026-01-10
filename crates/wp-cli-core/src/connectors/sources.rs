@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
+use orion_conf::{EnvTomlLoad, TomlIO};
 use orion_error::{ToStructError, UvsValidationFrom};
 use orion_variate::{EnvDict, EnvEvalable};
 use wp_conf::connectors::{
@@ -39,7 +39,7 @@ fn resolve_wpsrc_path(work_root: &str, eng_conf: &EngineConfig) -> OrionConfResu
 
 /// Load connectors map from `connectors/source.d` (dedup and validate ids).
 fn load_connectors_map(base_dir: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
-    let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source)?;
+    let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source, &EnvDict::default())?;
     Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
 }
 
@@ -74,6 +74,7 @@ fn detail_of(_kind: &str, params: &ParamMap) -> String {
 pub fn list_connectors(
     work_root: &str,
     eng_conf: &EngineConfig,
+    dict: &EnvDict,
 ) -> OrionConfResult<Vec<ConnectorListRow>> {
     let wpsrc_path = resolve_wpsrc_path(work_root, eng_conf)?;
     let conn_base = find_connectors_dir(&wpsrc_path).ok_or_else(|| {
@@ -83,7 +84,7 @@ pub fn list_connectors(
         ))
     })?;
     let conn_map = load_connectors_map(&conn_base)?;
-    let wp_sources = WpSourcesConfig::load_toml(&wpsrc_path)?;
+    let wp_sources = WpSourcesConfig::env_load_toml(&wpsrc_path, dict)?;
 
     // Count how many times each connector id is referenced.
     let mut refs: BTreeMap<String, usize> = BTreeMap::new();
@@ -120,7 +121,7 @@ pub fn route_table(
         ))
     })?;
     let conn_map = load_connectors_map(&conn_base)?;
-    let wrapper = WpSourcesConfig::load_toml(&wpsrc_path)?.env_eval(dict);
+    let wrapper = WpSourcesConfig::env_load_toml(&wpsrc_path, dict)?.env_eval(dict);
     let mut rows: Vec<RouteRow> = Vec::new();
     for src in wrapper.sources.into_iter() {
         let conn = conn_map.get(&src.connect).ok_or_else(|| {
@@ -198,7 +199,8 @@ params_override = { path = "/x" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng).expect("list");
+        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng, &EnvDict::default())
+            .expect("list");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, "c1");
         assert_eq!(rows[0].refs, 2);

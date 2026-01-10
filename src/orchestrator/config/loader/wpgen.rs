@@ -1,8 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use orion_conf::EnvTomlLoad;
 use orion_conf::TomlIO;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
 use serde_json::json;
 use wp_conf::connectors::{ParamMap, param_value_from_toml};
 use wp_conf::sinks::ConnectorRec;
@@ -18,22 +20,30 @@ use wp_conf::engine::EngineConfig;
 
 impl WarpConf {
     /// 加载已解析的 wpgen 配置，包含 connector 解析
-    pub fn load_wpgen_config(&self, file_name: &str) -> OrionConfResult<WpGenResolved> {
-        let conf = self.parse_wpgen_config(file_name)?;
-        let out_sink = self.resolve_out_sink(&conf)?;
+    pub fn load_wpgen_config(
+        &self,
+        file_name: &str,
+        dict: &EnvDict,
+    ) -> OrionConfResult<WpGenResolved> {
+        let conf = self.parse_wpgen_config(file_name, dict)?;
+        let out_sink = self.resolve_out_sink(&conf, dict)?;
         Ok(WpGenResolved { conf, out_sink })
     }
 
     // 1) 解析 wpgen.toml 为 WpGenConfig 并做基本验证
-    fn parse_wpgen_config(&self, file_name: &str) -> OrionConfResult<WpGenConfig> {
+    fn parse_wpgen_config(&self, file_name: &str, dict: &EnvDict) -> OrionConfResult<WpGenConfig> {
         let path = self.config_path_string(file_name);
-        let conf = WpGenConfig::load_toml(&PathBuf::from(path.as_str()))?;
+        let conf = WpGenConfig::env_load_toml(&PathBuf::from(path.as_str()), dict)?;
         conf.validate()?;
         Ok(conf)
     }
 
     // 2) 根据是否指定 connect 选择默认文件输出或按 connectors 装配 out_sink
-    fn resolve_out_sink(&self, conf: &WpGenConfig) -> OrionConfResult<SinkInstanceConf> {
+    fn resolve_out_sink(
+        &self,
+        conf: &WpGenConfig,
+        dict: &EnvDict,
+    ) -> OrionConfResult<SinkInstanceConf> {
         // 统一 name 缺省（仅用于展示）；connect 必须显式指定（不提供默认回退）
         let out_name = conf
             .output
@@ -49,7 +59,7 @@ impl WarpConf {
                 .err_result();
             }
         };
-        let (_start_root, conn) = self.load_connector_by_id(&conn_id)?;
+        let (_start_root, conn) = self.load_connector_by_id(&conn_id, dict)?;
         let mut merged = Self::merge_params_with_whitelist(&conn, &conf.output.params, &conn_id)?;
         // 自动开启：当生成速率无限制（speed==0）且连接器类型为 tcp，且未显式设置 max_backoff/sendq_backoff/sendq_backpressure
         if conn.kind == "tcp" {
@@ -73,8 +83,12 @@ impl WarpConf {
     }
 
     // 2.1) 装载 connectors 并按 id 获取（带错误上下文）
-    fn load_connector_by_id(&self, conn_id: &str) -> OrionConfResult<(String, ConnectorRec)> {
-        let wp_conf = EngineConfig::load_or_init(self.work_root())
+    fn load_connector_by_id(
+        &self,
+        conn_id: &str,
+        dict: &EnvDict,
+    ) -> OrionConfResult<(String, ConnectorRec)> {
+        let wp_conf = EngineConfig::load_or_init(self.work_root(), dict)
             .owe_res()
             .with("load_or_init")?
             .conf_absolutize(self.work_root());
@@ -86,7 +100,7 @@ impl WarpConf {
             self.work_root().join(configured_path)
         };
         let start_root = resolved_root.to_string_lossy().to_string();
-        let connectors = load_connectors_for(&start_root)?;
+        let connectors = load_connectors_for(&start_root, dict)?;
         let conn = connectors.get(conn_id).cloned().ok_or_else(|| {
             let mut known: Vec<String> = connectors.keys().cloned().collect();
             known.sort();

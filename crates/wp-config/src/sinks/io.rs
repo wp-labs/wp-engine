@@ -1,6 +1,6 @@
 use super::types::*;
 use crate::connectors::load_connector_defs_from_dir;
-use orion_conf::TomlIO;
+use orion_conf::EnvTomlLoad;
 use orion_conf::error::OrionConfResult;
 use orion_error::ErrorWith;
 use orion_variate::{EnvDict, EnvEvalable};
@@ -20,10 +20,13 @@ pub fn find_connectors_base_dir(sink_root: &Path) -> Option<PathBuf> {
     crate::common::io_locate::find_connectors_base_dir(sink_root, PATH_SINK_SUBDIR)
 }
 
-pub fn load_connectors_for(sink_root: &str) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
+pub fn load_connectors_for(
+    sink_root: &str,
+    dict: &EnvDict,
+) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
     let mut map = BTreeMap::new();
     if let Some(dir) = find_connectors_base_dir(Path::new(sink_root)) {
-        for def in load_connector_defs_from_dir(&dir, ConnectorScope::Sink)? {
+        for def in load_connector_defs_from_dir(&dir, ConnectorScope::Sink, dict)? {
             map.insert(def.id.clone(), def);
         }
     }
@@ -59,7 +62,9 @@ pub fn load_route_files_from(dir: &Path, dict: &EnvDict) -> OrionConfResult<Vec<
 
     for fstr in uniq.into_iter() {
         let fp = Path::new(&fstr).to_path_buf();
-        let mut rf: RouteFile = RouteFile::load_toml(&fp).with(&fp)?.env_eval(dict);
+        let mut rf: RouteFile = RouteFile::env_load_toml(&fp, dict)
+            .with(&fp)?
+            .env_eval(dict);
         rf.origin = Some(fp.clone());
         out.push(rf);
     }
@@ -74,7 +79,7 @@ pub fn load_sink_defaults<P: AsRef<Path>>(
     if !p.exists() {
         return Ok(None);
     }
-    let f: super::types::DefaultsFile = DefaultsFile::load_toml(&p)?;
+    let f: super::types::DefaultsFile = DefaultsFile::env_load_toml(&p, _dict)?;
     Ok(Some(f.defaults))
 }
 

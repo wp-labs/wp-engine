@@ -159,6 +159,8 @@ mockall = { workspace = true }
 orion_overload= { path = "crates/orion_overload" }
 orion_exp = { path = "crates/orion_exp" }
 orion-sec  =  {workspace = true }
+orion-variate =  {workspace = true }
+
 
 # --- Internal: Configuration & Knowledge ---
 wp_conf = { package = "wp-config", path = "crates/wp-config" }
@@ -346,7 +348,7 @@ similar = "2.7"
 rust-crypto = "0.2"
 
 # --- Configuration ---
-orion_conf = { version = "0.3", features = ["yaml", "toml"] }
+orion_conf = { version = "0.4", features = ["yaml", "toml"] }
 orion-sec  = "0.3"
 orion-variate = "0.10"
 

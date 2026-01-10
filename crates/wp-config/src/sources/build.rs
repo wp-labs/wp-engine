@@ -70,7 +70,7 @@ pub fn load_source_instances_from_str(
         .owe_conf()
         .want("parse sources")?
         .env_eval(dict);
-    let cnn_dict = load_connectors_for(start)?;
+    let cnn_dict = load_connectors_for(start, dict)?;
     build_source_instances(src_conf, &cnn_dict)
 }
 
@@ -151,6 +151,7 @@ mod tests {
     use super::*;
     use crate::sources::{io, types};
     use orion_conf::UvsConfFrom;
+    use orion_variate::EnvDict;
     use serde_json::json;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -271,7 +272,7 @@ type = "dummy"
 "#,
         )
         .unwrap();
-        let e = io::load_connectors_for(&base)
+        let e = io::load_connectors_for(&base, &EnvDict::default())
             .expect_err("dup err")
             .to_string();
         assert!(e.contains("duplicate connector id"));

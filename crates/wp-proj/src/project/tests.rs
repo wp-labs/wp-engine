@@ -208,6 +208,7 @@ mod tests {
             init::PrjScope,
         },
     };
+    use orion_variate::EnvDict;
     use std::sync::Arc;
     use wp_conf::engine::EngineConfig;
 
@@ -223,7 +224,7 @@ mod tests {
 
         // load_main should succeed (engine config auto-initialized)
         assert!(wp_engine::facade::config::load_warp_engine_confs(&work).is_ok());
-        assert!(project.sources_c().check_sources_config().is_err());
+        assert!(project.sources_c().check_sources_config(&EnvDict::default()).is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.wpl().check()).is_err());
         assert!(check_to_result(project.oml().check()).is_ok());
@@ -247,6 +248,7 @@ mod tests {
         // 创建最小项目结构
         create_minimal_project_structure(&work);
         create_basic_wparse_config(&work);
+        let dict = EnvDict::default();
 
         let project = WarpProject::bare(&work);
 
@@ -263,7 +265,7 @@ mod tests {
 
         // 详细调试检查逻辑
         println!("DEBUG minimal - Calling check_sources...");
-        let sources_result = project.sources_c().check_sources_config();
+        let sources_result = project.sources_c().check_sources_config(&dict);
         println!("DEBUG minimal - check_sources result: {:?}", sources_result);
 
         // 检查 input_sources
@@ -308,7 +310,7 @@ mod tests {
         );
         println!(
             "Minimal structure - sources: {:?}",
-            project.sources_c().check_sources_config()
+            project.sources_c().check_sources_config(&dict)
         );
         println!(
             "Minimal structure - wpl: {:?}",
@@ -330,6 +332,7 @@ mod tests {
         create_basic_wpsrc_config(&work);
 
         let project = WarpProject::bare(&work);
+        let dict = EnvDict::default();
 
         // 配置和 sources 现在都应该通过
         assert!(
@@ -338,7 +341,7 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config().is_ok());
+        assert!(project.sources_c().check_sources_config(&dict).is_ok());
         // check_input_sources 在有连接器配置时应该通过
         assert!(check_to_result(project.sources_c().check()).is_ok());
 
@@ -365,7 +368,7 @@ mod tests {
         );
         println!(
             "With sources - sources: {:?}",
-            project.sources_c().check_sources_config()
+            project.sources_c().check_sources_config(&dict)
         );
         println!(
             "With sources - input_sources: {:?}",
@@ -389,6 +392,7 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
+        let dict = EnvDict::default();
         // 调试各个检查
         println!(
             "DEBUG with_wpl - check_config: {:?}",
@@ -398,7 +402,7 @@ mod tests {
         );
         println!(
             "DEBUG with_wpl - check_sources: {:?}",
-            project.sources_c().check_sources_config()
+            project.sources_c().check_sources_config(&dict)
         );
         println!(
             "DEBUG with_wpl - check_input_sources: {:?}",
@@ -431,7 +435,7 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config().is_ok());
+        assert!(project.sources_c().check_sources_config(&dict).is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
         assert!(check_to_result(project.wpl().check()).is_ok());
 
@@ -480,6 +484,7 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
+        let dict = EnvDict::default();
         // 所有检查都应该通过
         println!("DEBUG: Testing complete project checks");
         println!(
@@ -490,7 +495,7 @@ mod tests {
         );
         println!(
             "check_sources: {:?}",
-            project.sources_c().check_sources_config()
+            project.sources_c().check_sources_config(&dict)
         );
         println!(
             "check_input_sources: {:?}",
@@ -563,7 +568,7 @@ mod tests {
                 .is_ok()
         );
         // 注意：由于修复了检查逻辑，现在需要文件存在时才能通过
-        assert!(project.sources_c().check_sources_config().is_ok());
+        assert!(project.sources_c().check_sources_config(&dict).is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
         // WPL和OML也需要处理路径问题
         // assert!(check_to_result(project.wpl().check()).is_ok());
@@ -615,13 +620,14 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
+        let dict = EnvDict::default();
         // check_sources 现在应该失败，因为文件内容无效
-        assert!(project.sources_c().check_sources_config().is_err());
+        assert!(project.sources_c().check_sources_config(&dict).is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());
 
         println!(
             "Invalid sources - should fail: {:?}",
-            project.sources_c().check_sources_config()
+            project.sources_c().check_sources_config(&dict)
         );
 
         cleanup_test_dir(&work);

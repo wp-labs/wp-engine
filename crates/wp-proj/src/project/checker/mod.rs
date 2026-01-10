@@ -9,6 +9,7 @@ use super::{Cell, ConnectorCounts, Row, SourceBreakdown};
 use crate::types::CheckStatus;
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;
+use orion_variate::EnvDict;
 use wp_cli_core::connectors::{sinks as sink_connectors, sources as source_connectors};
 use wp_engine::facade::config::{self as cfg_face, ENGINE_CONF_FILE};
 use wp_error::run_error::RunResult;
@@ -103,7 +104,7 @@ fn evaluate_target(
     }
 
     if comps.sources {
-        let sources_parse = project.sources_c().check_sources_config().map(|_| ());
+        let sources_parse = project.sources_c().check_sources_config(&EnvDict::default()).map(|_| ());
         let sources_runtime = project
             .sources_c()
             .check()
@@ -382,7 +383,7 @@ pub fn check_with_default(project: &WarpProject, opts: &CheckOptions) -> RunResu
 fn collect_connector_counts(work_root: &str) -> Result<ConnectorCounts, String> {
     let (_cm, main) = cfg_face::load_warp_engine_confs(work_root).map_err(|e| e.to_string())?;
     let src_rows =
-        source_connectors::list_connectors(work_root, &main).map_err(|e| e.to_string())?;
+        source_connectors::list_connectors(work_root, &main, &EnvDict::default()).map_err(|e| e.to_string())?;
     let src_defs = src_rows.len();
     let src_refs: usize = src_rows.iter().map(|row| row.refs).sum();
 

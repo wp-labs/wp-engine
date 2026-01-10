@@ -1,6 +1,7 @@
 use crate::common::io_locate::find_connectors_base_dir as resolve_base;
 use crate::connectors::load_connector_defs_from_dir;
 use orion_conf::error::OrionConfResult;
+use orion_variate::EnvDict;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use wp_connector_api::ConnectorScope;
@@ -18,10 +19,13 @@ pub fn resolve_connectors_base_dir(start: &Path) -> Option<PathBuf> {
 }
 
 /// 加载 `connectors/source.d` 下的全部连接器（去重校验 id）
-pub fn load_connectors_for(start: &Path) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
+pub fn load_connectors_for(
+    start: &Path,
+    dict: &EnvDict,
+) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
     let mut map = BTreeMap::new();
     if let Some(dir) = find_connectors_dir(start) {
-        for def in load_connector_defs_from_dir(&dir, ConnectorScope::Source)? {
+        for def in load_connector_defs_from_dir(&dir, ConnectorScope::Source, dict)? {
             map.insert(def.id.clone(), def);
         }
     }

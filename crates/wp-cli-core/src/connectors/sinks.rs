@@ -306,7 +306,7 @@ pub fn load_connectors_map(work_root: &str) -> OrionConfResult<BTreeMap<String, 
 
 fn load_sink_connectors(start: &Path) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
     if let Some(dir) = find_connectors_base_dir(start) {
-        let defs = load_connector_defs_from_dir(&dir, ConnectorScope::Sink)?;
+        let defs = load_connector_defs_from_dir(&dir, ConnectorScope::Sink, &EnvDict::default())?;
         Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
     } else {
         Ok(BTreeMap::new())

@@ -10,6 +10,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use orion_variate::EnvDict;
 use wp_engine::facade::config::{WPGEN_TOML, WarpConf, build_sink_target};
 use wp_engine::facade::generator::{GenGRA, RuleGRA, load_gen_confs, rule_gen_run};
 
@@ -86,7 +87,7 @@ output = "stdout"
 
     // Act: assemble runtime target and run the generator
     let rt = cm
-        .load_wpgen_config(WPGEN_TOML)
+        .load_wpgen_config(WPGEN_TOML, &EnvDict::default())
         .expect("load wpgen resolved");
     let out_target = build_sink_target(&rt.out_sink, 0, 1, 0)
         .await
