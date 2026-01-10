@@ -1,8 +1,21 @@
 use chrono::Utc;
+#[allow(unused_imports)]
+use orion_variate::EnvDict;
 use std::env;
 use std::env::current_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+pub trait ForTest<T> {
+    fn test_default() -> T;
+}
+
+// 移除 #[cfg(test)] 限制，让其他 crate 的测试也能使用
+impl ForTest<EnvDict> for EnvDict {
+    fn test_default() -> Self {
+        EnvDict::default()
+    }
+}
 
 /// Resolve a deterministic target dir:
 /// - honors `CARGO_TARGET_TMPDIR` / `CARGO_TARGET_DIR`

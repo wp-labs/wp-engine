@@ -3,12 +3,12 @@
 //! This module provides functions for processing sink groups and
 //! collecting line count statistics.
 
+use crate::utils::fs::{count_lines_file, is_match, resolve_path};
+use crate::utils::types::{Ctx, GroupAccum, Row, SinkAccum};
 use anyhow::Result;
 use orion_variate::EnvDict;
 use std::path::Path;
 use wp_conf::sinks::{load_business_route_confs, load_infra_route_confs};
-use crate::utils::fs::{count_lines_file, is_match, resolve_path};
-use crate::utils::types::{Ctx, GroupAccum, Row, SinkAccum};
 
 /// Process a sink group and collect line count statistics
 pub fn process_group(
@@ -197,10 +197,7 @@ pub fn process_group_v2(
 ///
 /// # Returns
 /// A tuple of (rows, total) where rows contains per-sink statistics and total is the sum of all lines
-pub fn collect_sink_statistics(
-    sink_root: &Path,
-    ctx: &Ctx,
-) -> Result<(Vec<Row>, u64)> {
+pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, u64)> {
     // Validate that sink directories exist
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         anyhow::bail!(

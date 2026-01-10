@@ -76,7 +76,10 @@ impl Wpl {
         let sample_data = Self::get_sample_data();
 
         // Write all files using the initializer
-        initializer.write_files(&[("parse.wpl", example_wpl_content), ("sample.dat", sample_data)])?;
+        initializer.write_files(&[
+            ("parse.wpl", example_wpl_content),
+            ("sample.dat", sample_data),
+        ])?;
 
         println!("Created example WPL files:");
         println!("  - {:?}", wpl_dir.join("parse.wpl"));
@@ -137,7 +140,9 @@ impl Wpl {
         for fp in rules {
             let raw = std::fs::read_to_string(&fp).unwrap_or_default();
             if raw.trim().is_empty() {
-                return Err(RunReason::from_conf(format!("配置错误: WPL文件为空: {:?}", fp)).to_err());
+                return Err(
+                    RunReason::from_conf(format!("配置错误: WPL文件为空: {:?}", fp)).to_err(),
+                );
             }
             let code = WplCode::build(fp.clone(), raw.as_str()).map_err(|e| {
                 RunReason::from_conf(format!("build wpl failed: {:?}: {}", fp, e)).to_err()

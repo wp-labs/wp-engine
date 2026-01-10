@@ -6,7 +6,7 @@ use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::UvsValidationFrom;
 use orion_variate::{EnvDict, EnvEvalable};
 use wp_conf::connectors::{
-    ConnectorScope, ParamMap, load_connector_defs_from_dir, param_map_to_table, merge_params,
+    ConnectorScope, ParamMap, load_connector_defs_from_dir, merge_params, param_map_to_table,
 };
 use wp_conf::engine::EngineConfig;
 use wp_conf::sources::{SourceConnector, WpSourcesConfig, find_connectors_dir};

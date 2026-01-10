@@ -9,7 +9,7 @@ use wp_error::run_error::{RunReason, RunResult};
 
 use crate::traits::{Checkable, Component, ComponentBase, ComponentLifecycle, HasExamples};
 use crate::types::CheckStatus;
-use crate::utils::{error_handler::ErrorHandler, TemplateInitializer};
+use crate::utils::{TemplateInitializer, error_handler::ErrorHandler};
 
 #[derive(Clone)]
 pub struct Oml {
@@ -74,7 +74,10 @@ rule = "/example/*"
 "#;
 
         // Write all files using the initializer
-        initializer.write_files(&[("example.oml", example_oml_content), ("knowdb.toml", knowdb_content)])?;
+        initializer.write_files(&[
+            ("example.oml", example_oml_content),
+            ("knowdb.toml", knowdb_content),
+        ])?;
 
         println!("Created example OML files:");
         println!("  - {:?}", oml_dir.join("example.oml"));

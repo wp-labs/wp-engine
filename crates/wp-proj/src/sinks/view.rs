@@ -27,7 +27,10 @@ impl DisplayFormat {
     }
 }
 
-pub fn render_sink_list(rows: &[wp_cli_core::business::connectors::sinks::RouteRow], fmt: DisplayFormat) {
+pub fn render_sink_list(
+    rows: &[wp_cli_core::business::connectors::sinks::RouteRow],
+    fmt: DisplayFormat,
+) {
     match fmt {
         DisplayFormat::Json => {
             let items: Vec<_> = rows

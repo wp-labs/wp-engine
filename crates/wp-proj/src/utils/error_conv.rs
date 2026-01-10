@@ -29,7 +29,6 @@
 ///! # fn some_anyhow_function() -> anyhow::Result<()> { Ok(()) }
 ///! # fn some_config_function() -> Result<(), orion_error::StructError<orion_conf::error::ConfIOReason>> { Ok(()) }
 ///! ```
-
 use orion_error::{ToStructError, UvsConfFrom};
 use wp_error::run_error::{RunReason, RunResult};
 
@@ -125,8 +124,7 @@ mod tests {
         });
         assert_eq!(counter, 0, "成功时不应该调用闭包");
 
-        let err_result: Result<i32, io::Error> =
-            Err(io::Error::new(io::ErrorKind::Other, "error"));
+        let err_result: Result<i32, io::Error> = Err(io::Error::new(io::ErrorKind::Other, "error"));
         let run_result = err_result.to_run_err_with(|e| {
             counter += 1; // 应该执行
             format!("错误: {}", e)

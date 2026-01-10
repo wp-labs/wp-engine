@@ -2,9 +2,9 @@
 //!
 //! 提供统一的文件和目录操作接口，统一错误处理。
 
+use orion_error::{ToStructError, UvsConfFrom};
 use std::fs;
 use std::path::{Path, PathBuf};
-use orion_error::{ToStructError, UvsConfFrom};
 use wp_error::run_error::{RunReason, RunResult};
 
 use crate::utils::error_conv::ResultExt;
@@ -55,8 +55,7 @@ impl FsOps {
     /// ```
     pub fn read_to_string<P: AsRef<Path>>(path: P) -> RunResult<String> {
         let path = path.as_ref();
-        fs::read_to_string(path)
-            .to_run_err_with(|_| format!("读取文件失败: {}", path.display()))
+        fs::read_to_string(path).to_run_err_with(|_| format!("读取文件失败: {}", path.display()))
     }
 
     /// 安全写入文件内容
@@ -79,8 +78,7 @@ impl FsOps {
             Self::ensure_dir(parent)?;
         }
 
-        fs::write(path, content)
-            .to_run_err_with(|_| format!("写入文件失败: {}", path.display()))
+        fs::write(path, content).to_run_err_with(|_| format!("写入文件失败: {}", path.display()))
     }
 
     /// 安全写入文件（带备份）
@@ -138,16 +136,10 @@ impl FsOps {
         let entries = glob::glob(&search_pattern)
             .map_err(|e| RunReason::from_conf(format!("Glob 模式错误: {}", e)).to_err())?;
 
-        let mut files: Vec<PathBuf> = entries
-            .filter_map(Result::ok)
-            .collect();
+        let mut files: Vec<PathBuf> = entries.filter_map(Result::ok).collect();
 
         // 按修改时间排序
-        files.sort_by_key(|p| {
-            fs::metadata(p)
-                .and_then(|m| m.modified())
-                .ok()
-        });
+        files.sort_by_key(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
 
         Ok(files)
     }

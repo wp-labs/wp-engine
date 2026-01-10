@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use orion_error::{ToStructError, UvsConfFrom};
 use crate::connectors::{
     lint::lint_rows_from_root,
     templates::init_definitions,
@@ -8,6 +7,7 @@ use crate::connectors::{
 };
 use crate::traits::Component;
 use crate::types::CheckStatus;
+use orion_error::{ToStructError, UvsConfFrom};
 
 use super::paths::ConnectorsPaths;
 use wp_error::run_error::{RunReason, RunResult};

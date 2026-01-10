@@ -1,20 +1,13 @@
+use crate::utils::types::{Ctx, GroupAccum, Row};
 use anyhow::Result;
 use orion_variate::EnvDict;
 use std::path::Path;
-use crate::utils::types::{Ctx, Row, GroupAccum};
 
 // Use business layer function
 use crate::business::observability::process_group;
 
 /// Build groups and rows for sinks, used by validators. Caller supplies sink_root and ctx.
-pub fn build_groups_v2(
-    sink_root: &Path,
-    ctx: &Ctx,
-) -> Result<(
-    Vec<Row>,
-    Vec<GroupAccum>,
-    u64,
-)> {
+pub fn build_groups_v2(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, Vec<GroupAccum>, u64)> {
     let mut rows = Vec::new();
     let mut groups = Vec::new();
     let mut total = 0u64;

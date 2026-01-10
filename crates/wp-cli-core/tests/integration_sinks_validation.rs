@@ -101,7 +101,10 @@ params = { file = "output.txt" }
 
     let result = sinks::validate_routes(root.to_str().unwrap());
 
-    assert!(result.is_err(), "Configuration with both OML and RULE should fail");
+    assert!(
+        result.is_err(),
+        "Configuration with both OML and RULE should fail"
+    );
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("OML and RULE cannot be used together"),
@@ -149,7 +152,10 @@ params = { file = "output.txt" }
 
     let result = sinks::validate_routes(root.to_str().unwrap());
 
-    assert!(result.is_err(), "Invalid rule pattern should fail validation");
+    assert!(
+        result.is_err(),
+        "Invalid rule pattern should fail validation"
+    );
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("should start with '/'"),
@@ -234,7 +240,10 @@ fn test_route_table_with_filters() {
     // Test non-matching filter
     let result = sinks::route_table(root.to_str().unwrap(), &["nonexistent".to_string()], &[]);
     assert!(result.is_ok());
-    assert!(result.unwrap().is_empty(), "Non-matching filter should return empty");
+    assert!(
+        result.unwrap().is_empty(),
+        "Non-matching filter should return empty"
+    );
 
     // Test sink filter
     let result = sinks::route_table(root.to_str().unwrap(), &[], &["sink1".to_string()]);

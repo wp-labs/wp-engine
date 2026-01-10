@@ -254,8 +254,8 @@ fn to_sev(mode: &ExpectMode) -> Severity {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::super::types::{GroupAccum, SinkAccum};
+    use super::*;
     use wp_conf::structure::SinkExpectOverride;
     use wp_conf::structure::{Basis, GroupExpectSpec};
 

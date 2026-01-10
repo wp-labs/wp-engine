@@ -94,10 +94,7 @@ mod tests {
 
         let merged = result.unwrap();
         assert_eq!(merged.len(), 3);
-        assert_eq!(
-            merged.get("fmt").and_then(|v| v.as_str()),
-            Some("json")
-        );
+        assert_eq!(merged.get("fmt").and_then(|v| v.as_str()), Some("json"));
         assert_eq!(
             merged.get("path").and_then(|v| v.as_str()),
             Some("/data/test.log")

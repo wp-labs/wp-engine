@@ -10,5 +10,7 @@ pub use super::connectors::{Connectors, ProjectPaths};
 pub use super::models::{Oml, Wpl};
 pub use super::sinks::Sinks;
 pub use super::sources::Sources;
-pub use checker::{Cell, CheckComponent, CheckComponents, CheckOptions, ConnectorCounts, Row, SourceBreakdown};
+pub use checker::{
+    Cell, CheckComponent, CheckComponents, CheckOptions, ConnectorCounts, Row, SourceBreakdown,
+};
 pub use warp::WarpProject;

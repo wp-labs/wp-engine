@@ -97,12 +97,7 @@ impl crate::loader::traits::ConfigLoader for SyslogSinkConf {
 
     fn load_from_str(content: &str, _base: &Path, _dict: &EnvDict) -> OrionConfResult<Self> {
         let conf: SyslogSinkConf = toml::from_str(content)
-            .map_err(|e| {
-                ConfIOReason::from_validation(format!(
-                    "TOML 解析失败: {}",
-                    e
-                )).to_err()
-            })?;
+            .map_err(|e| ConfIOReason::from_validation(format!("TOML 解析失败: {}", e)).to_err())?;
 
         Ok(conf)
     }
@@ -117,12 +112,7 @@ impl crate::loader::traits::ConfigLoader for SyslogSourceConf {
 
     fn load_from_str(content: &str, _base: &Path, _dict: &EnvDict) -> OrionConfResult<Self> {
         let conf: SyslogSourceConf = toml::from_str(content)
-            .map_err(|e| {
-                ConfIOReason::from_validation(format!(
-                    "TOML 解析失败: {}",
-                    e
-                )).to_err()
-            })?;
+            .map_err(|e| ConfIOReason::from_validation(format!("TOML 解析失败: {}", e)).to_err())?;
 
         Ok(conf)
     }
@@ -136,6 +126,7 @@ impl crate::loader::traits::ConfigLoader for SyslogSourceConf {
 mod tests {
     use super::*;
     use crate::loader::traits::ConfigLoader;
+    use crate::test_support::ForTest;
 
     #[test]
     fn config_loader_syslog_sink_from_str() {
@@ -144,7 +135,7 @@ addr = "192.168.1.1"
 port = 514
 protocol = "udp"
 "#;
-        let result = SyslogSinkConf::load_from_str(toml, Path::new("/"), &EnvDict::default());
+        let result = SyslogSinkConf::load_from_str(toml, Path::new("/"), &EnvDict::test_default());
 
         assert!(result.is_ok(), "Failed: {:?}", result.err());
         let conf = result.unwrap();
@@ -154,18 +145,22 @@ protocol = "udp"
 
     #[test]
     fn config_loader_syslog_sink_from_path() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let mut file = NamedTempFile::new().unwrap();
-        writeln!(file, r#"
+        writeln!(
+            file,
+            r#"
 addr = "10.0.0.1"
 port = 1514
 protocol = "tcp"
 app_name = "test_app"
-"#).unwrap();
+"#
+        )
+        .unwrap();
 
-        let result = SyslogSinkConf::load_from_path(file.path(), &EnvDict::default());
+        let result = SyslogSinkConf::load_from_path(file.path(), &EnvDict::test_default());
 
         assert!(result.is_ok(), "Failed: {:?}", result.err());
         let conf = result.unwrap();
@@ -183,7 +178,7 @@ port = 514
 protocol = "udp"
 enable = true
 "#;
-        let result = SyslogSourceConf::load_from_str(toml, Path::new("/"), &EnvDict::default());
+        let result = SyslogSourceConf::load_from_str(toml, Path::new("/"), &EnvDict::test_default());
 
         assert!(result.is_ok(), "Failed: {:?}", result.err());
         let conf = result.unwrap();
@@ -194,19 +189,23 @@ enable = true
 
     #[test]
     fn config_loader_syslog_source_validation() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let mut file = NamedTempFile::new().unwrap();
-        writeln!(file, r#"
+        writeln!(
+            file,
+            r#"
 key = "test"
 addr = ""
 port = 0
 protocol = "udp"
 enable = true
-"#).unwrap();
+"#
+        )
+        .unwrap();
 
-        let result = SyslogSourceConf::load_from_path(file.path(), &EnvDict::default());
+        let result = SyslogSourceConf::load_from_path(file.path(), &EnvDict::test_default());
 
         assert!(result.is_err(), "无效配置应该验证失败");
     }

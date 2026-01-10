@@ -3,12 +3,12 @@
 //! This module provides business logic for analyzing source configurations
 //! and counting lines in source files.
 
+use crate::utils::fs::{count_lines_file, resolve_path};
 use orion_variate::EnvDict;
 use std::collections::BTreeMap;
 use std::path::Path;
-use wp_conf::connectors::{ParamMap, param_value_from_toml, merge_params};
+use wp_conf::connectors::{ParamMap, merge_params, param_value_from_toml};
 use wp_conf::engine::EngineConfig;
-use crate::utils::fs::{count_lines_file, resolve_path};
 
 // Re-export types from wpcnt_lib for convenience
 pub use crate::utils::types::{Ctx, SrcLineItem, SrcLineReport};
@@ -75,8 +75,9 @@ pub fn total_input_from_wpsrc(
                             .cloned()
                             .unwrap_or_default();
                         let ov_map = toml_table_to_param_map(&ov);
-                        let merged = merge_params(&conn.default_params, &ov_map, &conn.allow_override)
-                            .unwrap_or_else(|_| conn.default_params.clone());
+                        let merged =
+                            merge_params(&conn.default_params, &ov_map, &conn.allow_override)
+                                .unwrap_or_else(|_| conn.default_params.clone());
 
                         // 支持 path 或 base+file 两种写法
                         let maybe_path = merged

@@ -13,12 +13,15 @@ use wp_error::run_error::RunResult;
 use wp_stat::StatStage;
 
 #[tokio::test(flavor = "multi_thread")]
+#[cfg(test)]
 async fn test_res() -> RunResult<()> {
     // Ensure built-in sinks are registered for Factory path (file/null/test_rescue)
+
+    use wp_conf::test_support::ForTest;
     crate::sinks::register_builtin_sinks();
 
     let (conf_manager, main_conf) =
-        load_warp_engine_confs("./tests/instance", &EnvDict::default())?;
+        load_warp_engine_confs("./tests/instance", &EnvDict::test_default())?;
 
     let dict = EnvDict::new();
     let _data_src = conf_manager.load_source_config(&dict)?;

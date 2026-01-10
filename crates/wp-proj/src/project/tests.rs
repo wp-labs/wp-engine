@@ -251,7 +251,6 @@ mod tests {
         // 创建最小项目结构
         create_minimal_project_structure(&work);
         create_basic_wparse_config(&work);
-        let dict = EnvDict::default();
 
         let project = WarpProject::bare(&work);
 
@@ -344,7 +343,6 @@ mod tests {
         create_basic_wpsrc_config(&work);
 
         let project = WarpProject::bare(&work);
-        let dict = EnvDict::default();
 
         // 配置和 sources 现在都应该通过
         assert!(
@@ -404,7 +402,6 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
-        let dict = EnvDict::default();
         // 调试各个检查
         println!(
             "DEBUG with_wpl - check_config: {:?}",
@@ -500,7 +497,6 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
-        let dict = EnvDict::default();
         // 所有检查都应该通过
         println!("DEBUG: Testing complete project checks");
         println!(
@@ -639,7 +635,6 @@ mod tests {
 
         let project = WarpProject::bare(&work);
 
-        let dict = EnvDict::default();
         // check_sources 现在应该失败，因为文件内容无效
         assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());

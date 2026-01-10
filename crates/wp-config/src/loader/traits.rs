@@ -32,10 +32,10 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
-use std::path::Path;
-use orion_variate::EnvDict;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
+use std::path::Path;
 
 /// 统一的配置加载接口
 ///
@@ -75,15 +75,15 @@ pub trait ConfigLoader: Sized {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     fn load_from_path(path: &Path, dict: &EnvDict) -> OrionConfResult<Self> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| {
-                ConfIOReason::from_validation(format!(
-                    "无法读取 {} 配置文件 {:?}: {}",
-                    Self::config_type_name(),
-                    path,
-                    e
-                )).to_err()
-            })?;
+        let content = std::fs::read_to_string(path).map_err(|e| {
+            ConfIOReason::from_validation(format!(
+                "无法读取 {} 配置文件 {:?}: {}",
+                Self::config_type_name(),
+                path,
+                e
+            ))
+            .to_err()
+        })?;
 
         let base = path.parent().unwrap_or_else(|| Path::new("."));
         let config = Self::load_from_str(&content, base, dict)?;
@@ -143,6 +143,7 @@ pub trait ConfigLoader: Sized {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::ForTest;
 
     // 用于测试的简单配置类型
     struct TestConfig {
@@ -170,13 +171,13 @@ mod tests {
 
     #[test]
     fn config_loader_load_from_path_reads_file() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "test content").unwrap();
 
-        let result = TestConfig::load_from_path(file.path(), &EnvDict::default());
+        let result = TestConfig::load_from_path(file.path(), &EnvDict::test_default());
         assert!(result.is_ok(), "应该成功加载");
     }
 
@@ -200,23 +201,21 @@ mod tests {
             }
         }
 
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "content").unwrap();
 
-        let result = InvalidConfig::load_from_path(file.path(), &EnvDict::default());
+        let result = InvalidConfig::load_from_path(file.path(), &EnvDict::test_default());
         assert!(result.is_err(), "验证失败应该返回错误");
         assert!(result.unwrap_err().to_string().contains("验证失败"));
     }
 
     #[test]
     fn config_loader_error_on_missing_file() {
-        let result = TestConfig::load_from_path(
-            Path::new("/nonexistent/file.toml"),
-            &EnvDict::default(),
-        );
+        let result =
+            TestConfig::load_from_path(Path::new("/nonexistent/file.toml"), &EnvDict::test_default());
         assert!(result.is_err(), "不存在的文件应该返回错误");
     }
 }

@@ -20,10 +20,10 @@
 //! ```
 
 use super::traits::ConfigLoader;
-use std::path::{Path, PathBuf};
-use orion_variate::EnvDict;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ToStructError, UvsValidationFrom};
+use orion_variate::EnvDict;
+use std::path::{Path, PathBuf};
 
 /// 从目录加载所有匹配模式的配置文件
 ///
@@ -66,25 +66,18 @@ pub fn load_all_from_dir<T: ConfigLoader>(
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<T>> {
     if !dir.exists() {
-        return Err(ConfIOReason::from_validation(format!(
-            "目录不存在: {:?}",
-            dir
-        )).to_err());
+        return Err(ConfIOReason::from_validation(format!("目录不存在: {:?}", dir)).to_err());
     }
 
     if !dir.is_dir() {
-        return Err(ConfIOReason::from_validation(format!(
-            "路径不是目录: {:?}",
-            dir
-        )).to_err());
+        return Err(ConfIOReason::from_validation(format!("路径不是目录: {:?}", dir)).to_err());
     }
 
     let mut configs = Vec::new();
 
-    let entries = std::fs::read_dir(dir)
-        .map_err(|e| {
-            ConfIOReason::from_validation(format!("无法读取目录 {:?}: {}", dir, e)).to_err()
-        })?;
+    let entries = std::fs::read_dir(dir).map_err(|e| {
+        ConfIOReason::from_validation(format!("无法读取目录 {:?}: {}", dir, e)).to_err()
+    })?;
 
     for entry in entries {
         let entry: std::fs::DirEntry = entry.map_err(|e| {
@@ -172,8 +165,9 @@ fn matches_pattern(path: &Path, pattern: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
+    use crate::test_support::ForTest;
     use std::fs;
+    use tempfile::tempdir;
 
     // 测试用的简单配置类型
     struct TestConfig {
@@ -201,12 +195,8 @@ mod tests {
         fs::write(temp.path().join("b.toml"), "config_b").unwrap();
         fs::write(temp.path().join("c.txt"), "ignored").unwrap();
 
-        let configs = load_all_from_dir::<TestConfig>(
-            temp.path(),
-            "*.toml",
-            &EnvDict::default(),
-        )
-        .unwrap();
+        let configs =
+            load_all_from_dir::<TestConfig>(temp.path(), "*.toml", &EnvDict::test_default()).unwrap();
 
         assert_eq!(configs.len(), 2, "应该加载 2 个 .toml 文件");
     }
@@ -216,7 +206,7 @@ mod tests {
         let result = load_all_from_dir::<TestConfig>(
             Path::new("/nonexistent/directory"),
             "*.toml",
-            &EnvDict::default(),
+            &EnvDict::test_default(),
         );
 
         assert!(result.is_err(), "不存在的目录应该返回错误");
@@ -233,7 +223,7 @@ mod tests {
         fs::write(&path2, "config2").unwrap();
 
         let paths = vec![path1, path2];
-        let configs = load_from_paths::<TestConfig>(&paths, &EnvDict::default()).unwrap();
+        let configs = load_from_paths::<TestConfig>(&paths, &EnvDict::test_default()).unwrap();
 
         assert_eq!(configs.len(), 2, "应该加载 2 个配置");
         assert_eq!(configs[0].name, "config1");

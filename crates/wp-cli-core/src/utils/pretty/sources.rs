@@ -1,7 +1,7 @@
+use super::super::types::SrcLineReport;
 use comfy_table::{
     Cell, CellAlignment, ContentArrangement, Row as CRow, Table, presets::ASCII_MARKDOWN,
 };
-use super::super::types::SrcLineReport;
 
 /// Print file sources (from wpsrc) in table form.
 /// Columns: Key | Enabled | Lines | Path | Error
@@ -34,8 +34,8 @@ pub fn print_src_files_table(rep: &SrcLineReport) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::super::types::{SrcLineItem, SrcLineReport};
+    use super::*;
 
     #[test]
     fn print_sources_table_does_not_panic() {

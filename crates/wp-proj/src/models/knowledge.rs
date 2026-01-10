@@ -1,6 +1,6 @@
-use wp_error::run_error::RunResult;
 use crate::traits::Component;
 use crate::utils::error_conv::ResultExt;
+use wp_error::run_error::RunResult;
 
 // 重新导出 wp-cli-core 的类型，保持向后兼容
 pub use wp_cli_core::knowdb::{CheckReport, CleanReport, TableCheck};
@@ -37,8 +37,7 @@ impl Knowledge {
     /// # Ok::<(), wp_error::run_error::RunError>(())
     /// ```
     pub fn init(&self, work_root: &str) -> RunResult<()> {
-        wp_cli_core::knowdb::init(work_root, false)
-            .to_run_err("知识库初始化失败")
+        wp_cli_core::knowdb::init(work_root, false).to_run_err("知识库初始化失败")
     }
 
     /// 检查知识库状态
@@ -55,8 +54,7 @@ impl Knowledge {
     /// - fail: 未通过检查的表数
     /// - tables: 每个表的详细检查结果
     pub fn check(&self, work_root: &str) -> RunResult<CheckReport> {
-        wp_cli_core::knowdb::check(work_root)
-            .to_run_err("知识库检查失败")
+        wp_cli_core::knowdb::check(work_root).to_run_err("知识库检查失败")
     }
 
     /// 清理知识库数据
@@ -72,8 +70,7 @@ impl Knowledge {
     /// - removed_authority_cache: 是否删除了权威缓存
     /// - not_found_models: models 目录是否不存在
     pub fn clean(&self, work_root: &str) -> RunResult<CleanReport> {
-        wp_cli_core::knowdb::clean(work_root)
-            .to_run_err("知识库清理失败")
+        wp_cli_core::knowdb::clean(work_root).to_run_err("知识库清理失败")
     }
 }
 
@@ -105,7 +102,10 @@ mod tests {
         // 验证目录和文件已创建
         let models_dir = temp.path().join("models/knowledge");
         assert!(models_dir.exists(), "models/knowledge 目录应该存在");
-        assert!(models_dir.join("knowdb.toml").exists(), "knowdb.toml 应该存在");
+        assert!(
+            models_dir.join("knowdb.toml").exists(),
+            "knowdb.toml 应该存在"
+        );
         assert!(models_dir.join("example").exists(), "example 目录应该存在");
     }
 

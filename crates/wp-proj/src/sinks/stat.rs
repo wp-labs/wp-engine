@@ -2,9 +2,9 @@ use std::path::{Path, PathBuf};
 
 use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
+use wp_cli_core as wlib;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
-use wp_cli_core as wlib;
 
 pub struct SinkStatFilters<'a> {
     pub work_root: &'a str,

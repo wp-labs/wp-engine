@@ -211,10 +211,7 @@ mod tests {
         let base = ComponentBase::new("/tmp/test", eng_conf);
 
         let resolved = base.resolve_path("config/app.toml");
-        assert_eq!(
-            resolved.to_str().unwrap(),
-            "/tmp/test/config/app.toml"
-        );
+        assert_eq!(resolved.to_str().unwrap(), "/tmp/test/config/app.toml");
     }
 
     #[test]

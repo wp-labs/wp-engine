@@ -65,12 +65,7 @@ impl crate::loader::traits::ConfigLoader for FileSinkConf {
     fn load_from_str(content: &str, _base: &Path, _dict: &EnvDict) -> OrionConfResult<Self> {
         // FileSinkConf 是一个简单的结构，直接从 TOML 解析即可
         let conf: FileSinkConf = toml::from_str(content)
-            .map_err(|e| {
-                ConfIOReason::from_validation(format!(
-                    "TOML 解析失败: {}",
-                    e
-                )).to_err()
-            })?;
+            .map_err(|e| ConfIOReason::from_validation(format!("TOML 解析失败: {}", e)).to_err())?;
 
         Ok(conf)
     }
@@ -85,11 +80,12 @@ impl crate::loader::traits::ConfigLoader for FileSinkConf {
 mod tests {
     use super::*;
     use crate::loader::traits::ConfigLoader;
+    use crate::test_support::ForTest;
 
     #[test]
     fn config_loader_file_sink_from_str() {
         let toml = r#"path = "/tmp/output.dat""#;
-        let result = FileSinkConf::load_from_str(toml, Path::new("/"), &EnvDict::default());
+        let result = FileSinkConf::load_from_str(toml, Path::new("/"), &EnvDict::test_default());
 
         assert!(result.is_ok());
         let conf = result.unwrap();
@@ -98,13 +94,13 @@ mod tests {
 
     #[test]
     fn config_loader_file_sink_from_path() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, r#"path = "/var/log/test.log""#).unwrap();
 
-        let result = FileSinkConf::load_from_path(file.path(), &EnvDict::default());
+        let result = FileSinkConf::load_from_path(file.path(), &EnvDict::test_default());
 
         assert!(result.is_ok());
         let conf = result.unwrap();
@@ -115,12 +111,12 @@ mod tests {
     fn config_loader_file_sink_validation() {
         let invalid_toml = r#"path = """#;
 
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "{}", invalid_toml).unwrap();
 
-        let result = FileSinkConf::load_from_path(file.path(), &EnvDict::default());
+        let result = FileSinkConf::load_from_path(file.path(), &EnvDict::test_default());
 
         assert!(result.is_err(), "空路径应该验证失败");
     }

@@ -1,8 +1,8 @@
 use super::types::WpSourcesConfig;
+use crate::loader::traits::ConfigLoader;
 use crate::sources::load_connectors_for;
 use crate::sources::types::SourceConnector;
 use crate::structure::{SourceInstanceConf, Validate};
-use crate::loader::traits::ConfigLoader;
 use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
@@ -181,7 +181,10 @@ impl ConfigLoader for Vec<SourceInstanceConf> {
 }
 
 // 保留原有函数作为兼容层
-#[deprecated(since = "1.8.0", note = "请使用 Vec::<SourceInstanceConf>::load_from_str()")]
+#[deprecated(
+    since = "1.8.0",
+    note = "请使用 Vec::<SourceInstanceConf>::load_from_str()"
+)]
 pub fn load_sources_from_str_deprecated(
     config_str: &str,
     start: &Path,
@@ -194,6 +197,7 @@ pub fn load_sources_from_str_deprecated(
 mod tests {
     use super::*;
     use crate::sources::{io, types};
+    use crate::test_support::ForTest;
     use orion_conf::UvsConfFrom;
     use orion_variate::EnvDict;
     use serde_json::json;
@@ -316,7 +320,7 @@ type = "dummy"
 "#,
         )
         .unwrap();
-        let e = io::load_connectors_for(&base, &EnvDict::default())
+        let e = io::load_connectors_for(&base, &EnvDict::test_default())
             .expect_err("dup err")
             .to_string();
         assert!(e.contains("duplicate connector id"));
@@ -423,11 +427,8 @@ connect = "dummy_conn"
 a = "custom_a"
 "#;
 
-        let result = Vec::<SourceInstanceConf>::load_from_str(
-            sources_toml,
-            &base,
-            &EnvDict::default(),
-        );
+        let result =
+            Vec::<SourceInstanceConf>::load_from_str(sources_toml, &base, &EnvDict::test_default());
 
         assert!(result.is_ok(), "应该成功加载");
         let sources = result.unwrap();
@@ -467,7 +468,7 @@ connect = "conn1"
         .unwrap();
 
         // 使用 load_from_path
-        let result = Vec::<SourceInstanceConf>::load_from_path(&sources_file, &EnvDict::default());
+        let result = Vec::<SourceInstanceConf>::load_from_path(&sources_file, &EnvDict::test_default());
 
         assert!(result.is_ok(), "load_from_path 应该成功");
         let sources = result.unwrap();
@@ -506,13 +507,9 @@ connect = "conn1"
         .unwrap();
 
         // 使用 load_from_path（会自动调用验证）
-        let result = Vec::<SourceInstanceConf>::load_from_path(
-            &invalid_file,
-            &EnvDict::default(),
-        );
+        let result = Vec::<SourceInstanceConf>::load_from_path(&invalid_file, &EnvDict::test_default());
 
         // 应该验证失败
         assert!(result.is_err(), "空 name 应该验证失败");
     }
 }
-

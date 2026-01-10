@@ -93,7 +93,6 @@ impl Sources {
         Ok(CheckStatus::Suc)
     }
 
-
     pub fn init(&self, dict: &EnvDict) -> RunResult<()> {
         let wpsrc_dir = self.sources_root();
         let wpsrc_path = wpsrc_dir.join(WPSRC_TOML);
@@ -141,7 +140,6 @@ impl Sources {
 
         Ok(())
     }
-
 
     /// Builds source specifications for validation
     fn build_source_specs(&self, wpsrc_path: &Path) -> RunResult<()> {

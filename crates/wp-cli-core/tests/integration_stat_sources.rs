@@ -3,9 +3,9 @@
 // This test ensures that the source file statistics collection works
 // correctly across the full call chain.
 
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::{Path, PathBuf};
-use orion_variate::EnvDict;
 use tempfile::TempDir;
 use wp_cli_core::Ctx;
 use wp_cli_core::list_file_sources_with_lines;
@@ -62,7 +62,11 @@ params_override = { path = "disabled.log" }
 
     // Create test data files
     fs::write(root.join("test_data1.log"), "line1\nline2\nline3\n").unwrap();
-    fs::write(root.join("test_data2.log"), "line1\nline2\nline3\nline4\nline5\n").unwrap();
+    fs::write(
+        root.join("test_data2.log"),
+        "line1\nline2\nline3\nline4\nline5\n",
+    )
+    .unwrap();
     fs::write(root.join("disabled.log"), "should_not_count\n").unwrap();
 
     (temp, root)
@@ -75,17 +79,17 @@ fn test_stat_src_file_counts_all_enabled_sources() {
     let dict = EnvDict::new();
     let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let report = list_file_sources_with_lines(
-        Path::new(root.to_str().unwrap()),
-        &eng_conf,
-        &ctx,
-        &dict,
-    );
+    let report =
+        list_file_sources_with_lines(Path::new(root.to_str().unwrap()), &eng_conf, &ctx, &dict);
 
     assert!(report.is_some(), "Should return a report");
 
     let report = report.unwrap();
-    assert_eq!(report.items.len(), 3, "Should have 3 items (2 enabled + 1 disabled)");
+    assert_eq!(
+        report.items.len(),
+        3,
+        "Should have 3 items (2 enabled + 1 disabled)"
+    );
 
     // Find enabled sources
     let enabled_items: Vec<_> = report.items.iter().filter(|i| i.enabled).collect();
@@ -105,24 +109,33 @@ fn test_stat_src_file_individual_source_counts() {
     let dict = EnvDict::new();
     let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let report = list_file_sources_with_lines(
-        Path::new(root.to_str().unwrap()),
-        &eng_conf,
-        &ctx,
-        &dict,
-    ).unwrap();
+    let report =
+        list_file_sources_with_lines(Path::new(root.to_str().unwrap()), &eng_conf, &ctx, &dict)
+            .unwrap();
 
     // Check individual source counts
-    let source1 = report.items.iter().find(|i| i.key == "test_source_1").unwrap();
+    let source1 = report
+        .items
+        .iter()
+        .find(|i| i.key == "test_source_1")
+        .unwrap();
     assert_eq!(source1.lines, Some(3), "test_source_1 should have 3 lines");
     assert!(source1.enabled);
     assert!(source1.error.is_none());
 
-    let source2 = report.items.iter().find(|i| i.key == "test_source_2").unwrap();
+    let source2 = report
+        .items
+        .iter()
+        .find(|i| i.key == "test_source_2")
+        .unwrap();
     assert_eq!(source2.lines, Some(5), "test_source_2 should have 5 lines");
     assert!(source2.enabled);
 
-    let disabled = report.items.iter().find(|i| i.key == "disabled_source").unwrap();
+    let disabled = report
+        .items
+        .iter()
+        .find(|i| i.key == "disabled_source")
+        .unwrap();
     assert!(!disabled.enabled, "disabled_source should be disabled");
     assert_eq!(disabled.lines, None, "Disabled source lines should be None");
 }
@@ -162,18 +175,20 @@ params_override = { path = "nonexistent.log" }
     let dict = EnvDict::new();
     let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let report = list_file_sources_with_lines(
-        Path::new(root.to_str().unwrap()),
-        &eng_conf,
-        &ctx,
-        &dict,
-    );
+    let report =
+        list_file_sources_with_lines(Path::new(root.to_str().unwrap()), &eng_conf, &ctx, &dict);
 
-    assert!(report.is_some(), "Should return a report even when file is missing");
+    assert!(
+        report.is_some(),
+        "Should return a report even when file is missing"
+    );
     let report = report.unwrap();
 
     assert_eq!(report.items.len(), 1);
-    assert_eq!(report.items[0].lines, None, "Missing file should have None lines");
+    assert_eq!(
+        report.items[0].lines, None,
+        "Missing file should have None lines"
+    );
     assert!(report.items[0].error.is_some(), "Should have error message");
 }
 
@@ -216,17 +231,17 @@ params_override = { base = "data", file = "test.log" }
     let dict = EnvDict::new();
     let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let report = list_file_sources_with_lines(
-        Path::new(root.to_str().unwrap()),
-        &eng_conf,
-        &ctx,
-        &dict,
-    );
+    let report =
+        list_file_sources_with_lines(Path::new(root.to_str().unwrap()), &eng_conf, &ctx, &dict);
 
     assert!(report.is_some());
     let report = report.unwrap();
 
-    assert_eq!(report.items[0].lines, Some(2), "Should count lines from base+file path");
+    assert_eq!(
+        report.items[0].lines,
+        Some(2),
+        "Should count lines from base+file path"
+    );
     assert!(report.items[0].path.contains("data"));
     assert!(report.items[0].path.contains("test.log"));
 }
@@ -246,12 +261,8 @@ fn test_stat_src_file_with_empty_wpsrc() {
     let dict = EnvDict::new();
     let ctx = Ctx::new(root.to_string_lossy().to_string());
 
-    let report = list_file_sources_with_lines(
-        Path::new(root.to_str().unwrap()),
-        &eng_conf,
-        &ctx,
-        &dict,
-    );
+    let report =
+        list_file_sources_with_lines(Path::new(root.to_str().unwrap()), &eng_conf, &ctx, &dict);
 
     // Should either return None or empty report
     if let Some(report) = report {
