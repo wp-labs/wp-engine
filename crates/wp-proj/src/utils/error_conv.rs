@@ -53,6 +53,7 @@ pub trait ResultExt<T, E> {
     /// 将 Result 转换为 RunResult，使用闭包生成上下文（延迟求值）
     ///
     /// 当上下文信息的构建成本较高时使用，只有在错误发生时才会调用闭包。
+    /// 闭包接收错误对象的引用作为参数。
     ///
     /// # 示例
     /// ```no_run
@@ -60,7 +61,7 @@ pub trait ResultExt<T, E> {
     /// # use wp_error::run_error::RunResult;
     /// fn process_item(id: i32) -> RunResult<()> {
     ///     expensive_operation(id)
-    ///         .to_run_err_with(|| format!("处理项目 {} 失败", id))
+    ///         .to_run_err_with(|e| format!("处理项目 {} 失败: {}", id, e))
     /// }
     /// # fn expensive_operation(id: i32) -> Result<(), std::io::Error> { Ok(()) }
     /// ```
