@@ -105,7 +105,7 @@ impl WarpProject {
         if mode.enable_connector() {
             self.connectors()
                 .check(self.work_root())
-                .map_err(|e| RunReason::from_conf(e).to_err())?;
+                .map(|_| ())?;
         }
         if mode.enable_topology() {
             self.sinks_c().check()?;

@@ -110,28 +110,18 @@ fn evaluate_target(
     }
 
     if comps.sources {
-        let sources_parse = project
-            .sources_c()
-            .check_sources_config(&EnvDict::default())
-            .map(|_| ());
-        let sources_runtime = project
+        let sources_check = project
             .sources_c()
             .check()
             .map_err(|e| e.reason().to_string())
             .map(|_| ());
-        let parse_cell = Cell::from_result(sources_parse);
-        let runtime_cell = Cell::from_result(sources_runtime);
+        let check_cell = Cell::from_result(sources_check);
+        // Use the unified check() for both syntax and runtime validation
         row.source_checks = Some(SourceBreakdown {
-            syntax: parse_cell.clone(),
-            runtime: runtime_cell.clone(),
+            syntax: check_cell.clone(),
+            runtime: check_cell.clone(),
         });
-        row.sources = if parse_cell.ok && runtime_cell.ok {
-            Cell::success()
-        } else if !parse_cell.ok {
-            parse_cell.clone()
-        } else {
-            runtime_cell.clone()
-        };
+        row.sources = check_cell;
         if !row.sources.ok && opts.fail_fast {
             return row;
         }
@@ -141,7 +131,13 @@ fn evaluate_target(
     }
 
     if comps.connectors {
-        row.connectors = Cell::from_result(project.connectors().check(&wrs).map(|_| ()));
+        row.connectors = Cell::from_result(
+            project
+                .connectors()
+                .check(&wrs)
+                .map(|_| ())
+                .map_err(|e| e.reason().to_string()),
+        );
         match collect_connector_counts(&wrs, dict) {
             Ok(stats) => row.connector_counts = Some(stats),
             Err(_e) => {

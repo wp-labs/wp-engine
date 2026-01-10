@@ -20,9 +20,8 @@ use wp_error::run_error::{RunReason, RunResult};
 // Re-export modules and types
 pub use super::source_builder::source_builders;
 
-use crate::traits::{Checkable, Component, HasStatistics};
+use crate::traits::{Checkable, Component, ComponentBase, ComponentLifecycle, HasStatistics};
 use crate::types::CheckStatus;
-use crate::utils::PathResolvable;
 
 /// Constants for default source configurations
 pub const DEFAULT_FILE_SOURCE_KEY: &str = "file_1";
@@ -38,13 +37,21 @@ pub const DEFAULT_SYSLOG_PORT: i64 = 1514;
 /// of data sources within the project.
 #[derive(Clone)]
 pub struct Sources {
-    work_root: PathBuf,
-    eng_conf: Arc<EngineConfig>,
+    base: ComponentBase,
 }
 
-impl PathResolvable for Sources {
-    fn work_root(&self) -> &Path {
-        &self.work_root
+// Deref to ComponentBase for seamless access to base methods
+impl std::ops::Deref for Sources {
+    type Target = ComponentBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl std::ops::DerefMut for Sources {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
@@ -52,17 +59,12 @@ impl Sources {
     /// Creates a new Sources instance
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
         Self {
-            work_root: work_root.as_ref().to_path_buf(),
-            eng_conf,
+            base: ComponentBase::new(work_root, eng_conf),
         }
     }
 
-    pub(crate) fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
-        self.eng_conf = eng_conf;
-    }
-
     fn sources_root(&self) -> PathBuf {
-        self.resolve_path(self.eng_conf.src_root())
+        self.resolve_path(self.eng_conf().src_root())
     }
 
     fn wpsrc_path(&self) -> PathBuf {
@@ -82,7 +84,7 @@ impl Sources {
         }
 
         // Parse and validate configuration
-        self.validate_wpsrc_config(&self.work_root, &wpsrc_path, &EnvDict::default())?;
+        self.validate_wpsrc_config(self.work_root(), &wpsrc_path, &EnvDict::default())?;
 
         // Attempt to build specifications to ensure they are valid
         self.build_source_specs(&wpsrc_path)?;
@@ -91,16 +93,6 @@ impl Sources {
         Ok(CheckStatus::Suc)
     }
 
-    pub fn check_sources_config(&self, dict: &EnvDict) -> Result<bool, String> {
-        let wpsrc_path = self.wpsrc_path();
-        if !wpsrc_path.exists() {
-            return Err("Configuration error: wpsrc.toml file does not exist".to_string());
-        }
-
-        self.parse_config_only(&self.work_root, &wpsrc_path, dict)
-            .map(|_| true)
-            .map_err(|e| format!("Parse sources failed: {}", e))
-    }
 
     pub fn init(&self, dict: &EnvDict) -> RunResult<()> {
         let wpsrc_dir = self.sources_root();
@@ -150,37 +142,6 @@ impl Sources {
         Ok(())
     }
 
-    fn parse_config_only(
-        &self,
-        work_root: &Path,
-        wpsrc_path: &Path,
-        dict: &EnvDict,
-    ) -> RunResult<()> {
-        let parser = SourceConfigParser::new(work_root.to_path_buf());
-
-        // Load configuration from TOML file, or use empty config if file doesn't exist
-        let sources_config = if wpsrc_path.exists() {
-            WarpSources::env_load_toml(wpsrc_path, dict).map_err(|e| {
-                RunReason::from_conf(format!("Failed to load wpsrc.toml: {}", e)).to_err()
-            })?
-        } else {
-            WarpSources { sources: vec![] }
-        };
-
-        // Serialize configuration for parsing
-        let config_content = toml::to_string_pretty(&sources_config).map_err(|e| {
-            RunReason::from_conf(format!("Failed to serialize config: {}", e)).to_err()
-        })?;
-
-        // Parse and validate the configuration structure
-        parser
-            .parse_and_validate_only(&config_content)
-            .map_err(|e| {
-                RunReason::from_conf(format!("Configuration parsing failed: {}", e)).to_err()
-            })?;
-
-        Ok(())
-    }
 
     /// Builds source specifications for validation
     fn build_source_specs(&self, wpsrc_path: &Path) -> RunResult<()> {
@@ -309,6 +270,13 @@ impl HasStatistics for Sources {
     fn has_statistics(&self) -> bool {
         // Sources has statistics capabilities via the stat module
         self.wpsrc_path().exists()
+    }
+}
+
+impl ComponentLifecycle for Sources {
+    fn init(&self, dict: &EnvDict) -> RunResult<()> {
+        // Delegate to the existing init implementation
+        Sources::init(self, dict)
     }
 }
 

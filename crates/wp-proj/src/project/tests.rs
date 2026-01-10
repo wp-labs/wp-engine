@@ -226,12 +226,7 @@ mod tests {
         assert!(
             wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::default()).is_ok()
         );
-        assert!(
-            project
-                .sources_c()
-                .check_sources_config(&EnvDict::default())
-                .is_err()
-        );
+        assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());
         // WPL check should return Miss status (Ok) when files don't exist, consistent with OML
         assert!(check_to_result(project.wpl().check()).is_ok());
@@ -273,7 +268,7 @@ mod tests {
 
         // 详细调试检查逻辑
         println!("DEBUG minimal - Calling check_sources...");
-        let sources_result = project.sources_c().check_sources_config(&dict);
+        let sources_result = check_to_result(project.sources_c().check());
         println!("DEBUG minimal - check_sources result: {:?}", sources_result);
 
         // 检查 input_sources
@@ -327,7 +322,7 @@ mod tests {
         );
         println!(
             "Minimal structure - sources: {:?}",
-            project.sources_c().check_sources_config(&dict)
+            check_to_result(project.sources_c().check())
         );
         println!(
             "Minimal structure - wpl: {:?}",
@@ -358,7 +353,7 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config(&dict).is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
         // check_input_sources 在有连接器配置时应该通过
         assert!(check_to_result(project.sources_c().check()).is_ok());
 
@@ -385,7 +380,7 @@ mod tests {
         );
         println!(
             "With sources - sources: {:?}",
-            project.sources_c().check_sources_config(&dict)
+            check_to_result(project.sources_c().check())
         );
         println!(
             "With sources - input_sources: {:?}",
@@ -419,7 +414,7 @@ mod tests {
         );
         println!(
             "DEBUG with_wpl - check_sources: {:?}",
-            project.sources_c().check_sources_config(&dict)
+            check_to_result(project.sources_c().check())
         );
         println!(
             "DEBUG with_wpl - check_input_sources: {:?}",
@@ -452,7 +447,7 @@ mod tests {
                 .map_err(|e| e.to_string())
                 .is_ok()
         );
-        assert!(project.sources_c().check_sources_config(&dict).is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
         assert!(check_to_result(project.wpl().check()).is_ok());
 
@@ -516,7 +511,7 @@ mod tests {
         );
         println!(
             "check_sources: {:?}",
-            project.sources_c().check_sources_config(&dict)
+            check_to_result(project.sources_c().check())
         );
         println!(
             "check_input_sources: {:?}",
@@ -538,7 +533,7 @@ mod tests {
         {
             let actual_path =
                 PathBuf::from(main.src_conf_of(wp_engine::facade::config::WPSRC_TOML));
-            println!("check_sources_config looking for: {:?}", actual_path);
+            println!("check_sources looking for: {:?}", actual_path);
             println!("Actual path exists: {}", actual_path.exists());
 
             // 如果路径不匹配，将文件复制到正确位置
@@ -591,7 +586,7 @@ mod tests {
                 .is_ok()
         );
         // 注意：由于修复了检查逻辑，现在需要文件存在时才能通过
-        assert!(project.sources_c().check_sources_config(&dict).is_ok());
+        assert!(check_to_result(project.sources_c().check()).is_ok());
         assert!(check_to_result(project.sources_c().check()).is_ok());
         // WPL和OML也需要处理路径问题
         // assert!(check_to_result(project.wpl().check()).is_ok());
@@ -646,12 +641,12 @@ mod tests {
 
         let dict = EnvDict::default();
         // check_sources 现在应该失败，因为文件内容无效
-        assert!(project.sources_c().check_sources_config(&dict).is_err());
+        assert!(check_to_result(project.sources_c().check()).is_err());
         assert!(check_to_result(project.sources_c().check()).is_err());
 
         println!(
             "Invalid sources - should fail: {:?}",
-            project.sources_c().check_sources_config(&dict)
+            check_to_result(project.sources_c().check())
         );
 
         cleanup_test_dir(&work);
