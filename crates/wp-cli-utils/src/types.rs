@@ -22,6 +22,23 @@ impl Ctx {
     }
 }
 
+/// A flattened row for source line information
+#[derive(Debug, Serialize, Clone)]
+pub struct SrcLineItem {
+    pub key: String,
+    pub path: String,
+    pub enabled: bool,
+    pub lines: Option<u64>,
+    pub error: Option<String>,
+}
+
+/// Report of source file line counts
+#[derive(Debug, Serialize, Clone)]
+pub struct SrcLineReport {
+    pub total_enabled_lines: u64,
+    pub items: Vec<SrcLineItem>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct Row {
     pub group: String,

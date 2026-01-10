@@ -5,7 +5,14 @@ use wp_conf::{
     engine::EngineConfig,
     sinks::{load_business_route_confs, load_infra_route_confs},
 };
-use wpcnt_lib::{SrcLineReport, list_file_sources_with_lines};
+use wpcnt_lib::types::{Ctx, Row};
+
+// Use business layer functions
+use crate::business::observability::{
+    list_file_sources_with_lines,
+    process_group,
+    SrcLineReport,
+};
 
 /// Sources (file) only
 pub fn stat_src_file(
@@ -13,8 +20,8 @@ pub fn stat_src_file(
     eng_conf: &EngineConfig,
     dict: &EnvDict,
 ) -> Result<Option<SrcLineReport>> {
-    let ctx = wpcnt_lib::types::Ctx::new(work_root.to_string());
-    Ok(wpcnt_lib::list_file_sources_with_lines(
+    let ctx = Ctx::new(work_root.to_string());
+    Ok(list_file_sources_with_lines(
         Path::new(work_root),
         eng_conf,
         &ctx,
@@ -25,9 +32,8 @@ pub fn stat_src_file(
 /// Sinks (file-like) only; caller must pass resolved sink_root
 pub fn stat_sink_file(
     sink_root: &Path,
-    ctx: &wpcnt_lib::types::Ctx,
-) -> Result<(Vec<wpcnt_lib::types::Row>, u64)> {
-    use wpcnt_lib as wlib;
+    ctx: &Ctx,
+) -> Result<(Vec<Row>, u64)> {
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         anyhow::bail!(
             "缺少 sinks 配置目录：在 '{}' 下未发现 business.d/ 或 infra.d/",
@@ -37,12 +43,13 @@ pub fn stat_sink_file(
     let mut rows = Vec::new();
     let mut total = 0u64;
     let env_dict = EnvDict::new();
+
     for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
         let g = conf.sink_group;
-        if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !wpcnt_lib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
-        let _ = wlib::process_group(
+        let _ = process_group(
             g.name(),
             g.expect().clone(),
             g.sinks().clone(),
@@ -54,10 +61,10 @@ pub fn stat_sink_file(
     }
     for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
         let g = conf.sink_group;
-        if !wlib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !wpcnt_lib::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
-        let _ = wlib::process_group(
+        let _ = process_group(
             g.name(),
             g.expect().clone(),
             g.sinks().clone(),
@@ -74,9 +81,9 @@ pub fn stat_sink_file(
 pub fn stat_file_combined(
     work_root: &str,
     eng_conf: &EngineConfig,
-    ctx: &wpcnt_lib::types::Ctx,
+    ctx: &Ctx,
     dict: &EnvDict,
-) -> Result<(Option<SrcLineReport>, Vec<wpcnt_lib::types::Row>, u64)> {
+) -> Result<(Option<SrcLineReport>, Vec<Row>, u64)> {
     let src_rep = list_file_sources_with_lines(Path::new(work_root), eng_conf, ctx, dict);
     let sink_root = Path::new(work_root).join(eng_conf.sink_root());
     let (rows, total) = stat_sink_file(&sink_root, ctx)?;

@@ -1,7 +1,12 @@
-use crate::fsutils::{count_lines_file, is_match, resolve_path};
-use crate::types::{Ctx, GroupAccum, Row, SinkAccum};
-// no direct use; rely on SinkUseConf methods via fully-qualified paths in arguments
+//! Sink group processing business logic
+//!
+//! This module provides functions for processing sink groups and
+//! collecting line count statistics.
 
+use wpcnt_lib::fsutils::{count_lines_file, is_match, resolve_path};
+use wpcnt_lib::types::{Ctx, GroupAccum, Row, SinkAccum};
+
+/// Process a sink group and collect line count statistics
 pub fn process_group(
     group_name: &str,
     expect: Option<wp_conf::structure::GroupExpectSpec>,
@@ -95,6 +100,7 @@ pub struct ResolvedSinkLite {
     pub params: toml::value::Table,
 }
 
+/// V2 version of process_group using resolved sink information
 pub fn process_group_v2(
     group_name: &str,
     expect: Option<wp_conf::structure::GroupExpectSpec>,

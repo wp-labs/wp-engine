@@ -26,7 +26,7 @@ pub fn prepare_validate_context(
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     let stats = stats_file.and_then(|p| wlib::load_stats_file(Path::new(p)));
     let input_from_sources =
-        wlib::total_input_from_wpsrc(Path::new(&cm.work_root_path()), &main, &ctx, dict)
+        wp_cli_core::total_input_from_wpsrc(Path::new(&cm.work_root_path()), &main, &ctx, dict)
             .filter(|n| *n > 0);
     Ok(ValidateContext {
         groups,
