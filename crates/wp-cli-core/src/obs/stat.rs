@@ -8,12 +8,17 @@ use wp_conf::{
 use wpcnt_lib::{SrcLineReport, list_file_sources_with_lines};
 
 /// Sources (file) only
-pub fn stat_src_file(work_root: &str, eng_conf: &EngineConfig) -> Result<Option<SrcLineReport>> {
+pub fn stat_src_file(
+    work_root: &str,
+    eng_conf: &EngineConfig,
+    dict: &EnvDict,
+) -> Result<Option<SrcLineReport>> {
     let ctx = wpcnt_lib::types::Ctx::new(work_root.to_string());
     Ok(wpcnt_lib::list_file_sources_with_lines(
         Path::new(work_root),
         eng_conf,
         &ctx,
+        dict,
     ))
 }
 
@@ -70,8 +75,9 @@ pub fn stat_file_combined(
     work_root: &str,
     eng_conf: &EngineConfig,
     ctx: &wpcnt_lib::types::Ctx,
+    dict: &EnvDict,
 ) -> Result<(Option<SrcLineReport>, Vec<wpcnt_lib::types::Row>, u64)> {
-    let src_rep = list_file_sources_with_lines(Path::new(work_root), eng_conf, ctx);
+    let src_rep = list_file_sources_with_lines(Path::new(work_root), eng_conf, ctx, dict);
     let sink_root = Path::new(work_root).join(eng_conf.sink_root());
     let (rows, total) = stat_sink_file(&sink_root, ctx)?;
     Ok((src_rep, rows, total))

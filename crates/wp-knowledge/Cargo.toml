@@ -14,6 +14,8 @@ name = "wp_knowledge"
 orion_overload = { path = "../orion_overload" }
 orion-error= { workspace = true }
 wp-error = { workspace = true }
+orion-variate = { workspace = true }
+orion_conf = { workspace = true }
 wp-log = { workspace = true }
 wp-specs = { workspace = true }
 wp-model-core = { workspace = true }

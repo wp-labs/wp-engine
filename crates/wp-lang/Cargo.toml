@@ -12,6 +12,8 @@ arcstr = { workspace = true }
 smol_str = { workspace = true }
 derive_more = { workspace = true }
 ordered-float = { workspace = true }                       # 可哈希浮点
+orion-variate = { workspace = true }
+orion_conf = { workspace = true }
 orion_overload = { path = "../orion_overload" }
 wp-model-core= { workspace=true }
 wp-data-fmt= { workspace=true }

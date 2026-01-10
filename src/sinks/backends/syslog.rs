@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use orion_conf::ErrorOwe;
+use orion_conf::{EnvTomlLoad, ErrorOwe};
+use orion_variate::EnvDict;
 use serde_json::json;
 use std::str::FromStr;
 use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider, param_map_to_table};
@@ -60,7 +61,8 @@ fn syslog_conf_from_spec(spec: &ResolvedSinkSpec) -> AnyResult<SyslogSinkConf> {
         params.insert("app_name".to_string(), json!(app));
     }
     let toml_str = toml::to_string(&param_map_to_table(&params))?;
-    let conf: SyslogSinkConf = toml::from_str(&toml_str)?;
+    let dict = EnvDict::default();
+    let conf: SyslogSinkConf = SyslogSinkConf::env_parse_toml(&toml_str, &dict)?;
     Ok(conf)
 }
 

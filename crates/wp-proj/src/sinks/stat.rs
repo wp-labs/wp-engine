@@ -59,7 +59,7 @@ pub fn stat_file_combined(
     let ctx = build_ctx(&cm.work_root_path(), filters);
     //ensure_sink_dirs(&sink_root, main.sink_root())?;
     let (src, rows, total) =
-        wp_cli_core::obs::stat::stat_file_combined(&cm.work_root_path(), &main, &ctx)
+        wp_cli_core::obs::stat::stat_file_combined(&cm.work_root_path(), &main, &ctx, dict)
             .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     Ok(CombinedStatResult {
         src,

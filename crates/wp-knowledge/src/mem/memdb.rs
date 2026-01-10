@@ -333,6 +333,8 @@ mod tests {
     // V1 TableConf removed
     use crate::mem::ToSqlParams;
     use anyhow::Context;
+    use orion_conf::EnvTomlLoad;
+    use orion_variate::EnvDict;
     use serde::Serialize;
     use std::fs;
     use wp_data_fmt::{Csv, DataFormat};
@@ -660,7 +662,8 @@ mod tests {
         let mut buffer = Vec::with_capacity(10240);
         f.read_to_end(&mut buffer).expect("read conf file error");
         let conf_data = String::from_utf8(buffer)?;
-        let conf: T = toml::from_str(conf_data.as_str())?;
+        let dict = EnvDict::default();
+        let conf: T = T::env_parse_toml(conf_data.as_str(), &dict)?;
         Ok(conf)
     }
 

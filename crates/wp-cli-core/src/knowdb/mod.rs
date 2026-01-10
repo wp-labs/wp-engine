@@ -1,4 +1,6 @@
 use anyhow::Result;
+use orion_conf::EnvTomlLoad;
+use orion_variate::EnvDict;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -160,7 +162,8 @@ pub fn check(work_root: &str) -> Result<CheckReport> {
         anyhow::bail!("knowdb config not found: {}", conf_path.display());
     }
     let txt = std::fs::read_to_string(&conf_path)?;
-    let conf: KnowDbConf = toml::from_str(&txt)?;
+    let dict = EnvDict::default();
+    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&txt, &dict)?;
     if conf.version != 2 {
         anyhow::bail!("knowdb.version must be 2");
     }

@@ -2,11 +2,13 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use orion_conf::traits::EnvTomlLoad;
 use serde::Deserialize;
 use wp_log::info_ctrl;
 
 use crate::mem::memdb::MemDB;
 use orion_error::{ContextRecord, ErrorOwe, OperationContext, ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use rusqlite::OpenFlags;
 use wp_error::{KnowledgeReason, KnowledgeResult};
 
@@ -177,7 +179,8 @@ fn parse_knowdb_conf(
         root.join(conf_path)
     };
     let conf_txt = read_to_string(&conf_abs)?;
-    let conf: KnowDbConf = toml::from_str(&conf_txt).owe_conf()?;
+    let dict = EnvDict::default();
+    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&conf_txt, &dict).owe_conf()?;
     if conf.version != 2 {
         return KnowledgeReason::from_conf("unsupported knowdb.version").err_result();
     }

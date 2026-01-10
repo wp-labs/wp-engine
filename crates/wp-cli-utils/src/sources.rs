@@ -1,5 +1,6 @@
 use crate::fsutils::{count_lines_file, resolve_path};
 use crate::types::Ctx;
+use orion_conf::EnvTomlLoad;
 use orion_variate::EnvDict;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -32,8 +33,11 @@ type SrcConnectorRec = wp_conf::sources::SourceConnector;
 
 // 删除本地封装，调用点直接使用配置层公共定位
 
-fn load_connectors_map(base_dir: &std::path::Path) -> Option<BTreeMap<String, SrcConnectorRec>> {
-    wp_conf::sources::load_connectors_for(base_dir, &EnvDict::default()).ok()
+fn load_connectors_map(
+    base_dir: &std::path::Path,
+    dict: &EnvDict,
+) -> Option<BTreeMap<String, SrcConnectorRec>> {
+    wp_conf::sources::load_connectors_for(base_dir, dict).ok()
 }
 
 fn merge_params(base: &ParamMap, override_tbl: &toml::value::Table, allow: &[String]) -> ParamMap {
@@ -51,9 +55,10 @@ pub fn total_input_from_wpsrc(
     work_root: &std::path::Path,
     engine_conf: &EngineConfig,
     ctx: &Ctx,
+    dict: &EnvDict,
 ) -> Option<u64> {
     let content = read_wpsrc_toml(work_root, engine_conf)?;
-    let toml_val: toml::Value = toml::from_str(&content).ok()?;
+    let toml_val: toml::Value = toml::Value::env_parse_toml(&content, dict).ok()?;
     let mut sum = 0u64;
     if let Some(arr) = toml_val.get("sources").and_then(|v| v.as_array()) {
         // load connectors once
@@ -61,7 +66,7 @@ pub fn total_input_from_wpsrc(
             wp_conf::find_connectors_base_dir(&ctx.work_root.join("sources"), "source.d");
         let conn_map = conn_dir
             .as_ref()
-            .and_then(|p| load_connectors_map(p.as_path()))
+            .and_then(|p| load_connectors_map(p.as_path(), dict))
             .unwrap_or_default();
         for item in arr {
             // v2: prefer connect flow
@@ -131,9 +136,10 @@ pub fn list_file_sources_with_lines(
     work_root: &std::path::Path,
     eng_conf: &EngineConfig,
     ctx: &Ctx,
+    dict: &EnvDict,
 ) -> Option<SrcLineReport> {
     let content = read_wpsrc_toml(work_root, eng_conf)?;
-    let toml_val: toml::Value = toml::from_str(&content).ok()?;
+    let toml_val: toml::Value = toml::Value::env_parse_toml(&content, dict).ok()?;
     let mut items = Vec::new();
     let mut total = 0u64;
     if let Some(arr) = toml_val.get("sources").and_then(|v| v.as_array()) {
@@ -142,7 +148,7 @@ pub fn list_file_sources_with_lines(
             wp_conf::find_connectors_base_dir(&ctx.work_root.join("sources"), "source.d");
         let conn_map = conn_dir
             .as_ref()
-            .and_then(|p| load_connectors_map(p.as_path()))
+            .and_then(|p| load_connectors_map(p.as_path(), dict))
             .unwrap_or_default();
         for it in arr {
             let conn_id = match it.get("connect").and_then(|v| v.as_str()) {

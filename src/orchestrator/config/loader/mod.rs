@@ -57,7 +57,10 @@ output = "stdout"
 "#;
         let p = cm.ensure_config_path_exists(WPGEN_TOML)?;
         fs::write(&p, toml)?;
-        assert!(cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default()).is_err());
+        assert!(
+            cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default())
+                .is_err()
+        );
         Ok(())
     }
 
@@ -149,7 +152,9 @@ output = "stdout"
 "#;
         let p = cm.ensure_config_path_exists(WPGEN_TOML)?;
         fs::write(&p, toml)?;
-        let err = cm.load_wpgen_config(WPGEN_TOML, &EnvDict::default()).unwrap_err();
+        let err = cm
+            .load_wpgen_config(WPGEN_TOML, &EnvDict::default())
+            .unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("override 'path' not allowed"), "msg={}", msg);
         cm.clear_work_directory();

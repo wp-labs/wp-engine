@@ -2,6 +2,7 @@ use super::types::WpSourcesConfig;
 use crate::sources::load_connectors_for;
 use crate::sources::types::SourceConnector;
 use crate::structure::SourceInstanceConf;
+use orion_conf::EnvTomlLoad;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
 use orion_error::{ErrorOwe, ErrorWith, ToStructError, UvsValidationFrom};
 use orion_variate::{EnvDict, EnvEvaluable};
@@ -12,7 +13,8 @@ use wp_connector_api::ParamMap;
 
 /// 仅解析并执行最小校验（不进行实际构建，不触发 I/O）
 pub fn parse_and_validate_only(config_str: &str) -> OrionConfResult<Vec<wp_specs::CoreSourceSpec>> {
-    let wrapper: WpSourcesConfig = toml::from_str(config_str)
+    let dict = EnvDict::default();
+    let wrapper: WpSourcesConfig = WpSourcesConfig::env_parse_toml(config_str, &dict)
         .owe_conf()
         .want("parse sources v2")?;
     let mut out: Vec<wp_specs::CoreSourceSpec> = Vec::new();
@@ -66,7 +68,7 @@ pub fn load_source_instances_from_str(
     start: &Path,
     dict: &EnvDict,
 ) -> OrionConfResult<Vec<SourceInstanceConf>> {
-    let src_conf: WpSourcesConfig = toml::from_str::<WpSourcesConfig>(config_str)
+    let src_conf: WpSourcesConfig = WpSourcesConfig::env_parse_toml(config_str, dict)
         .owe_conf()
         .want("parse sources")?
         .env_eval(dict);

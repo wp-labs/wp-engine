@@ -267,6 +267,7 @@ impl Validate for SinkInstanceConf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use orion_conf::EnvTomlLoad;
     use orion_variate::{EnvDict, ValueType};
     use serde_json::json;
 
@@ -305,7 +306,9 @@ tags = ["env:test"]
 [params]
 path = "p2.dat"
 "#;
-        let s: SinkInstanceConf = toml::from_str(raw).expect("deserialize");
+        let dict = EnvDict::default();
+        let s: SinkInstanceConf =
+            SinkInstanceConf::env_parse_toml(raw, &dict).expect("deserialize");
         assert_eq!(s.name(), &s.core.name);
         assert_eq!(s.resolved_kind_str(), s.core.kind);
         assert_eq!(s.resolved_params_table(), s.core.params);

@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::net::Ipv4Addr;
 
+use orion_conf::EnvTomlLoad;
 use orion_error::{ContextRecord, ErrorOwe, ErrorWith, WithContext};
+use orion_variate::EnvDict;
 use wp_model_core::model::FNameStr;
 
 use crate::parser::error::WplCodeResult;
@@ -18,7 +20,10 @@ impl FieldsGenRule {
         ctx.record("path", path);
 
         let content = std::fs::read_to_string(path).owe_conf().with(&ctx)?;
-        let res: Self = toml::from_str(&content).owe_conf().with(&ctx)?;
+        let dict = EnvDict::default();
+        let res: Self = Self::env_parse_toml(&content, &dict)
+            .owe_conf()
+            .with(&ctx)?;
         Ok(res)
     }
     pub fn new() -> Self {

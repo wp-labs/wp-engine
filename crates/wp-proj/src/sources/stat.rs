@@ -29,7 +29,7 @@ pub fn stat_file_sources(work_root: &str, dict: &EnvDict) -> RunResult<SourceSta
     let resolved = cm.work_root_path();
 
     // Gather statistics from file sources
-    let report = wp_cli_core::obs::stat::stat_src_file(&resolved, &main).map_err(|e| {
+    let report = wp_cli_core::obs::stat::stat_src_file(&resolved, &main, dict).map_err(|e| {
         RunReason::from_conf(format!(
             "Failed to collect source statistics from '{}': {}",
             resolved, e

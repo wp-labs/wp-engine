@@ -1,6 +1,6 @@
 use crate::connectors::registry;
 use orion_conf::error::{ConfIOReason, OrionConfResult};
-use orion_conf::{ErrorOwe, ErrorWith};
+use orion_conf::{EnvTomlLoad, ErrorOwe, ErrorWith};
 use orion_error::{ToStructError, UvsValidationFrom};
 use orion_variate::EnvDict;
 use serde_derive::{Deserialize, Serialize};
@@ -19,18 +19,16 @@ pub struct UnifiedSourcesConfig {
 
 impl UnifiedSourcesConfig {
     #[allow(clippy::ptr_arg)]
-    pub fn from_file(path: &PathBuf) -> OrionConfResult<Self> {
+    pub fn from_file(path: &PathBuf, dict: &EnvDict) -> OrionConfResult<Self> {
         let content = std::fs::read_to_string(path)
             .owe_conf()
             .want("load config")
             .with(path)?;
-        Self::from_str(&content)
+        Self::from_str(&content, dict)
     }
     #[allow(clippy::should_implement_trait)]
-    pub fn from_str(content: &str) -> OrionConfResult<Self> {
-        toml::from_str(content)
-            .owe_conf()
-            .want("to UnifiedSourcesConfig")
+    pub fn from_str(content: &str, dict: &EnvDict) -> OrionConfResult<Self> {
+        Self::env_parse_toml(content, dict).want("to UnifiedSourcesConfig")
     }
 }
 

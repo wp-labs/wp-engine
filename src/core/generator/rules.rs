@@ -1,6 +1,8 @@
 use super::super::prelude::*;
 use oml::parser::code::OMLCode;
+use orion_conf::EnvTomlLoad;
 use orion_error::{ContextRecord, WithContext};
+use orion_variate::EnvDict;
 use std::{
     collections::{HashMap, VecDeque},
     fs::File,
@@ -119,7 +121,10 @@ pub fn load_gen_confs(path: &str) -> ConfResult<Vec<GenRuleUnit>> {
             let mut ctx = WithContext::want("loadd field gen rule");
             ctx.record("sec", sec.to_str().unwrap_or("unknow"));
             let toml = std::fs::read_to_string(sec).owe_conf().with(&ctx)?;
-            let conf: FieldsGenRule = toml::from_str(toml.as_str()).owe_conf().with(&ctx)?;
+            let dict = EnvDict::default();
+            let conf: FieldsGenRule = FieldsGenRule::env_parse_toml(toml.as_str(), &dict)
+                .owe_conf()
+                .with(&ctx)?;
             fields = conf.items;
             info_ctrl!("load conf file: {:?}", sec);
         }
