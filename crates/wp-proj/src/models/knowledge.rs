@@ -3,8 +3,16 @@ use orion_error::ToStructError;
 use orion_variate::EnvDict;
 use wp_error::run_error::{RunReason, RunResult};
 
+use crate::traits::Component;
+
 #[derive(Clone)]
 pub struct Knowledge;
+
+impl Component for Knowledge {
+    fn component_name(&self) -> &'static str {
+        "Knowledge"
+    }
+}
 
 impl Knowledge {
     pub fn new() -> Self {

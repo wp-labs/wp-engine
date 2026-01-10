@@ -6,6 +6,7 @@ use wp_engine::facade::config::WPARSE_OML_FILE;
 use wp_engine::facade::generator::fetch_oml_data;
 use wp_error::run_error::{RunReason, RunResult};
 
+use crate::traits::{Checkable, Component, HasExamples};
 use crate::types::CheckStatus;
 use crate::utils::{error_handler::ErrorHandler, PathResolvable, TemplateInitializer};
 
@@ -89,11 +90,7 @@ rule = "/example/*"
         let oml_files = find_conf_files(root_str, WPARSE_OML_FILE)
             .map_err(|e| RunReason::from_conf(format!("OML 查找失败: {}", e)).to_err())?;
         if oml_files.is_empty() {
-            return Err(RunReason::from_conf(format!(
-                "OML 文件不存在: {}/{}",
-                root_str, WPARSE_OML_FILE
-            ))
-            .to_err());
+            return Ok(CheckStatus::Miss);
         }
         for f in &oml_files {
             ErrorHandler::check_file_not_empty(f, "OML")?;
@@ -102,6 +99,27 @@ rule = "/example/*"
         fetch_oml_data(root_str, WPARSE_OML_FILE)
             .map_err(|e| RunReason::from_conf(format!("parse oml failed: {}", e)).to_err())?;
         Ok(CheckStatus::Suc)
+    }
+}
+
+// Trait implementations for unified component interface
+impl Component for Oml {
+    fn component_name(&self) -> &'static str {
+        "OML"
+    }
+}
+
+impl Checkable for Oml {
+    fn check(&self) -> RunResult<CheckStatus> {
+        // Delegate to the existing check implementation
+        Oml::check(self)
+    }
+}
+
+impl HasExamples for Oml {
+    fn init_with_examples(&self) -> RunResult<()> {
+        // Delegate to the existing init_with_examples implementation
+        Oml::init_with_examples(self)
     }
 }
 
