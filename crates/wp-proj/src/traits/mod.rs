@@ -6,6 +6,8 @@
 //! See [`component`] for the core trait definitions.
 
 pub mod component;
+pub mod component_base;
 
-// Re-export main traits for convenience
-pub use component::{Checkable, Component, HasExamples, HasStatistics};
+// Re-export main traits and types for convenience
+pub use component::{Checkable, Component, ComponentLifecycle, HasExamples, HasStatistics};
+pub use component_base::ComponentBase;

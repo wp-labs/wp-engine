@@ -134,3 +134,56 @@ pub trait HasStatistics: Component {
         false // Default implementation
     }
 }
+
+/// Trait for components that support lifecycle management (initialization).
+///
+/// Components implementing this trait can initialize themselves, creating
+/// necessary configuration files and directory structures.
+///
+/// # Method Semantics
+///
+/// - `init()`: Initialize the component, creating necessary configuration files and directories
+///   - If configuration already exists, should preserve existing configuration (not overwrite)
+///   - Used for first-time setup or ensuring minimal configuration exists
+///   - Should be an idempotent operation (safe to call multiple times)
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use wp_proj::traits::{Component, ComponentLifecycle};
+/// use wp_error::run_error::RunResult;
+/// use orion_variate::EnvDict;
+///
+/// struct MyComponent;
+///
+/// impl Component for MyComponent {
+///     fn component_name(&self) -> &'static str { "MyComponent" }
+/// }
+///
+/// impl ComponentLifecycle for MyComponent {
+///     fn init(&self, dict: &orion_variate::EnvDict) -> RunResult<()> {
+///         // Create configuration files and directories
+///         // If they already exist, preserve them
+///         Ok(())
+///     }
+/// }
+/// ```
+pub trait ComponentLifecycle: Component {
+    /// Initializes the component, creating necessary configuration and directories
+    ///
+    /// # Parameters
+    ///
+    /// - `dict`: Environment variable dictionary for configuration template variable substitution
+    ///
+    /// # Behavior Contract
+    ///
+    /// - If configuration files already exist and are valid, should not overwrite them
+    /// - Should create necessary directory structures
+    /// - Should provide reasonable default configurations
+    /// - Idempotent operation: multiple calls should be safe
+    ///
+    /// # Returns
+    ///
+    /// `RunResult<()>` indicating success or failure of initialization
+    fn init(&self, dict: &orion_variate::EnvDict) -> RunResult<()>;
+}

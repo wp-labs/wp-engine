@@ -13,41 +13,44 @@ use wp_conf::structure::SinkInstanceConf;
 use wp_connector_api::ParamMap;
 use wp_error::run_error::RunResult;
 
-use crate::traits::{Checkable, Component, HasStatistics};
+use crate::traits::{Checkable, Component, ComponentBase, ComponentLifecycle, HasStatistics};
 use crate::types::CheckStatus;
-use crate::utils::{config_path::ConfigPathResolver, PathResolvable};
+use crate::utils::config_path::ConfigPathResolver;
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Sinks {
-    work_root: PathBuf,
-    eng_conf: Arc<EngineConfig>,
+    base: ComponentBase,
 }
 
-impl PathResolvable for Sinks {
-    fn work_root(&self) -> &Path {
-        &self.work_root
+// Deref to ComponentBase for seamless access to base methods
+impl std::ops::Deref for Sinks {
+    type Target = ComponentBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl std::ops::DerefMut for Sinks {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl Sinks {
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
         Self {
-            work_root: work_root.as_ref().to_path_buf(),
-            eng_conf,
+            base: ComponentBase::new(work_root, eng_conf),
         }
     }
 
-    pub(crate) fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
-        self.eng_conf = eng_conf;
-    }
-
     fn sink_root(&self) -> PathBuf {
-        self.resolve_path(self.eng_conf.sink_root())
+        self.resolve_path(self.eng_conf().sink_root())
     }
 
     // 校验路由（严格）
     pub fn check(&self) -> RunResult<CheckStatus> {
-        sinks_core::validate_routes(self.work_root.to_string_lossy().as_ref()).err_conv()?;
+        sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref()).err_conv()?;
         Ok(CheckStatus::Suc)
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
     }
@@ -201,6 +204,13 @@ impl HasStatistics for Sinks {
     fn has_statistics(&self) -> bool {
         // Sinks has statistics capabilities via the stat module
         self.sink_root().exists()
+    }
+}
+
+impl ComponentLifecycle for Sinks {
+    fn init(&self, _dict: &EnvDict) -> RunResult<()> {
+        // Delegate to the existing init implementation
+        Sinks::init(self)
     }
 }
 

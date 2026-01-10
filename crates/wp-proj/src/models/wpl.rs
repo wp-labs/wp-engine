@@ -1,4 +1,5 @@
 use orion_error::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use wp_conf::engine::EngineConfig;
@@ -6,41 +7,44 @@ use wp_engine::facade::config::WPARSE_RULE_FILE;
 use wp_error::run_error::{RunReason, RunResult};
 use wpl::WplCode;
 
-use crate::traits::{Checkable, Component, HasExamples};
+use crate::traits::{Checkable, Component, ComponentBase, ComponentLifecycle, HasExamples};
 use crate::types::CheckStatus;
-use crate::utils::{PathResolvable, TemplateInitializer};
+use crate::utils::TemplateInitializer;
 
 #[derive(Clone)]
 pub struct Wpl {
-    work_root: PathBuf,
-    eng_conf: Arc<EngineConfig>,
+    base: ComponentBase,
 }
 
-impl PathResolvable for Wpl {
-    fn work_root(&self) -> &Path {
-        &self.work_root
+// Deref to ComponentBase for seamless access to base methods
+impl std::ops::Deref for Wpl {
+    type Target = ComponentBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl std::ops::DerefMut for Wpl {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl Wpl {
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
         Self {
-            work_root: work_root.as_ref().to_path_buf(),
-            eng_conf,
+            base: ComponentBase::new(work_root, eng_conf),
         }
     }
 
-    pub fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
-        self.eng_conf = eng_conf;
-    }
-
     fn rule_root(&self) -> PathBuf {
-        self.resolve_path(self.eng_conf.rule_root())
+        self.resolve_path(self.eng_conf().rule_root())
     }
 
     /// Initialize WPL with example content for the specified project directory
     pub fn init_with_examples(&self) -> RunResult<()> {
-        let work_root = &self.work_root;
+        let work_root = self.work_root();
         // Include example WPL content using include_str!
         let example_wpl_content = include_str!("../example/wpl/nginx/parse.wpl");
 
@@ -164,5 +168,12 @@ impl HasExamples for Wpl {
     fn init_with_examples(&self) -> RunResult<()> {
         // Delegate to the existing init_with_examples implementation
         Wpl::init_with_examples(self)
+    }
+}
+
+impl ComponentLifecycle for Wpl {
+    fn init(&self, _dict: &EnvDict) -> RunResult<()> {
+        // WPL initialization uses examples by default
+        self.init_with_examples()
     }
 }

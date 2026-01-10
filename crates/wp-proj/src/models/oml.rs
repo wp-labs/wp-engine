@@ -1,4 +1,5 @@
 use orion_error::{ToStructError, UvsConfFrom};
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use wp_conf::{engine::EngineConfig, utils::find_conf_files};
@@ -6,41 +7,44 @@ use wp_engine::facade::config::WPARSE_OML_FILE;
 use wp_engine::facade::generator::fetch_oml_data;
 use wp_error::run_error::{RunReason, RunResult};
 
-use crate::traits::{Checkable, Component, HasExamples};
+use crate::traits::{Checkable, Component, ComponentBase, ComponentLifecycle, HasExamples};
 use crate::types::CheckStatus;
-use crate::utils::{error_handler::ErrorHandler, PathResolvable, TemplateInitializer};
+use crate::utils::{error_handler::ErrorHandler, TemplateInitializer};
 
 #[derive(Clone)]
 pub struct Oml {
-    work_root: PathBuf,
-    eng_conf: Arc<EngineConfig>,
+    base: ComponentBase,
 }
 
-impl PathResolvable for Oml {
-    fn work_root(&self) -> &Path {
-        &self.work_root
+// Deref to ComponentBase for seamless access to base methods
+impl std::ops::Deref for Oml {
+    type Target = ComponentBase;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl std::ops::DerefMut for Oml {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl Oml {
     pub fn new<P: AsRef<Path>>(work_root: P, eng_conf: Arc<EngineConfig>) -> Self {
         Self {
-            work_root: work_root.as_ref().to_path_buf(),
-            eng_conf,
+            base: ComponentBase::new(work_root, eng_conf),
         }
     }
 
-    pub fn update_engine_conf(&mut self, eng_conf: Arc<EngineConfig>) {
-        self.eng_conf = eng_conf;
-    }
-
     fn oml_root(&self) -> PathBuf {
-        self.resolve_path(self.eng_conf.oml_root())
+        self.resolve_path(self.eng_conf().oml_root())
     }
 
     /// Initialize OML with example content for the specified project directory
     pub fn init_with_examples(&self) -> RunResult<()> {
-        let work_root = &self.work_root;
+        let work_root = self.work_root();
         let example_oml_content = include_str!("../example/oml/nginx.oml");
         if !example_oml_content.contains("name") || !example_oml_content.contains("rule") {
             return ErrorHandler::config_error("example OML content is missing essential fields");
@@ -120,6 +124,13 @@ impl HasExamples for Oml {
     fn init_with_examples(&self) -> RunResult<()> {
         // Delegate to the existing init_with_examples implementation
         Oml::init_with_examples(self)
+    }
+}
+
+impl ComponentLifecycle for Oml {
+    fn init(&self, _dict: &EnvDict) -> RunResult<()> {
+        // OML initialization uses examples by default
+        self.init_with_examples()
     }
 }
 
