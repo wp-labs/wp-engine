@@ -5,9 +5,11 @@ use crate::connectors::{
     templates::init_definitions,
     types::{LintRow, LintSeverity, SilentErrKind},
 };
+use crate::traits::{Checkable, Component};
+use crate::types::CheckStatus;
 
 use super::paths::ConnectorsPaths;
-use wp_error::run_error::RunResult;
+use wp_error::run_error::{RunReason, RunResult};
 
 #[derive(Clone)]
 #[allow(dead_code)] // paths field is used in tests but not detected
@@ -71,3 +73,14 @@ fn format_lint_error(row: &LintRow) -> String {
         ),
     }
 }
+
+// Trait implementations for unified component interface
+impl Component for Connectors {
+    fn component_name(&self) -> &'static str {
+        "Connectors"
+    }
+}
+
+// Note: Connectors does not implement Checkable because its check() method
+// requires a work_root parameter, which differs from the trait signature.
+// The existing check(&self, work_root) method is preserved for compatibility.

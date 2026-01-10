@@ -13,6 +13,8 @@ use wp_conf::structure::SinkInstanceConf;
 use wp_connector_api::ParamMap;
 use wp_error::run_error::RunResult;
 
+use crate::traits::{Checkable, Component, HasStatistics};
+use crate::types::CheckStatus;
 use crate::utils::{config_path::ConfigPathResolver, PathResolvable};
 
 #[derive(Clone, Default)]
@@ -44,8 +46,9 @@ impl Sinks {
     }
 
     // 校验路由（严格）
-    pub fn check(&self) -> RunResult<()> {
-        sinks_core::validate_routes(self.work_root.to_string_lossy().as_ref()).err_conv()
+    pub fn check(&self) -> RunResult<CheckStatus> {
+        sinks_core::validate_routes(self.work_root.to_string_lossy().as_ref()).err_conv()?;
+        Ok(CheckStatus::Suc)
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
     }
 
@@ -177,6 +180,27 @@ impl Sinks {
         }
 
         Ok(())
+    }
+}
+
+// Trait implementations for unified component interface
+impl Component for Sinks {
+    fn component_name(&self) -> &'static str {
+        "Sinks"
+    }
+}
+
+impl Checkable for Sinks {
+    fn check(&self) -> RunResult<CheckStatus> {
+        // Delegate to the existing check implementation
+        Sinks::check(self)
+    }
+}
+
+impl HasStatistics for Sinks {
+    fn has_statistics(&self) -> bool {
+        // Sinks has statistics capabilities via the stat module
+        self.sink_root().exists()
     }
 }
 
