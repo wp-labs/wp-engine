@@ -10,7 +10,7 @@ use crate::types::CheckStatus;
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;
 use orion_variate::EnvDict;
-use wp_cli_core::connectors::{sinks as sink_connectors, sources as source_connectors};
+use wp_cli_core::business::connectors::{sinks as sink_connectors, sources as source_connectors};
 use wp_engine::facade::config::{self as cfg_face, ENGINE_CONF_FILE};
 use wp_error::run_error::RunResult;
 

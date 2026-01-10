@@ -2,7 +2,7 @@ use orion_error::ErrorConv;
 use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use wp_cli_core::connectors::sinks as sinks_core;
+use wp_cli_core::business::connectors::sinks as sinks_core;
 use wp_conf::connectors::param_map_to_table;
 use wp_conf::engine::EngineConfig;
 use wp_conf::sinks::{

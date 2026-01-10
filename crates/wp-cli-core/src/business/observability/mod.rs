@@ -5,6 +5,7 @@
 
 mod sources;
 mod sinks;
+mod validate;
 
 pub use sources::{
     SrcLineItem,
@@ -17,4 +18,7 @@ pub use sinks::{
     collect_sink_statistics,
     process_group,
     process_group_v2,
+};
+pub use validate::{
+    build_groups_v2,
 };

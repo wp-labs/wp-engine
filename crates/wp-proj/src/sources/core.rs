@@ -10,7 +10,7 @@ use orion_variate::EnvDict;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use wp_cli_core::connectors::sources as sources_core;
+use wp_cli_core::business::connectors::sources as sources_core;
 use wp_conf::sources::types::{SourceItem, WarpSources};
 use wp_conf::{engine::EngineConfig, sources::build::load_source_instances_from_file};
 use wp_engine::facade::config::WPSRC_TOML;

@@ -27,7 +27,7 @@ impl DisplayFormat {
     }
 }
 
-pub fn render_sink_list(rows: &[wp_cli_core::connectors::sinks::RouteRow], fmt: DisplayFormat) {
+pub fn render_sink_list(rows: &[wp_cli_core::business::connectors::sinks::RouteRow], fmt: DisplayFormat) {
     match fmt {
         DisplayFormat::Json => {
             let items: Vec<_> = rows
@@ -119,7 +119,7 @@ pub fn render_route_rows(items: &[PipelineRow], fmt: DisplayFormat) {
 }
 
 pub fn expand_route_rows(
-    rows: &[wp_cli_core::connectors::sinks::RouteRow],
+    rows: &[wp_cli_core::business::connectors::sinks::RouteRow],
     oml_map: &[OmlRule],
 ) -> Vec<PipelineRow> {
     let mut out = Vec::new();
@@ -252,8 +252,8 @@ fn format_rules(rules: &[String]) -> String {
 mod tests {
     use super::*;
 
-    fn sample_route_row() -> wp_cli_core::connectors::sinks::RouteRow {
-        wp_cli_core::connectors::sinks::RouteRow {
+    fn sample_route_row() -> wp_cli_core::business::connectors::sinks::RouteRow {
+        wp_cli_core::business::connectors::sinks::RouteRow {
             scope: "biz".into(),
             group: "default".into(),
             full_name: "biz.demo".into(),
