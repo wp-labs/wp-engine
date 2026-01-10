@@ -1,11 +1,14 @@
 mod options;
 mod report;
+mod types;
+
 pub use options::{CheckComponent, CheckComponents, CheckOptions};
+pub use types::{Cell, ConnectorCounts, Row, SourceBreakdown};
+
 use report::{build_detail_table, component_cells};
 use std::path::PathBuf;
 
 use super::warp::WarpProject;
-use super::{Cell, ConnectorCounts, Row, SourceBreakdown};
 use crate::types::CheckStatus;
 use orion_conf::UvsConfFrom;
 use orion_error::ToStructError;

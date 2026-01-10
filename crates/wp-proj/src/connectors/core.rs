@@ -5,11 +5,10 @@ use crate::connectors::{
     templates::init_definitions,
     types::{LintRow, LintSeverity, SilentErrKind},
 };
-use crate::traits::{Checkable, Component};
-use crate::types::CheckStatus;
+use crate::traits::Component;
 
 use super::paths::ConnectorsPaths;
-use wp_error::run_error::{RunReason, RunResult};
+use wp_error::run_error::RunResult;
 
 #[derive(Clone)]
 #[allow(dead_code)] // paths field is used in tests but not detected
