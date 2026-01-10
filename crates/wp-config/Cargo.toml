@@ -46,3 +46,6 @@ once_cell = { workspace = true }
 wildmatch = { workspace = true }
 serde_derive = { workspace = true }
 chrono = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
