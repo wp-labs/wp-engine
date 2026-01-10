@@ -12,3 +12,16 @@ pub use business::observability::{
     process_group,
     SrcLineReport,
 };
+
+// Re-export utils for convenience
+pub use utils::{
+    banner::{print_banner, split_quiet_args},
+    fs::*,
+    pretty::{
+        print_rows, print_src_files_table, print_validate_evidence, print_validate_headline,
+        print_validate_report, print_validate_tables, print_validate_tables_verbose,
+    },
+    stats::{StatsFile, group_input, load_stats_file},
+    types::*,
+    validate::*,
+};

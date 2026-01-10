@@ -8,10 +8,10 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use wp_conf::connectors::{ParamMap, param_value_from_toml, merge_params};
 use wp_conf::engine::EngineConfig;
-use wpcnt_lib::fsutils::{count_lines_file, resolve_path};
+use crate::utils::fs::{count_lines_file, resolve_path};
 
 // Re-export types from wpcnt_lib for convenience
-pub use wpcnt_lib::types::{Ctx, SrcLineItem, SrcLineReport};
+pub use crate::utils::types::{Ctx, SrcLineItem, SrcLineReport};
 
 type SrcConnectorRec = wp_conf::sources::SourceConnector;
 
@@ -188,12 +188,13 @@ pub fn list_file_sources_with_lines(
                             });
                         }
                         Err(e) => {
+                            let err_msg: String = e.to_string();
                             items.push(SrcLineItem {
                                 key,
                                 path: pbuf.display().to_string(),
                                 enabled,
                                 lines: None,
-                                error: Some(e.to_string()),
+                                error: Some(err_msg),
                             });
                         }
                     }

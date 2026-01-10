@@ -1,7 +1,7 @@
 use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
 use std::path::Path;
-use wpcnt_lib::types::Ctx;
+use wp_cli_core::Ctx;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 
@@ -13,7 +13,7 @@ pub struct SourceStatResult {
     /// The resolved work root directory path
     pub work_root: String,
     /// Optional report containing line count statistics for each file source
-    pub report: Option<wpcnt_lib::SrcLineReport>,
+    pub report: Option<wp_cli_core::SrcLineReport>,
 }
 
 /// Statistics module for file-based sources

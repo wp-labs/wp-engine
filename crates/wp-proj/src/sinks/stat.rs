@@ -4,7 +4,7 @@ use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
-use wpcnt_lib as wlib;
+use wp_cli_core as wlib;
 
 pub struct SinkStatFilters<'a> {
     pub work_root: &'a str,
@@ -32,12 +32,12 @@ impl<'a> SinkStatFilters<'a> {
 }
 
 pub struct SinkStatResult {
-    pub rows: Vec<wlib::types::Row>,
+    pub rows: Vec<wlib::Row>,
     pub total: u64,
 }
 
 pub struct CombinedStatResult {
-    pub src: Option<wpcnt_lib::SrcLineReport>,
+    pub src: Option<wp_cli_core::SrcLineReport>,
     pub sink: SinkStatResult,
 }
 

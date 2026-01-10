@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
-use wp_cli_core::connectors::sinks;
+use wp_cli_core::business::connectors::sinks;
 
 /// Helper to create a test environment with valid sink configuration
 fn create_valid_sink_env() -> (TempDir, PathBuf) {

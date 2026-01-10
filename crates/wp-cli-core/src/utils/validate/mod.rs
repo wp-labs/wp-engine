@@ -2,5 +2,7 @@
 //!
 //! This module provides functions for validating data integrity,
 //! checking thresholds, and other validation operations.
-//!
-//! Content will be migrated from wp-cli-utils/src/validate.rs in Phase 5.
+
+pub mod validate;
+
+pub use validate::*;

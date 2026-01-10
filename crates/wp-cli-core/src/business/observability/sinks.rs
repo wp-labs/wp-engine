@@ -7,8 +7,8 @@ use anyhow::Result;
 use orion_variate::EnvDict;
 use std::path::Path;
 use wp_conf::sinks::{load_business_route_confs, load_infra_route_confs};
-use wpcnt_lib::fsutils::{count_lines_file, is_match, resolve_path};
-use wpcnt_lib::types::{Ctx, GroupAccum, Row, SinkAccum};
+use crate::utils::fs::{count_lines_file, is_match, resolve_path};
+use crate::utils::types::{Ctx, GroupAccum, Row, SinkAccum};
 
 /// Process a sink group and collect line count statistics
 pub fn process_group(

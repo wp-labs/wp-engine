@@ -1,7 +1,7 @@
 use anyhow::Result;
 use orion_variate::EnvDict;
 use std::path::Path;
-use wpcnt_lib::types::{Ctx, Row, GroupAccum};
+use crate::utils::types::{Ctx, Row, GroupAccum};
 
 // Use business layer function
 use crate::business::observability::process_group;
@@ -24,7 +24,7 @@ pub fn build_groups_v2(
         wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
     {
         let g = conf.sink_group;
-        if !wpcnt_lib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
         let gacc = process_group(
@@ -42,7 +42,7 @@ pub fn build_groups_v2(
         wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
     {
         let g = conf.sink_group;
-        if !wpcnt_lib::is_match(g.name().as_str(), &ctx.group_filters) {
+        if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
         }
         let gacc = process_group(
@@ -141,12 +141,12 @@ tol   = 0.0
         // create file with 2 lines
         fs::write(root.join("o1.dat"), b"a\nb\n").unwrap();
 
-        let ctx = wpcnt_lib::types::Ctx::new(root.to_string_lossy().to_string());
+        let ctx = crate::utils::types::Ctx::new(root.to_string_lossy().to_string());
         let (_rows, groups, total) = build_groups_v2(&sink_root, &ctx).expect("groups");
         assert!(!groups.is_empty() && total > 0);
 
         // denom uses TotalInput (from defaults); we pass override as total from rows
-        let rep = wpcnt_lib::validate::validate_groups(&groups, Some(total));
+        let rep = crate::utils::validate::validate_groups(&groups, Some(total));
         assert!(!rep.has_error_fail());
     }
 }

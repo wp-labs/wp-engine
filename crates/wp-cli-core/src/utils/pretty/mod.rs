@@ -1,6 +1,11 @@
-//! Pretty-printing and formatting utilities
-//!
-//! This module provides functions for formatting and displaying
-//! various data structures in a human-readable format.
-//!
-//! Content will be migrated from wp-cli-utils/src/pretty/ in Phase 5.
+pub mod helpers;
+pub mod sinks;
+pub mod sources;
+pub mod validate;
+
+pub use sinks::print_rows;
+pub use sources::print_src_files_table;
+pub use validate::{
+    print_validate_evidence, print_validate_headline, print_validate_report, print_validate_tables,
+    print_validate_tables_verbose,
+};

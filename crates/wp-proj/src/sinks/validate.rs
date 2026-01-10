@@ -5,10 +5,10 @@ use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
-use wpcnt_lib as wlib;
+use wp_cli_core as wlib;
 
 pub struct ValidateContext {
-    pub groups: Vec<wlib::types::GroupAccum>,
+    pub groups: Vec<wlib::GroupAccum>,
     pub stats: Option<wlib::StatsFile>,
     pub input_from_sources: Option<u64>,
 }

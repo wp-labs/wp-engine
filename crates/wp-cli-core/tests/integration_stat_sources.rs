@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use orion_variate::EnvDict;
 use tempfile::TempDir;
-use wpcnt_lib::types::Ctx;
+use wp_cli_core::Ctx;
 use wp_cli_core::list_file_sources_with_lines;
 use wp_conf::engine::EngineConfig;
 

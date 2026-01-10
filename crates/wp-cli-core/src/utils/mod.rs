@@ -2,13 +2,14 @@
 //!
 //! This module provides various utility functions that are used across
 //! the CLI application but don't contain business logic.
-//!
-//! The content of these modules will be migrated from wp-cli-utils in Phase 5.
 
-// These modules will be populated in Phase 5
-// pub mod banner;
-// pub mod fs;
-// pub mod pretty;
-// pub mod stats;
-// pub mod types;
-// pub mod validate;
+pub mod banner;
+pub mod fs;
+pub mod pretty;
+pub mod stats;
+pub mod types;
+pub mod validate;
+
+// Re-export commonly used items
+pub use banner::{print_banner, split_quiet_args};
+pub use types::*;
