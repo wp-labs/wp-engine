@@ -1,12 +1,81 @@
-use orion_conf::{EnvTomlLoad, UvsConfFrom};
-use orion_error::ToStructError;
-use orion_variate::EnvDict;
 use wp_error::run_error::{RunReason, RunResult};
-
+use orion_error::{ToStructError, UvsConfFrom};
 use crate::traits::Component;
 
-#[derive(Clone)]
+// 重新导出 wp-cli-core 的类型，保持向后兼容
+pub use wp_cli_core::knowdb::{CheckReport, CleanReport, TableCheck};
+
+/// 知识库管理组件
+///
+/// 提供知识库的初始化、检查和清理功能。
+/// 实现委托给 wp-cli-core::knowdb。
+#[derive(Debug, Clone, Default)]
 pub struct Knowledge;
+
+impl Knowledge {
+    /// 创建新的知识库管理实例
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// 初始化知识库
+    ///
+    /// 在指定的工作根目录下创建知识库结构，包括：
+    /// - models/knowledge/ 目录
+    /// - knowdb.toml 配置文件
+    /// - example/ 示例表目录及文件
+    ///
+    /// # 参数
+    /// - `work_root`: 项目根目录
+    ///
+    /// # 示例
+    /// ```no_run
+    /// use wp_proj::models::Knowledge;
+    ///
+    /// let kb = Knowledge::new();
+    /// kb.init("./my-project")?;
+    /// # Ok::<(), wp_error::run_error::RunError>(())
+    /// ```
+    pub fn init(&self, work_root: &str) -> RunResult<()> {
+        wp_cli_core::knowdb::init(work_root, false)
+            .map_err(|e| RunReason::from_conf(format!("知识库初始化失败: {}", e)).to_err())
+    }
+
+    /// 检查知识库状态
+    ///
+    /// 验证知识库配置文件和表文件的完整性。
+    ///
+    /// # 参数
+    /// - `work_root`: 项目根目录
+    ///
+    /// # 返回
+    /// 返回检查报告，包含：
+    /// - total: 总表数
+    /// - ok: 通过检查的表数
+    /// - fail: 未通过检查的表数
+    /// - tables: 每个表的详细检查结果
+    pub fn check(&self, work_root: &str) -> RunResult<CheckReport> {
+        wp_cli_core::knowdb::check(work_root)
+            .map_err(|e| RunReason::from_conf(format!("知识库检查失败: {}", e)).to_err())
+    }
+
+    /// 清理知识库数据
+    ///
+    /// 删除 models/knowledge/ 目录和 .run/authority.sqlite 缓存文件。
+    ///
+    /// # 参数
+    /// - `work_root`: 项目根目录
+    ///
+    /// # 返回
+    /// 返回清理报告，包含：
+    /// - removed_models_dir: 是否删除了 models 目录
+    /// - removed_authority_cache: 是否删除了权威缓存
+    /// - not_found_models: models 目录是否不存在
+    pub fn clean(&self, work_root: &str) -> RunResult<CleanReport> {
+        wp_cli_core::knowdb::clean(work_root)
+            .map_err(|e| RunReason::from_conf(format!("知识库清理失败: {}", e)).to_err())
+    }
+}
 
 impl Component for Knowledge {
     fn component_name(&self) -> &'static str {
@@ -14,245 +83,76 @@ impl Component for Knowledge {
     }
 }
 
-impl Knowledge {
-    pub fn new() -> Self {
-        Knowledge
-    }
-    pub fn init(&self, work_root: &str) -> RunResult<()> {
-        wp_cli_core::knowdb::init(work_root, false)
-            .map_err(|e| RunReason::from_conf(e.to_string()).to_err())
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
 
-use anyhow::Result;
-use serde::Serialize;
-use std::fs;
-use std::path::{Path, PathBuf};
-use wp_knowledge::loader::KnowDbConf;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct TableCheck {
-    pub name: String,
-    pub dir: String,
-    pub create_ok: bool,
-    pub insert_ok: bool,
-    pub data_ok: bool,
-    pub columns_ok: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Default)]
-pub struct CheckReport {
-    pub total: usize,
-    pub ok: usize,
-    pub fail: usize,
-    pub tables: Vec<TableCheck>,
-}
-
-#[derive(Debug, Clone, Serialize, Default)]
-pub struct CleanReport {
-    pub removed_models_dir: bool,
-    pub removed_authority_cache: bool,
-    pub not_found_models: bool,
-}
-
-/// Initialize knowledge DB skeleton under `<work_root>/models/knowledge`.
-pub fn init(work_root: &str, full: bool) -> Result<()> {
-    // build TOML body via simple structs to avoid drift
-    #[derive(Serialize)]
-    struct KnowdbToml {
-        version: u32,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        base_dir: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        default: Option<LoadSpec>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        csv: Option<CsvSpec>,
-        tables: Vec<TableSpec>,
-    }
-    #[derive(Serialize)]
-    struct LoadSpec {
-        transaction: bool,
-        batch_size: usize,
-        on_error: String,
-    }
-    #[derive(Serialize)]
-    struct CsvSpec {
-        has_header: bool,
-        delimiter: String,
-        encoding: String,
-        trim: bool,
-    }
-    #[derive(Serialize)]
-    struct TableSpec {
-        name: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        dir: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        data_file: Option<String>,
-        columns: ColumnsSpec,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        expected_rows: Option<RowExpect>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        enabled: Option<bool>,
-    }
-    #[derive(Serialize)]
-    struct ColumnsSpec {
-        #[serde(skip_serializing_if = "Vec::is_empty")]
-        by_header: Vec<String>,
-        #[serde(skip_serializing_if = "Vec::is_empty")]
-        by_index: Vec<usize>,
-    }
-    #[derive(Serialize)]
-    struct RowExpect {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        min: Option<usize>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        max: Option<usize>,
+    #[test]
+    fn knowledge_component_name() {
+        let kb = Knowledge::new();
+        assert_eq!(kb.component_name(), "Knowledge");
     }
 
-    let spec = if full {
-        KnowdbToml {
-            version: 2,
-            base_dir: Some(".".into()),
-            default: Some(LoadSpec {
-                transaction: true,
-                batch_size: 2000,
-                on_error: "fail".into(),
-            }),
-            csv: Some(CsvSpec {
-                has_header: true,
-                delimiter: ",".into(),
-                encoding: "utf-8".into(),
-                trim: true,
-            }),
-            tables: vec![TableSpec {
-                name: "example".into(),
-                dir: Some("example".into()),
-                data_file: None,
-                columns: ColumnsSpec {
-                    by_header: vec!["name".into(), "pinying".into()],
-                    by_index: vec![],
-                },
-                expected_rows: Some(RowExpect {
-                    min: Some(1),
-                    max: Some(100),
-                }),
-                enabled: Some(true),
-            }],
-        }
-    } else {
-        KnowdbToml {
-            version: 2,
-            base_dir: None,
-            default: None,
-            csv: None,
-            tables: vec![TableSpec {
-                name: "example".into(),
-                dir: None,
-                data_file: None,
-                columns: ColumnsSpec {
-                    by_header: vec!["name".into(), "pinying".into()],
-                    by_index: vec![],
-                },
-                expected_rows: Some(RowExpect {
-                    min: Some(1),
-                    max: None,
-                }),
-                enabled: None,
-            }],
-        }
-    };
+    #[test]
+    fn knowledge_init_creates_structure() {
+        let temp = tempdir().unwrap();
+        let kb = Knowledge::new();
 
-    let wr = PathBuf::from(work_root);
-    let models_dir = wr.join("models").join("knowledge");
-    fs::create_dir_all(&models_dir)?;
-    let body = toml::to_string_pretty(&spec).unwrap_or_else(|_| {
-        "version = 2\n\n[[tables]]\nname = \"example\"\ncolumns.by_header = [\"name\", \"pinying\"]\n".to_string()
-    });
-    fs::write(models_dir.join("knowdb.toml"), body)?;
-    // example dir and sample files
-    let ex = models_dir.join("example");
-    fs::create_dir_all(&ex)?;
-    fs::write(
-        ex.join("create.sql"),
-        "CREATE TABLE IF NOT EXISTS {table} (\n  id      INTEGER PRIMARY KEY,\n  name    TEXT NOT NULL,\n  pinying TEXT NOT NULL\n);\nCREATE INDEX IF NOT EXISTS idx_{table}_name ON {table}(name);\n",
-    )?;
-    fs::write(
-        ex.join("insert.sql"),
-        "INSERT INTO {table} (name, pinying) VALUES (?1, ?2);\n",
-    )?;
-    fs::write(
-        ex.join("data.csv"),
-        "name,pinying\n令狐冲,linghuchong\n任盈盈,renyingying\n",
-    )?;
-    Ok(())
-}
+        let result = kb.init(temp.path().to_str().unwrap());
+        assert!(result.is_ok(), "初始化应该成功");
 
-/// Check knowledge config and table files; returns structured table-level status.
-pub fn check(work_root: &str, dict: &EnvDict) -> Result<CheckReport> {
-    let wr = PathBuf::from(work_root);
-    let conf_path = wr.join("models/knowledge/knowdb.toml");
-    if !conf_path.exists() {
-        anyhow::bail!("knowdb config not found: {}", conf_path.display());
-    }
-    let conf: KnowDbConf = KnowDbConf::env_load_toml(&conf_path, dict)?;
-    if conf.version != 2 {
-        anyhow::bail!("knowdb.version must be 2");
+        // 验证目录和文件已创建
+        let models_dir = temp.path().join("models/knowledge");
+        assert!(models_dir.exists(), "models/knowledge 目录应该存在");
+        assert!(models_dir.join("knowdb.toml").exists(), "knowdb.toml 应该存在");
+        assert!(models_dir.join("example").exists(), "example 目录应该存在");
     }
 
-    // base_dir relative to knowdb.toml
-    let base_dir = conf_path
-        .parent()
-        .unwrap_or(Path::new("."))
-        .join(conf.base_dir);
-    let mut rep = CheckReport::default();
-    for t in conf.tables.into_iter().filter(|t| t.enabled) {
-        let dir_name = t.dir.clone().unwrap_or(t.name.clone());
-        let tdir = base_dir.join(&dir_name);
-        let create_ok = tdir.join("create.sql").exists();
-        let insert_ok = tdir.join("insert.sql").exists();
-        let data_p = tdir.join(t.data_file.unwrap_or_else(|| "data.csv".into()));
-        let data_ok = data_p.exists();
-        let columns_ok = !t.columns.by_header.is_empty() || !t.columns.by_index.is_empty();
-        let ok = create_ok && insert_ok && data_ok && columns_ok;
-        if ok {
-            rep.ok += 1;
-        } else {
-            rep.fail += 1;
-        }
-        rep.total += 1;
-        rep.tables.push(TableCheck {
-            name: t.name,
-            dir: tdir.to_string_lossy().to_string(),
-            create_ok,
-            insert_ok,
-            data_ok,
-            columns_ok,
-        });
-    }
-    Ok(rep)
-}
+    #[test]
+    fn knowledge_check_reports_status() {
+        let temp = tempdir().unwrap();
+        let kb = Knowledge::new();
 
-/// Clean knowledge models directory and authority cache.
-pub fn clean(work_root: &str) -> Result<CleanReport> {
-    let wr = PathBuf::from(work_root);
-    let models_dir = wr.join("models").join("knowledge");
-    let mut rep = CleanReport::default();
-    match std::fs::remove_dir_all(&models_dir) {
-        Ok(_) => {
-            rep.removed_models_dir = true;
-        }
-        Err(_) => {
-            rep.not_found_models = !models_dir.exists();
-            if !rep.not_found_models {
-                anyhow::bail!("remove '{}' failed", models_dir.display());
-            }
-        }
+        // 先初始化
+        kb.init(temp.path().to_str().unwrap()).unwrap();
+
+        // 再检查
+        let report = kb.check(temp.path().to_str().unwrap()).unwrap();
+        assert!(report.total > 0, "应该有至少一个表");
+        assert_eq!(report.ok, report.total, "所有表应该通过检查");
     }
-    let auth = wr.join(".run").join("authority.sqlite");
-    if auth.exists() {
-        let _ = std::fs::remove_file(&auth);
-        rep.removed_authority_cache = true;
+
+    #[test]
+    fn knowledge_clean_removes_files() {
+        let temp = tempdir().unwrap();
+        let kb = Knowledge::new();
+
+        // 先初始化
+        kb.init(temp.path().to_str().unwrap()).unwrap();
+
+        // 验证文件存在
+        let models_dir = temp.path().join("models/knowledge");
+        assert!(models_dir.exists());
+
+        // 清理
+        let report = kb.clean(temp.path().to_str().unwrap()).unwrap();
+        assert!(report.removed_models_dir, "应该删除 models 目录");
+
+        // 验证文件已删除
+        assert!(!models_dir.exists(), "models 目录应该被删除");
     }
-    Ok(rep)
+
+    #[test]
+    fn knowledge_error_conversion_works() {
+        let kb = Knowledge::new();
+
+        // 使用无效路径触发错误
+        let result = kb.check("/nonexistent/path/that/does/not/exist");
+        assert!(result.is_err(), "应该返回 RunResult 错误");
+
+        let err = result.unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("知识库检查失败"), "错误消息应该包含上下文");
+    }
 }
