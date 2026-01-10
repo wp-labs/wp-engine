@@ -5,12 +5,14 @@
 //! ## 模块组成
 //!
 //! - **config_path**: 统一的配置路径解析，支持回退机制
+//! - **error_conv**: 错误类型转换辅助（anyhow/OrionConfResult → RunResult）
 //! - **error_handler**: 统一的错误处理策略和错误信息格式化
 //! - **log_handler**: 通用的日志处理，基于 WpEngine LogConf 对象
 //! - **path_resolver**: 路径解析 trait，用于将相对路径转换为绝对路径
 //! - **template_init**: 模板文件初始化辅助工具
 
 pub mod config_path;
+pub mod error_conv;
 pub mod error_handler;
 pub mod log_handler;
 pub mod path_resolver;
