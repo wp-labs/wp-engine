@@ -47,6 +47,7 @@ pub mod structure;
 pub mod test_support;
 mod types;
 pub mod utils;
+
 // 便于外部复用：核心配置结构快速重导出
 //pub use buildin::{OutFile, Syslog};
 pub use sinks::{ConnectorRec, DefaultsBody, RouteFile, RouteGroup, RouteSink, StringOrArray};
