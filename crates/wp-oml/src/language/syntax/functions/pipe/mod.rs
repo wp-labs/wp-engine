@@ -36,6 +36,7 @@ pub enum PipeFun {
     SxfGet(SxfGet),
     PathGet(PathGet),
     UrlGet(UrlGet),
+    KvGet(KvGet),
     Ip4ToInt(Ip4ToInt),
 }
 
@@ -62,6 +63,7 @@ impl Display for PipeFun {
             PipeFun::SxfGet(v) => write!(f, "{}", v),
             PipeFun::PathGet(v) => write!(f, "{}", v),
             PipeFun::UrlGet(v) => write!(f, "{}", v),
+            PipeFun::KvGet(v) => write!(f, "{}", v),
             PipeFun::Ip4ToInt(v) => write!(f, "{}", v),
         }
     }

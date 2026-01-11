@@ -1,8 +1,9 @@
 use crate::core::prelude::*;
 use crate::language::{
-    Get, Nth, PathGet, PathType, PiPeOperation, SkipEmpty, SxfGet, UrlGet, UrlType,
+    Get, KvGet, Nth, PathGet, PathType, PiPeOperation, SkipEmpty, SxfGet, UrlGet, UrlType,
 };
 
+use chrono::{DateTime, FixedOffset, ParseError};
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use url::{Position, Url};
@@ -154,6 +155,39 @@ impl ValueProcessor for UrlGet {
     }
 }
 
+impl ValueProcessor for KvGet {
+    fn value_cacu(&self, in_val: DataField) -> DataField {
+        match in_val.get_value() {
+            Value::Chars(x) => {
+                let kv = parse_kv_string(x);
+                match kv.get(&self.key) {
+                    Some(v) => {
+                        if self.key.eq("rt") {
+                            match parse_rfc2822_datetime(v) {
+                                Ok(time) => {
+                                    return DataField::from_time(
+                                        in_val.get_name().to_string(),
+                                        time.naive_local(),
+                                    );
+                                }
+                                Err(_) => {
+                                    return DataField::from_chars(
+                                        in_val.get_name().to_string(),
+                                        String::default(),
+                                    );
+                                }
+                            }
+                        }
+                        DataField::from_chars(in_val.get_name().to_string(), v.clone())
+                    }
+                    None => DataField::from_chars(in_val.get_name().to_string(), String::default()),
+                }
+            }
+            _ => in_val,
+        }
+    }
+}
+
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -298,6 +332,66 @@ fn handle_special_cases(key: &str, value: &str) -> String {
     }
 }
 
+fn parse_kv_string(input: &str) -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    let mut key: Option<String> = None;
+    let mut value = String::new();
+
+    for part in input.split_whitespace() {
+        let mut split = part.splitn(2, '=');
+        if let Some(k) = split.next() {
+            if let Some(v) = split.next() {
+                if let Some(prev_key) = key.take() {
+                    map.insert(prev_key, value.trim_end().to_string());
+                    value.clear();
+                }
+                key = Some(k.to_string());
+                value = v.to_string();
+            } else {
+                if !value.is_empty() {
+                    value.push(' ');
+                }
+                value.push_str(part);
+            }
+        }
+    }
+    if let Some(k) = key {
+        map.insert(k, value.trim_end().to_string());
+    }
+    map
+}
+
+fn parse_rfc2822_datetime(s: &str) -> Result<DateTime<FixedOffset>, ParseError> {
+    let s = s.trim();
+    let s = if let Some(start) = s.find("#arcsightDate(") {
+        let after = &s[start + 14..];
+        if let Some(end) = after.find(')') {
+            &after[..end]
+        } else {
+            s
+        }
+    } else {
+        s
+    };
+    let mut parts = s.splitn(2, ',');
+    let first = parts.next().unwrap_or("");
+    let rest = parts.next().unwrap_or("");
+    let rest = rest.replacen(",", "", 1);
+    let mut cleaned = format!("{},{}", first, rest)
+        .replace("  ", " ")
+        .trim()
+        .to_string();
+    if cleaned.ends_with(" UTC") {
+        cleaned.truncate(cleaned.len() - 4); // 去掉最后4个字符(" UTC")
+        cleaned.push_str(" +0000");
+    }
+    if let Some(offset) = FixedOffset::east_opt(0) {
+        DateTime::parse_from_rfc2822(&cleaned).map(|dt| dt.with_timezone(&offset))
+    } else {
+        DateTime::parse_from_rfc2822("invalid")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
@@ -407,6 +501,48 @@ mod tests {
             "cors=true&content-type=application/x-json-stream".to_string(),
         );
         assert_eq!(target.field("E"), Some(&expect));
+    }
+
+    #[test]
+    fn test_pipe_kv_get() {
+        let cache = &mut FieldQueryCache::default();
+        let data = vec![
+            DataField::from_chars(
+                "A1",
+                "duid=6e807d1ce04d45e6859cb9c8682136a9 cat=SystemEvent osName=Windows 11 Pro rt=#arcsightDate(Mon, 07 Jul 2025, 09:20:32 UTC) activityID=2253609875888355907 activityType=90 siteId=2175157337956401390 siteName=LPS Tech accountId=696251658036601942 accountName=Lenovo (Singapore) Pte Ltd notificationScope=SITE",
+            ),
+            DataField::from_chars(
+                "B2",
+                "fileHash=3395856ce81f2b7382dee72602f798b642f14140 filePath=\\Device\\HarddiskVolume3\\Users\\Administrator\\Desktop\\New Text Document.txt osName=Windows Server 2022 Standard ip=203.215.248.210 cat=SystemEvent suser=ITSS-EDR rt=#arcsightDate(Mon, 07 Jul 2025, 09:40:23 UTC) activityID=2253619873095908462 activityType=2001 siteId=2175157337956401390 siteName=LPS Tech accountId=696251658036601942 accountName=Lenovo (Singapore) Pte Ltd notificationScope=SITE",
+            ),
+            DataField::from_chars(
+                "B3",
+                "osName=Windows Server 2022 Standard fileHash=3395856ce81f2b7382dee72602f798b642f14140 filePath=\\Device\\HarddiskVolume3\\Users\\Administrator\\Desktop\\test.png cat=SystemEvent rt=Tue, 08 Jul 2025, 09:11:44 UTC activityID=2254330226851089655 activityType=4008 siteId=2175157337956401390 siteName=LPS Tech accountId=696251658036601942 accountName=Lenovo (Singapore) Pte Ltd notificationScope=SITE",
+            ),
+        ];
+        let src = DataRecord { items: data };
+
+        let mut conf = r#"
+        name : test
+        ---
+        X : chars =  pipe take(A1) | kv(rt) | Time::to_ts_ms;
+        Y : chars =  pipe take(B2) | kv(fileHash);
+        Z : chars =  pipe take(B3) | kv(osName);
+         "#;
+        let model = oml_parse(&mut conf).unwrap();
+
+        let target = model.transform(src, cache);
+
+        let expect = DataField::from_chars("X".to_string(), "1751851232000".to_string());
+        assert_eq!(target.field("X"), Some(&expect));
+        let expect = DataField::from_chars(
+            "Y".to_string(),
+            "3395856ce81f2b7382dee72602f798b642f14140".to_string(),
+        );
+        assert_eq!(target.field("Y"), Some(&expect));
+        let expect =
+            DataField::from_chars("Z".to_string(), "Windows Server 2022 Standard".to_string());
+        assert_eq!(target.field("Z"), Some(&expect));
     }
 
     #[test]

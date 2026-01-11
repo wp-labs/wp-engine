@@ -30,9 +30,9 @@ impl Display for FunOperation {
 
 pub use pipe::{
     Base64Decode, Base64Encode, Dumb, EncodeType, Get, HtmlEscape, HtmlUnescape, Ip4ToInt,
-    JsonEscape, JsonUnescape, Nth, PIPE_BASE64_DECODE, PIPE_BASE64_ENCODE, PIPE_GET,
+    JsonEscape, JsonUnescape, KvGet, Nth, PIPE_BASE64_DECODE, PIPE_BASE64_ENCODE, PIPE_GET,
     PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_IP4_TO_INT, PIPE_JSON_ESCAPE, PIPE_JSON_UNESCAPE,
-    PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET, PIPE_TIME_TO_TS,
+    PIPE_KV, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET, PIPE_TIME_TO_TS,
     PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON, PIPE_TO_STR,
     PIPE_URL, PathGet, PathType, PipeFun, SkipEmpty, StrEscape, SxfGet, TimeStampUnit, TimeToTs,
     TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, ToStr, UrlGet, UrlType,
