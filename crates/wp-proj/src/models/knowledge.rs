@@ -121,7 +121,9 @@ mod tests {
         kb.init(temp.path().to_str().unwrap()).unwrap();
 
         // 再检查
-        let report = kb.check(temp.path().to_str().unwrap(), &EnvDict::test_default()).unwrap();
+        let report = kb
+            .check(temp.path().to_str().unwrap(), &EnvDict::test_default())
+            .unwrap();
         assert!(report.total > 0, "应该有至少一个表");
         assert_eq!(report.ok, report.total, "所有表应该通过检查");
     }
@@ -151,7 +153,10 @@ mod tests {
         let kb = Knowledge::new();
 
         // 使用无效路径触发错误
-        let result = kb.check("/nonexistent/path/that/does/not/exist", &EnvDict::test_default());
+        let result = kb.check(
+            "/nonexistent/path/that/does/not/exist",
+            &EnvDict::test_default(),
+        );
         assert!(result.is_err(), "应该返回 RunResult 错误");
 
         let err = result.unwrap_err();

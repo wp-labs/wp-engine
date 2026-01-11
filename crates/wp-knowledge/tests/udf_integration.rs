@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use wp_config::test_support::ForTest;
 use orion_variate::EnvDict;
+use wp_config::test_support::ForTest;
 use wp_knowledge::facade as kdb;
 
 fn uniq_tmp_dir() -> PathBuf {
@@ -65,7 +65,12 @@ CREATE INDEX IF NOT EXISTS idx_{table}_end   ON {table}(ip_end_int);
         root.display()
     );
     // Try to initialize, but don't fail if it's already initialized
-    let _ = kdb::init_thread_cloned_from_knowdb(Path::new(&root), &conf_path, &auth_uri, &EnvDict::test_default());
+    let _ = kdb::init_thread_cloned_from_knowdb(
+        Path::new(&root),
+        &conf_path,
+        &auth_uri,
+        &EnvDict::test_default(),
+    );
 
     // 3) query with UDF on read connection
     let rows = kdb::query_named(
@@ -134,7 +139,12 @@ CREATE INDEX IF NOT EXISTS idx_{table}_end   ON {table}(ip_end_int);
         root.display()
     );
     // Try to initialize, but don't fail if it's already initialized
-    let _ = kdb::init_thread_cloned_from_knowdb(Path::new(&root), &conf_path, &auth_uri, &EnvDict::test_default());
+    let _ = kdb::init_thread_cloned_from_knowdb(
+        Path::new(&root),
+        &conf_path,
+        &auth_uri,
+        &EnvDict::test_default(),
+    );
 
     // 3) query with integer compare on read connection
     let rows = kdb::query_named(

@@ -22,8 +22,13 @@ fn ensure_packaged_knowdb_initialized() -> PathBuf {
         }
         let _ = std::fs::remove_file(&authority_file);
         let authority_uri = format!("file:{}?mode=rwc&uri=true", authority_file.display());
-        kdb::init_thread_cloned_from_knowdb(&root_clone, &conf_path, &authority_uri, &EnvDict::test_default())
-            .expect("init knowdb v2");
+        kdb::init_thread_cloned_from_knowdb(
+            &root_clone,
+            &conf_path,
+            &authority_uri,
+            &EnvDict::test_default(),
+        )
+        .expect("init knowdb v2");
     });
     root
 }

@@ -107,16 +107,11 @@ fn matches_pattern(path: &Path, pattern: &str) -> bool {
 
     // 匹配扩展名
     if let Some(ext_pattern) = pattern.strip_prefix("*.") {
-        return path
-            .extension()
-            .and_then(|e| e.to_str())
-            .map_or(false, |ext| ext == ext_pattern);
+        return path.extension().and_then(|e| e.to_str()) == Some(ext_pattern);
     }
 
     // 精确匹配文件名
-    path.file_name()
-        .and_then(|n| n.to_str())
-        .map_or(false, |name| name == pattern)
+    path.file_name().and_then(|n| n.to_str()) == Some(pattern)
 }
 
 #[cfg(test)]

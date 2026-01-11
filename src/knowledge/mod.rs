@@ -1,7 +1,7 @@
+use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use orion_variate::EnvDict;
 
 #[derive(Clone, Debug)]
 pub struct KnowdbHandler {

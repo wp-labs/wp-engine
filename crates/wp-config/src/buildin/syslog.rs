@@ -178,7 +178,8 @@ port = 514
 protocol = "udp"
 enable = true
 "#;
-        let result = SyslogSourceConf::load_from_str(toml, Path::new("/"), &EnvDict::test_default());
+        let result =
+            SyslogSourceConf::load_from_str(toml, Path::new("/"), &EnvDict::test_default());
 
         assert!(result.is_ok(), "Failed: {:?}", result.err());
         let conf = result.unwrap();

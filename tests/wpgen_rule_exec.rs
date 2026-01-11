@@ -93,8 +93,8 @@ output = "stdout"
     let out_target = build_sink_target(&rt.out_sink, 0, 1, 0)
         .await
         .expect("build sink target");
-    let rules =
-        load_gen_confs(rule_root.to_str().unwrap(), &EnvDict::test_default()).expect("load gen_rule.wpl under rule_root");
+    let rules = load_gen_confs(rule_root.to_str().unwrap(), &EnvDict::test_default())
+        .expect("load gen_rule.wpl under rule_root");
     assert!(!rules.is_empty(), "rules should not be empty");
 
     let gnc = RuleGRA {

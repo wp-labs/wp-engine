@@ -97,8 +97,7 @@ impl WarpProject {
 
     pub(crate) fn load_components(&mut self, mode: PrjScope) -> RunResult<()> {
         if mode.enable_conf() {
-            let eng_conf =
-                Self::load_engine_config_only(self.work_root_path(), &self.dict)?;
+            let eng_conf = Self::load_engine_config_only(self.work_root_path(), &self.dict)?;
             self.replace_engine_conf(eng_conf);
             Self::load_wpgen_config_only(self.work_root_path(), &self.dict)?;
         }

@@ -470,7 +470,8 @@ connect = "conn1"
         .unwrap();
 
         // 使用 load_from_path
-        let result = Vec::<SourceInstanceConf>::load_from_path(&sources_file, &EnvDict::test_default());
+        let result =
+            Vec::<SourceInstanceConf>::load_from_path(&sources_file, &EnvDict::test_default());
 
         assert!(result.is_ok(), "load_from_path 应该成功");
         let sources = result.unwrap();
@@ -509,7 +510,8 @@ connect = "conn1"
         .unwrap();
 
         // 使用 load_from_path（会自动调用验证）
-        let result = Vec::<SourceInstanceConf>::load_from_path(&invalid_file, &EnvDict::test_default());
+        let result =
+            Vec::<SourceInstanceConf>::load_from_path(&invalid_file, &EnvDict::test_default());
 
         // 应该验证失败
         assert!(result.is_err(), "空 name 应该验证失败");

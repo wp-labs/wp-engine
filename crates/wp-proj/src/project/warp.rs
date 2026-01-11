@@ -82,14 +82,22 @@ impl WarpProject {
     }
 
     /// 静态初始化：创建并初始化完整项目
-    pub fn init<P: AsRef<Path>>(work_root: P, mode: PrjScope, dict: &orion_variate::EnvDict) -> RunResult<Self> {
+    pub fn init<P: AsRef<Path>>(
+        work_root: P,
+        mode: PrjScope,
+        dict: &orion_variate::EnvDict,
+    ) -> RunResult<Self> {
         let mut project = Self::build(work_root.as_ref(), dict);
         project.init_components(mode)?;
         Ok(project)
     }
 
     /// 静态加载：基于现有结构执行校验加载
-    pub fn load<P: AsRef<Path>>(work_root: P, mode: PrjScope, dict: &orion_variate::EnvDict) -> RunResult<Self> {
+    pub fn load<P: AsRef<Path>>(
+        work_root: P,
+        mode: PrjScope,
+        dict: &orion_variate::EnvDict,
+    ) -> RunResult<Self> {
         let mut project = Self::build(work_root.as_ref(), dict);
         project.load_components(mode)?;
         Ok(project)

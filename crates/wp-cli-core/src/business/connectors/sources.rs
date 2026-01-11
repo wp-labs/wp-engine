@@ -38,7 +38,10 @@ fn resolve_wpsrc_path(work_root: &str, eng_conf: &EngineConfig) -> OrionConfResu
 }
 
 /// Load connectors map from `connectors/source.d` (dedup and validate ids).
-fn load_connectors_map(base_dir: &Path, dict: &EnvDict) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
+fn load_connectors_map(
+    base_dir: &Path,
+    dict: &EnvDict,
+) -> OrionConfResult<BTreeMap<String, SourceConnector>> {
     let defs = load_connector_defs_from_dir(base_dir, ConnectorScope::Source, dict)?;
     Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())
 }
@@ -183,8 +186,12 @@ params_override = { path = "/x" }
         .unwrap();
 
         let eng = EngineConfig::init(root.to_string_lossy().as_ref());
-        let rows = list_connectors(root.to_string_lossy().as_ref(), &eng, &EnvDict::test_default())
-            .expect("list");
+        let rows = list_connectors(
+            root.to_string_lossy().as_ref(),
+            &eng,
+            &EnvDict::test_default(),
+        )
+        .expect("list");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, "c1");
         assert_eq!(rows[0].refs, 2);

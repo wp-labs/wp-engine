@@ -300,11 +300,17 @@ fn target_detail_of(s: &SinkInstanceConf) -> OrionConfResult<(String, String)> {
 }
 
 /// Load sink connectors (id -> connector) beneath the given work root.
-pub fn load_connectors_map(work_root: &str, dict: &orion_variate::EnvDict) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
+pub fn load_connectors_map(
+    work_root: &str,
+    dict: &orion_variate::EnvDict,
+) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
     load_sink_connectors(Path::new(work_root), dict)
 }
 
-fn load_sink_connectors(start: &Path, dict: &orion_variate::EnvDict) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
+fn load_sink_connectors(
+    start: &Path,
+    dict: &orion_variate::EnvDict,
+) -> OrionConfResult<BTreeMap<String, ConnectorRec>> {
     if let Some(dir) = find_connectors_base_dir(start) {
         let defs = load_connector_defs_from_dir(&dir, ConnectorScope::Sink, dict)?;
         Ok(defs.into_iter().map(|def| (def.id.clone(), def)).collect())

@@ -21,15 +21,17 @@ impl WarpConf {
 
         // 仅支持统一 [[sources]] 配置；不再回退旧格式
         let parser = SourceConfigParser::new(self.work_root().to_path_buf());
-        let specs = parser.parse_and_validate_only(&content, dict).map_err(|e| {
-            use orion_error::{ToStructError, UvsConfFrom};
-            wp_error::run_error::RunReason::from_conf(format!(
-                "Failed to parse unified [[sources]] config: {}\npath: {}",
-                e,
-                path.to_string_lossy()
-            ))
-            .to_err()
-        })?;
+        let specs = parser
+            .parse_and_validate_only(&content, dict)
+            .map_err(|e| {
+                use orion_error::{ToStructError, UvsConfFrom};
+                wp_error::run_error::RunReason::from_conf(format!(
+                    "Failed to parse unified [[sources]] config: {}\npath: {}",
+                    e,
+                    path.to_string_lossy()
+                ))
+                .to_err()
+            })?;
         let mut out = Vec::new();
         for spec in specs.into_iter() {
             let f = FileSourceConf {

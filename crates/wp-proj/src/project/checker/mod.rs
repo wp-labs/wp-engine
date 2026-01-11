@@ -392,8 +392,8 @@ pub fn check_with_default(
 fn collect_connector_counts(work_root: &str, dict: &EnvDict) -> Result<ConnectorCounts, String> {
     let (_cm, main) =
         cfg_face::load_warp_engine_confs(work_root, dict).map_err(|e| e.to_string())?;
-    let src_rows = source_connectors::list_connectors(work_root, &main, dict)
-        .map_err(|e| e.to_string())?;
+    let src_rows =
+        source_connectors::list_connectors(work_root, &main, dict).map_err(|e| e.to_string())?;
     let src_defs = src_rows.len();
     let src_refs: usize = src_rows.iter().map(|row| row.refs).sum();
 

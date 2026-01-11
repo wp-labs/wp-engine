@@ -1,6 +1,8 @@
 // use serial_test::serial; // 暂时注释以解决编译问题
 
 #[cfg(test)]
+use orion_variate::EnvDict;
+#[cfg(test)]
 use rand::{RngCore, rng};
 #[cfg(test)]
 use std::fs;
@@ -10,8 +12,6 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(test)]
 use wp_conf::test_support::ForTest;
-#[cfg(test)]
-use orion_variate::EnvDict;
 
 #[cfg(test)]
 /// 创建唯一的临时目录用于测试
@@ -228,7 +228,8 @@ mod tests {
 
         // load_main should succeed (engine config auto-initialized)
         assert!(
-            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default()).is_ok()
+            wp_engine::facade::config::load_warp_engine_confs(&work, &EnvDict::test_default())
+                .is_ok()
         );
         assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
         assert!(check_to_result(project.sources_c().check(&EnvDict::test_default())).is_err());
@@ -276,7 +277,8 @@ mod tests {
 
         // 检查 input_sources
         println!("DEBUG minimal - Calling check_input_sources...");
-        let input_sources_result = check_to_result(project.sources_c().check(&EnvDict::test_default()));
+        let input_sources_result =
+            check_to_result(project.sources_c().check(&EnvDict::test_default()));
         println!(
             "DEBUG minimal - check_input_sources result: {:?}",
             input_sources_result
@@ -517,8 +519,14 @@ mod tests {
             "check_input_sources: {:?}",
             check_to_result(project.sources_c().check(&EnvDict::test_default()))
         );
-        println!("check_wpl: {:?}", check_to_result(project.wpl().check(&EnvDict::test_default())));
-        println!("check_oml: {:?}", check_to_result(project.oml().check(&EnvDict::test_default())));
+        println!(
+            "check_wpl: {:?}",
+            check_to_result(project.wpl().check(&EnvDict::test_default()))
+        );
+        println!(
+            "check_oml: {:?}",
+            check_to_result(project.oml().check(&EnvDict::test_default()))
+        );
 
         // 调试路径问题
         let manual_path = format!("{}/topology/sources/wpsrc.toml", work);
@@ -717,10 +725,22 @@ mod tests {
 
         // 独立测试各个组件
         println!("Connectors check: {:?}", connectors.check(&work));
-        println!("Sinks check: {:?}", check_to_result(sinks.check(&EnvDict::test_default())));
-        println!("Sources check: {:?}", check_to_result(sources.check(&EnvDict::test_default())));
-        println!("WPL check: {:?}", check_to_result(wpl.check(&EnvDict::test_default())));
-        println!("OML check: {:?}", check_to_result(oml.check(&EnvDict::test_default())));
+        println!(
+            "Sinks check: {:?}",
+            check_to_result(sinks.check(&EnvDict::test_default()))
+        );
+        println!(
+            "Sources check: {:?}",
+            check_to_result(sources.check(&EnvDict::test_default()))
+        );
+        println!(
+            "WPL check: {:?}",
+            check_to_result(wpl.check(&EnvDict::test_default()))
+        );
+        println!(
+            "OML check: {:?}",
+            check_to_result(oml.check(&EnvDict::test_default()))
+        );
 
         cleanup_test_dir(&work);
     }
@@ -802,7 +822,8 @@ mod tests {
     #[test]
     fn warp_project_static_init_and_load_conf() {
         let work = uniq_tmp_dir();
-        WarpProject::init(&work, PrjScope::Conf, &EnvDict::test_default()).expect("init conf project");
+        WarpProject::init(&work, PrjScope::Conf, &EnvDict::test_default())
+            .expect("init conf project");
         assert!(std::path::Path::new(&format!("{}/conf/wparse.toml", work)).exists());
         assert!(WarpProject::load(&work, PrjScope::Conf, &EnvDict::test_default()).is_ok());
         cleanup_test_dir(&work);

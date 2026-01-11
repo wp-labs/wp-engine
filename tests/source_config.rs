@@ -356,16 +356,19 @@ fn unified_config_validates_file_source_configuration() {
     // Parse and validate configuration
     let parser = create_config_parser(test_dir);
     let specs = parser
-        .parse_and_validate_only(&format!(
-            r#"
+        .parse_and_validate_only(
+            &format!(
+                r#"
 [[sources]]
 key = "{}"
 enable = true
 connect = "{}"
 params_override = {{ }}
 "#,
-            FILE_SOURCE_KEY, FILE_CONNECTOR_ID
-        ), &EnvDict::test_default())
+                FILE_SOURCE_KEY, FILE_CONNECTOR_ID
+            ),
+            &EnvDict::test_default(),
+        )
         .expect("Failed to validate configuration");
 
     // Validate specifications
@@ -581,16 +584,19 @@ fn configuration_handles_missing_test_files_gracefully() {
     // Validation should succeed (file existence checked during build, not validation)
     let parser = create_config_parser(test_dir);
     let specs = parser
-        .parse_and_validate_only(&format!(
-            r#"
+        .parse_and_validate_only(
+            &format!(
+                r#"
 [[sources]]
 key = "{}"
 enable = true
 connect = "{}"
 params_override = {{ }}
 "#,
-            "test_missing_file", FILE_CONNECTOR_ID
-        ), &EnvDict::test_default())
+                "test_missing_file", FILE_CONNECTOR_ID
+            ),
+            &EnvDict::test_default(),
+        )
         .expect("Validation should succeed even with missing files");
 
     assert_eq!(specs.len(), 1, "Expected exactly 1 specification");
