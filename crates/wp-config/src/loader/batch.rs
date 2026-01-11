@@ -34,11 +34,14 @@ use std::path::{Path, PathBuf};
 /// - 任何配置文件加载失败
 ///
 /// ```
-pub fn load_all_from_dir<T: ConfigLoader>(
+pub fn load_all_from_dir<T>(
     dir: &Path,
     pattern: &str,
     dict: &EnvDict,
-) -> OrionConfResult<Vec<T>> {
+) -> OrionConfResult<Vec<T>>
+where
+    T: ConfigLoader + serde::Serialize,
+{
     if !dir.exists() {
         return Err(ConfIOReason::from_validation(format!("目录不存在: {:?}", dir)).to_err());
     }
@@ -83,10 +86,13 @@ pub fn load_all_from_dir<T: ConfigLoader>(
 /// # 错误
 /// 如果任何文件加载失败，返回第一个错误。
 ///
-pub fn load_from_paths<T: ConfigLoader>(
+pub fn load_from_paths<T>(
     paths: &[PathBuf],
     dict: &EnvDict,
-) -> OrionConfResult<Vec<T>> {
+) -> OrionConfResult<Vec<T>>
+where
+    T: ConfigLoader + serde::Serialize,
+{
     paths
         .iter()
         .map(|path| T::load_from_path(path, dict))
@@ -118,10 +124,12 @@ fn matches_pattern(path: &Path, pattern: &str) -> bool {
 mod tests {
     use super::*;
     use crate::test_support::ForTest;
+    use serde::Serialize;
     use std::fs;
     use tempfile::tempdir;
 
     // 测试用的简单配置类型
+    #[derive(Serialize)]
     struct TestConfig {
         name: String,
     }

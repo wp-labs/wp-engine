@@ -52,7 +52,10 @@ pub trait ConfigLoader: Sized {
     /// )?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    fn load_from_path(path: &Path, dict: &EnvDict) -> OrionConfResult<Self> {
+    fn load_from_path(path: &Path, dict: &EnvDict) -> OrionConfResult<Self>
+    where
+        Self: serde::Serialize,
+    {
         let content = std::fs::read_to_string(path).map_err(|e| {
             ConfIOReason::from_validation(format!(
                 "无法读取 {} 配置文件 {:?}: {}",
@@ -65,6 +68,11 @@ pub trait ConfigLoader: Sized {
 
         let base = path.parent().unwrap_or_else(|| Path::new("."));
         let config = Self::load_from_str(&content, base, dict)?;
+
+        // 检测未替换的变量
+        if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+            super::validate_vars::check_unresolved_variables(&config, filename)?;
+        }
 
         // 自动验证
         config.validate()?;
@@ -122,8 +130,10 @@ pub trait ConfigLoader: Sized {
 mod tests {
     use super::*;
     use crate::test_support::ForTest;
+    use serde::Serialize;
 
     // 用于测试的简单配置类型
+    #[derive(Serialize)]
     struct TestConfig {
         value: String,
     }
@@ -162,7 +172,7 @@ mod tests {
     #[test]
     fn config_loader_validate_called() {
         // 创建一个会失败验证的配置
-        #[derive(Debug)]
+        #[derive(Debug, Serialize)]
         struct InvalidConfig;
 
         impl ConfigLoader for InvalidConfig {

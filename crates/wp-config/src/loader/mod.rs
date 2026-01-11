@@ -21,6 +21,8 @@
 pub mod batch;
 pub mod delegate;
 pub mod traits;
+pub mod validate_vars;
 
 pub use delegate::ConfDelegate;
 pub use traits::ConfigLoader;
+pub use validate_vars::check_unresolved_variables;
