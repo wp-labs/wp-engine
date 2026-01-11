@@ -34,11 +34,7 @@ use std::path::{Path, PathBuf};
 /// - 任何配置文件加载失败
 ///
 /// ```
-pub fn load_all_from_dir<T>(
-    dir: &Path,
-    pattern: &str,
-    dict: &EnvDict,
-) -> OrionConfResult<Vec<T>>
+pub fn load_all_from_dir<T>(dir: &Path, pattern: &str, dict: &EnvDict) -> OrionConfResult<Vec<T>>
 where
     T: ConfigLoader + serde::Serialize,
 {
@@ -86,10 +82,7 @@ where
 /// # 错误
 /// 如果任何文件加载失败，返回第一个错误。
 ///
-pub fn load_from_paths<T>(
-    paths: &[PathBuf],
-    dict: &EnvDict,
-) -> OrionConfResult<Vec<T>>
+pub fn load_from_paths<T>(paths: &[PathBuf], dict: &EnvDict) -> OrionConfResult<Vec<T>>
 where
     T: ConfigLoader + serde::Serialize,
 {

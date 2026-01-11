@@ -1,6 +1,6 @@
 use super::warp::{WarpProject, normalize_work_root};
 use crate::utils::error_handler::ErrorHandler;
-use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError};
+use orion_conf::{EnvTomlLoad, ErrorOwe, ToStructError, TomlIO};
 use orion_error::{UvsConfFrom, UvsValidationFrom};
 use orion_variate::EnvDict;
 use std::path::{Path, PathBuf};
@@ -187,10 +187,9 @@ impl WarpProject {
 
         let engine_config_path = abs_root.join(CONF_WPARSE_FILE);
         if !engine_config_path.exists() {
-            let engine_config_content = include_str!("../example/conf/wparse.toml");
-            if let Err(_) = fs::write(&engine_config_path, engine_config_content) {
-                eprintln!("Warning: Failed to write wparse.toml");
-            }
+            // 使用 EngineConfig::init() 生成配置并保存
+            let conf = EngineConfig::init(&abs_root);
+            conf.save_toml(&engine_config_path).owe_conf()?;
         }
         let conf = EngineConfig::env_load_toml(&engine_config_path, dict)
             .owe_conf()?

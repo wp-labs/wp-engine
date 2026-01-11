@@ -64,11 +64,11 @@ pub fn check_unresolved_variables<T: Serialize>(
 ///
 /// 返回格式为 `${VAR_NAME}` 的字符串
 fn find_first_unresolved_var(s: &str) -> Option<String> {
-    if let Some(start) = s.find("${") {
-        if let Some(end) = s[start..].find('}') {
-            let var_with_braces = &s[start..start + end + 1];
-            return Some(var_with_braces.to_string());
-        }
+    if let Some(start) = s.find("${")
+        && let Some(end) = s[start..].find('}')
+    {
+        let var_with_braces = &s[start..start + end + 1];
+        return Some(var_with_braces.to_string());
     }
     None
 }

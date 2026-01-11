@@ -4,7 +4,7 @@
 /// - 顶层 [stat] 仅包含全局窗口设定（window_sec）
 /// - 分阶段条目：[[stat.pick]] / [[stat.parse]] / [[stat.sink]]
 /// - 字段对齐：name→key，collect→fields，max→top_n，target: "*" 表示全量
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct StatConf {
     /// 统计窗口（单位秒）；None 表示使用默认（60）
@@ -19,6 +19,49 @@ pub struct StatConf {
     /// 下游阶段（Sink）统计项
     #[serde(default)]
     pub sink: Vec<StatItem>,
+}
+/*
+// [stat]
+
+[[stat.pick]]
+key = "pick_stat"
+target = "*"
+
+[[stat.parse]]
+key = "parse_stat"
+target = "*"
+
+[[stat.sink]]
+key = "sink_stat"
+target = "*"
+*/
+impl Default for StatConf {
+    fn default() -> Self {
+        Self {
+            window_sec: Default::default(),
+            pick: [StatItem {
+                key: "pick_stat".into(),
+                target: "*".into(),
+                fields: Vec::new(),
+                top_n: None,
+            }]
+            .to_vec(),
+            parse: [StatItem {
+                key: "parse_stat".into(),
+                target: "*".into(),
+                fields: Vec::new(),
+                top_n: None,
+            }]
+            .to_vec(),
+            sink: [StatItem {
+                key: "sink_stat".into(),
+                target: "*".into(),
+                fields: Vec::new(),
+                top_n: None,
+            }]
+            .to_vec(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]

@@ -1,6 +1,28 @@
 use super::options::CheckComponents;
 use super::types::{Cell, Row};
 use comfy_table::{Cell as TCell, ContentArrangement, Table, presets::UTF8_FULL};
+use std::path::Path;
+
+/// 截断路径，只保留最后 n 级
+fn truncate_path(path: &str, levels: usize) -> String {
+    let p = Path::new(path);
+    let components: Vec<_> = p.components().collect();
+
+    if components.len() <= levels {
+        return path.to_string();
+    }
+
+    let start = components.len() - levels;
+    let truncated: Vec<_> = components[start..].iter().collect();
+
+    let result = truncated
+        .iter()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
+
+    format!(".../{}", result)
+}
 
 pub fn build_detail_table(rows: &[Row], comps: &CheckComponents) -> Table {
     let mut table = Table::new();
@@ -57,11 +79,15 @@ struct DetailEntry {
 
 fn detail_entries_for(row: &Row, comps: &CheckComponents) -> Vec<DetailEntry> {
     let mut entries = Vec::new();
-    let cat = |section: &str| format!("{} / {}", row.path, section);
+    let cat = |section: &str| {
+        let short_path = truncate_path(&row.path, 1);
+        format!("{} / {}", short_path, section)
+    };
     if comps.engine {
         let config_data = row
             .conf_detail
-            .clone()
+            .as_ref()
+            .map(|path| truncate_path(path, 3))
             .unwrap_or_else(|| cell_data(&row.conf));
         entries.push(DetailEntry {
             category: cat("Config"),
@@ -153,4 +179,39 @@ fn status_mark(cell: &Cell) -> &'static str {
 
 fn cell_data(cell: &Cell) -> String {
     cell.msg.clone().unwrap_or_else(|| "ok".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_truncate_path_short() {
+        let path = "my_example";
+        assert_eq!(truncate_path(path, 1), "my_example");
+        assert_eq!(truncate_path(path, 3), "my_example");
+    }
+
+    #[test]
+    fn test_truncate_path_long() {
+        let path = "/Users/zuowenjian/devspace/wp-labs/warp-parse/my_example/./conf/wparse.toml";
+        let result = truncate_path(path, 3);
+        // 路径中的 "." 也算一级，所以最后3级是 "my_example/./conf"，不过这取决于实现
+        // 实际结果会包含 "./", 让我们修正期望值
+        assert_eq!(result, ".../my_example/conf/wparse.toml");
+    }
+
+    #[test]
+    fn test_truncate_path_exact() {
+        let path = "a/b/c";
+        assert_eq!(truncate_path(path, 3), "a/b/c");
+        assert_eq!(truncate_path(path, 2), ".../b/c");
+    }
+
+    #[test]
+    fn test_truncate_path_relative() {
+        let path = "./conf/wparse.toml";
+        assert_eq!(truncate_path(path, 3), "./conf/wparse.toml");
+        assert_eq!(truncate_path(path, 2), ".../conf/wparse.toml");
+    }
 }

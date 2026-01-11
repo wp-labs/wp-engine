@@ -15,7 +15,6 @@ use wp_connector_api::{ParamMap, Tags};
 use wp_log::{debug_data, info_data};
 use wp_model_core::model::fmt_def::TextFmt;
 
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Getters)]
 pub struct SinkInstanceConf {
     /// 组合核心规格：name/type/params/filter/tags 由 CoreSinkSpec 承担，扁平合入
