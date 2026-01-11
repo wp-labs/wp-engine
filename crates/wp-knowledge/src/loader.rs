@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use orion_conf::traits::EnvTomlLoad;
+use orion_conf::EnvTomlLoad;
 use serde::Deserialize;
 use wp_log::info_ctrl;
 
@@ -181,7 +181,8 @@ fn parse_knowdb_conf(
         root.join(conf_path)
     };
     let conf_txt = read_to_string(&conf_abs)?;
-    let conf: KnowDbConf = KnowDbConf::env_parse_toml(&conf_txt, dict).owe_conf()?;
+    let conf: KnowDbConf = <KnowDbConf as EnvTomlLoad<KnowDbConf>>::env_parse_toml(&conf_txt, dict)
+        .owe_conf()?;
     if conf.version != 2 {
         return KnowledgeReason::from_conf("unsupported knowdb.version").err_result();
     }

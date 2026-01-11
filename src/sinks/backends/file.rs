@@ -163,8 +163,6 @@ impl RecSyncSink for FileSink {
 // Default buffer for classic file sink (kept for compatibility)
 const FILE_BUF_SIZE: usize = 102_400; // 100 KiB
 
-// fast_file 环境变量解析已移除
-
 // Classic async file sink (original behavior preserved):
 // - Direct BufWriter writes
 // - Periodic flush by count (every 100 writes)

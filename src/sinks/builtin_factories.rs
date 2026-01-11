@@ -88,6 +88,49 @@ impl SinkDefProvider for FileFactory {
             origin: Some("builtin:file".into()),
         }
     }
+    fn sink_defs(&self) -> Vec<ConnectorDef> {
+        let mut defs = Vec::new();
+        let mut params = ParamMap::new();
+        params.insert("fmt".into(), json!("json"));
+        params.insert("base".into(), json!("./data/out_dat"));
+        params.insert("file".into(), json!("default.json"));
+        defs.push(ConnectorDef {
+            id: "file_json_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into(), "file".into()],
+            default_params: params,
+            origin: Some("builtin:file".into()),
+        });
+
+        let mut params = ParamMap::new();
+        params.insert("fmt".into(), json!("proto"));
+        params.insert("base".into(), json!("./data/out_dat"));
+        params.insert("file".into(), json!("default.proto"));
+        defs.push(ConnectorDef {
+            id: "file_proto_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into(), "file".into()],
+            default_params: params,
+            origin: Some("builtin:file".into()),
+        });
+
+        let mut params = ParamMap::new();
+        params.insert("fmt".into(), json!("kv"));
+        params.insert("base".into(), json!("./data/out_dat"));
+        params.insert("file".into(), json!("default.kv"));
+        defs.push(ConnectorDef {
+            id: "file_kv_sink".into(),
+            kind: self.kind().into(),
+            scope: ConnectorScope::Sink,
+            allow_override: vec!["base".into(), "file".into()],
+            default_params: params,
+            origin: Some("builtin:file".into()),
+        });
+
+        defs
+    }
 }
 
 struct TestRescueFactory;
@@ -145,13 +188,13 @@ pub fn register_builtin_factories() {
 }
 
 pub fn builtin_sink_defs() -> Vec<ConnectorDef> {
-    vec![
-        BlackHoleFactory.sink_def(),
-        FileFactory.sink_def(),
-        SyslogFactory.sink_def(),
-        TcpFactory.sink_def(),
-        TestRescueFactory.sink_def(),
-    ]
+    let mut defs = Vec::new();
+    defs.append(&mut BlackHoleFactory.sink_defs());
+    defs.append(&mut FileFactory.sink_defs());
+    defs.append(&mut SyslogFactory.sink_defs());
+    defs.append(&mut TcpFactory.sink_defs());
+    defs.append(&mut TestRescueFactory.sink_defs());
+    defs
 }
 
 #[allow(dead_code)]
