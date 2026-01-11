@@ -122,6 +122,7 @@ impl LoggingConfig {
                 path: "./logs".to_string(),
             }),
         };
+        #[allow(clippy::field_reassign_with_default)]
         let mut lc = LogConf::default();
         lc.level = self.level.clone();
         lc.levels = None; // 统一用合成后的 level 字符串解析

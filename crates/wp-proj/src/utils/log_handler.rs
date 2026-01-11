@@ -45,6 +45,36 @@ impl LogHandler {
         })
     }
 
+    /// 规范化路径，移除 "." 和 ".." 组件
+    fn normalize_path(path: &Path) -> String {
+        let mut components = Vec::new();
+
+        for component in path.components() {
+            match component {
+                std::path::Component::CurDir => {
+                    // 跳过 "." 组件
+                }
+                std::path::Component::ParentDir => {
+                    // ".." 组件：弹出上一个组件（如果存在且不是根）
+                    if !components.is_empty() {
+                        components.pop();
+                    }
+                }
+                _ => {
+                    // 正常组件（根、前缀、普通路径）
+                    components.push(component);
+                }
+            }
+        }
+
+        // 重新组装路径
+        let mut result = std::path::PathBuf::new();
+        for component in components {
+            result.push(component);
+        }
+        result.to_string_lossy().to_string()
+    }
+
     /// 清理日志目录
     fn clean_log_dir<P: AsRef<Path>>(work_root: P, log_path: &str) -> RunResult<bool> {
         let work_root = work_root.as_ref();
@@ -57,17 +87,19 @@ impl LogHandler {
             work_root.join(log_dir)
         };
 
+        // 规范化路径，移除 "./" 和 "../" 组件
+        let normalized_path = Self::normalize_path(&full_log_dir);
+
         if full_log_dir.exists() {
             match std::fs::remove_dir_all(&full_log_dir) {
                 Ok(_) => {
-                    println!("✓ Cleaned log directory: {}", full_log_dir.display());
+                    println!("✓ Cleaned log directory: {}", normalized_path);
                     Ok(true)
                 }
                 Err(e) => {
                     eprintln!(
                         "Warning: Failed to remove log directory {}: {}",
-                        full_log_dir.display(),
-                        e
+                        normalized_path, e
                     );
                     Ok(false)
                 }
@@ -101,5 +133,25 @@ mod tests {
         let cleaned = LogHandler::clean_logs(&cfg, temp.path().to_str().unwrap()).unwrap();
         assert!(cleaned);
         assert!(!log_dir.exists());
+    }
+
+    #[test]
+    fn normalize_path_removes_current_dir_components() {
+        use std::path::PathBuf;
+
+        // 测试 ././ 被规范化
+        let path = PathBuf::from("/Users/test/./data/./logs");
+        let normalized = LogHandler::normalize_path(&path);
+        assert_eq!(normalized, "/Users/test/data/logs");
+
+        // 测试 .. 被规范化
+        let path = PathBuf::from("/Users/test/foo/../logs");
+        let normalized = LogHandler::normalize_path(&path);
+        assert_eq!(normalized, "/Users/test/logs");
+
+        // 测试混合情况
+        let path = PathBuf::from("/Users/./test/./foo/../logs");
+        let normalized = LogHandler::normalize_path(&path);
+        assert_eq!(normalized, "/Users/test/logs");
     }
 }
