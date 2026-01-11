@@ -70,9 +70,9 @@ pub struct StatItem {
     pub key: String,
     #[serde(default)]
     pub target: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub top_n: Option<usize>,
 }
 

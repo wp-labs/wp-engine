@@ -1,7 +1,7 @@
 use orion_conf::{EnvTomlLoad, ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
 use orion_variate::{EnvDict, EnvEvaluable};
 use serde_derive::{Deserialize, Serialize};
-use std::{fs::create_dir_all, path::Path};
+use std::{fs::create_dir_all, path::{Path, PathBuf}};
 use wp_error::error_handling::RobustnessMode;
 use wp_log::conf::LogConf;
 
@@ -325,5 +325,87 @@ fn resolve_engine_path(value: &str, abs_work_root: &Path) -> String {
     if path.is_absolute() {
         return value.to_string();
     }
-    abs_work_root.join(path).to_string_lossy().to_string()
+
+    // 拼接路径并规范化，去掉 ./ 和 ../ 等组件
+    let joined = abs_work_root.join(path);
+    normalize_path(&joined)
+}
+
+/// 规范化路径，去掉 . 和 .. 组件
+fn normalize_path(path: &Path) -> String {
+    let mut components = Vec::new();
+
+    for component in path.components() {
+        match component {
+            std::path::Component::CurDir => {
+                // 跳过 "." 组件
+            }
+            std::path::Component::ParentDir => {
+                // ".." 组件：弹出上一个组件（如果存在且不是根）
+                if !components.is_empty() {
+                    components.pop();
+                }
+            }
+            _ => {
+                // 正常组件（根、前缀、普通路径）
+                components.push(component);
+            }
+        }
+    }
+
+    // 重新组装路径
+    let mut result = PathBuf::new();
+    for component in components {
+        result.push(component);
+    }
+    result.to_string_lossy().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_path_removes_current_dir() {
+        let path = Path::new("/foo/./bar/./baz");
+        assert_eq!(normalize_path(path), "/foo/bar/baz");
+    }
+
+    #[test]
+    fn test_normalize_path_removes_parent_dir() {
+        let path = Path::new("/foo/bar/../baz");
+        assert_eq!(normalize_path(path), "/foo/baz");
+    }
+
+    #[test]
+    fn test_normalize_path_complex() {
+        let path = Path::new("/foo/./bar/../baz/./qux/../quux");
+        assert_eq!(normalize_path(path), "/foo/baz/quux");
+    }
+
+    #[test]
+    fn test_normalize_path_multiple_current_dirs() {
+        let path = Path::new("/foo/././bar/././baz");
+        assert_eq!(normalize_path(path), "/foo/bar/baz");
+    }
+
+    #[test]
+    fn test_normalize_path_already_normalized() {
+        let path = Path::new("/foo/bar/baz");
+        assert_eq!(normalize_path(path), "/foo/bar/baz");
+    }
+
+    #[test]
+    fn test_resolve_engine_path_with_current_dir() {
+        let work_root = Path::new("/work");
+        let result = resolve_engine_path("./topology/sinks", work_root);
+        assert_eq!(result, "/work/topology/sinks");
+    }
+
+    #[test]
+    fn test_resolve_engine_path_absolute() {
+        let work_root = Path::new("/work");
+        let result = resolve_engine_path("/absolute/path", work_root);
+        assert_eq!(result, "/absolute/path");
+    }
 }
