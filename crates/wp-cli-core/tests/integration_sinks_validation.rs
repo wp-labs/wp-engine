@@ -3,10 +3,12 @@
 // This test ensures that the sink route validation logic works correctly
 // across the full call chain from CLI to config layer.
 
+use orion_variate::EnvDict;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 use wp_cli_core::business::connectors::sinks;
+use wp_conf::test_support::ForTest;
 
 /// Helper to create a test environment with valid sink configuration
 fn create_valid_sink_env() -> (TempDir, PathBuf) {
@@ -55,7 +57,7 @@ params = { file = "output.txt" }
 fn test_validate_routes_with_valid_config() {
     let (_temp, root) = create_valid_sink_env();
 
-    let result = sinks::validate_routes(root.to_str().unwrap());
+    let result = sinks::validate_routes(root.to_str().unwrap(), &EnvDict::test_default());
 
     assert!(result.is_ok(), "Valid configuration should pass validation");
 }
@@ -99,7 +101,7 @@ params = { file = "output.txt" }
     )
     .unwrap();
 
-    let result = sinks::validate_routes(root.to_str().unwrap());
+    let result = sinks::validate_routes(root.to_str().unwrap(), &EnvDict::test_default());
 
     assert!(
         result.is_err(),
@@ -150,7 +152,7 @@ params = { file = "output.txt" }
     )
     .unwrap();
 
-    let result = sinks::validate_routes(root.to_str().unwrap());
+    let result = sinks::validate_routes(root.to_str().unwrap(), &EnvDict::test_default());
 
     assert!(
         result.is_err(),
@@ -201,7 +203,7 @@ params = { file = "output.txt" }
     )
     .unwrap();
 
-    let result = sinks::validate_routes(root.to_str().unwrap());
+    let result = sinks::validate_routes(root.to_str().unwrap(), &EnvDict::test_default());
 
     assert!(result.is_err(), "Empty pattern should fail validation");
     let error_msg = result.unwrap_err().to_string();
@@ -216,7 +218,7 @@ params = { file = "output.txt" }
 fn test_route_table_generation() {
     let (_temp, root) = create_valid_sink_env();
 
-    let result = sinks::route_table(root.to_str().unwrap(), &[], &[]);
+    let result = sinks::route_table(root.to_str().unwrap(), &[], &[], &EnvDict::test_default());
 
     assert!(result.is_ok(), "Route table generation should succeed");
     let routes = result.unwrap();
@@ -233,12 +235,22 @@ fn test_route_table_with_filters() {
     let (_temp, root) = create_valid_sink_env();
 
     // Test group filter
-    let result = sinks::route_table(root.to_str().unwrap(), &["test_group".to_string()], &[]);
+    let result = sinks::route_table(
+        root.to_str().unwrap(),
+        &["test_group".to_string()],
+        &[],
+        &EnvDict::test_default(),
+    );
     assert!(result.is_ok());
     assert!(!result.unwrap().is_empty());
 
     // Test non-matching filter
-    let result = sinks::route_table(root.to_str().unwrap(), &["nonexistent".to_string()], &[]);
+    let result = sinks::route_table(
+        root.to_str().unwrap(),
+        &["nonexistent".to_string()],
+        &[],
+        &EnvDict::test_default(),
+    );
     assert!(result.is_ok());
     assert!(
         result.unwrap().is_empty(),
@@ -246,7 +258,12 @@ fn test_route_table_with_filters() {
     );
 
     // Test sink filter
-    let result = sinks::route_table(root.to_str().unwrap(), &[], &["sink1".to_string()]);
+    let result = sinks::route_table(
+        root.to_str().unwrap(),
+        &[],
+        &["sink1".to_string()],
+        &EnvDict::test_default(),
+    );
     assert!(result.is_ok());
     assert!(!result.unwrap().is_empty());
 }

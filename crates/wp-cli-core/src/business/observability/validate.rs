@@ -7,14 +7,17 @@ use std::path::Path;
 use crate::business::observability::process_group;
 
 /// Build groups and rows for sinks, used by validators. Caller supplies sink_root and ctx.
-pub fn build_groups_v2(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, Vec<GroupAccum>, u64)> {
+pub fn build_groups_v2(
+    sink_root: &Path,
+    ctx: &Ctx,
+    env_dict: &EnvDict,
+) -> Result<(Vec<Row>, Vec<GroupAccum>, u64)> {
     let mut rows = Vec::new();
     let mut groups = Vec::new();
     let mut total = 0u64;
-    let env_dict = EnvDict::new();
 
     for conf in
-        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
+        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), env_dict)?
     {
         let g = conf.sink_group;
         if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
@@ -32,7 +35,7 @@ pub fn build_groups_v2(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, Vec<Gro
         groups.push(gacc);
     }
     for conf in
-        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)?
+        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), env_dict)?
     {
         let g = conf.sink_group;
         if !crate::utils::fs::is_match(g.name().as_str(), &ctx.group_filters) {
@@ -54,6 +57,8 @@ pub fn build_groups_v2(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, Vec<Gro
 
 #[cfg(test)]
 mod tests {
+    use wp_conf::test_support::ForTest;
+
     use super::*;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -135,7 +140,8 @@ tol   = 0.0
         fs::write(root.join("o1.dat"), b"a\nb\n").unwrap();
 
         let ctx = crate::utils::types::Ctx::new(root.to_string_lossy().to_string());
-        let (_rows, groups, total) = build_groups_v2(&sink_root, &ctx).expect("groups");
+        let (_rows, groups, total) =
+            build_groups_v2(&sink_root, &ctx, &EnvDict::test_default()).expect("groups");
         assert!(!groups.is_empty() && total > 0);
 
         // denom uses TotalInput (from defaults); we pass override as total from rows

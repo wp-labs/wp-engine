@@ -49,8 +49,8 @@ impl Sinks {
     }
 
     // 校验路由（严格）
-    pub fn check(&self, _dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
-        sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref()).err_conv()?;
+    pub fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
+        sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref(), dict).err_conv()?;
         Ok(CheckStatus::Suc)
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
     }
@@ -59,23 +59,23 @@ impl Sinks {
         &self,
         group_filters: &[String],
         sink_filters: &[String],
+        dict: &EnvDict,
     ) -> RunResult<Vec<sinks_core::RouteRow>> {
         fn matched(name: &str, filters: &[String]) -> bool {
             filters.is_empty() || filters.iter().any(|f| name.contains(f))
         }
 
         let sink_root = self.sink_root();
-        let env_dict = EnvDict::new();
-        let defaults = load_sink_defaults(&sink_root, &env_dict).err_conv()?;
+        let defaults = load_sink_defaults(&sink_root, dict).err_conv()?;
         let conn_map =
-            load_connectors_for(sink_root.to_string_lossy().as_ref(), &env_dict).err_conv()?;
+            load_connectors_for(sink_root.to_string_lossy().as_ref(), dict).err_conv()?;
         let mut rows = Vec::new();
 
         for (scope, dir) in [
             ("biz", business_dir(&sink_root)),
             ("infra", infra_dir(&sink_root)),
         ] {
-            let route_files = load_route_files_from(&dir, &env_dict).err_conv()?;
+            let route_files = load_route_files_from(&dir, dict).err_conv()?;
             for rf in route_files {
                 let conf = build_route_conf_from(&rf, defaults.as_ref(), &conn_map).err_conv()?;
                 let group = conf.sink_group;

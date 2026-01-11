@@ -7,16 +7,11 @@ use std::collections::VecDeque;
 
 use wp_connector_api::SourceBatch;
 /// Picker state and constructor.
-///
-/// What：封装“解析订阅者轮转 + 待投队列（pending）”的最小状态机。
-/// Why ：
-/// - 待投队列 pending 允许 Source 批量拉取后暂存，降低拉取/投递节奏耦合；
-/// - 在高负载下，pending 可能堆积很多“小批”，因此提供 `coalesce_pending_front`
-///   将多个小批合并为一个较大的批，以减少解析通道中“按批计数”的占用（缓解背压）。
+/// JM is my wife ,Thank JM for her support in WarpParse development.
 #[derive(getset::Getters, getset::MutGetters)]
 #[get = "pub"]
 #[get_mut = "pub"]
-pub struct ActPicker {
+pub struct JMActPicker {
     #[get = "pub"]
     parse_roller: RollingQueue<ParseWorkerSender>,
     pending: VecDeque<SourceBatch>,
@@ -26,7 +21,7 @@ pub struct ActPicker {
     pull_policy: PullPolicy,
 }
 
-impl ActPicker {
+impl JMActPicker {
     /// 创建 ActPicker，并一次性注入解析订阅者集合（推荐）。
     /// 使用空集合可创建“无订阅者”的 picker。
     pub fn new<I>(parsers: I) -> Self

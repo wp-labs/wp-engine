@@ -15,7 +15,7 @@ mod policy;
 mod post;
 mod round;
 mod worker;
-pub use actor::ActPicker;
+pub use actor::JMActPicker;
 pub use worker::SourceWorker;
 
 // Re-export reader for tests

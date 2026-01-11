@@ -1,8 +1,6 @@
 // use serial_test::serial; // 暂时注释以解决编译问题
 
 #[cfg(test)]
-use orion_variate::EnvDict;
-#[cfg(test)]
 use rand::{RngCore, rng};
 #[cfg(test)]
 use std::fs;
@@ -238,7 +236,7 @@ mod tests {
         assert!(check_to_result(project.oml().check(&EnvDict::test_default())).is_ok());
 
         // 连接器检查可能会通过，因为它只检查目录结构
-        let connectors_result = project.connectors().check(&work);
+        let connectors_result = project.connectors().check(&work, &EnvDict::test_default());
         // sinks 检查也可能通过，取决于实现
         let sinks_result = check_to_result(project.sinks_c().check(&EnvDict::test_default()));
 
@@ -724,7 +722,7 @@ mod tests {
         let _knowledge = Knowledge::new();
 
         // 独立测试各个组件
-        println!("Connectors check: {:?}", connectors.check(&work));
+        println!("Connectors check: {:?}", connectors.check(&work, &EnvDict::test_default()));
         println!(
             "Sinks check: {:?}",
             check_to_result(sinks.check(&EnvDict::test_default()))

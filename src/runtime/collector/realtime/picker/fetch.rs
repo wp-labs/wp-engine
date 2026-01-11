@@ -1,6 +1,6 @@
 use crate::runtime::{
     actor::command::TaskController,
-    collector::realtime::{ActPicker, picker::round::SrcStatus},
+    collector::realtime::{JMActPicker, picker::round::SrcStatus},
     errors::err4_dispatch_data,
 };
 use crate::sample_log_with_hits;
@@ -15,7 +15,7 @@ use wp_error::{
     error_handling::{ErrorHandlingStrategy, sys_robust_mode},
 };
 
-impl ActPicker {
+impl JMActPicker {
     pub(super) async fn fetch_into_pending(
         &mut self,
         source: &mut dyn DataSource,
@@ -383,7 +383,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_into_pending_skips_when_no_budget() {
         let (tx, _rx) = mpsc::channel::<SourceBatch>(TEST_SINGLE_SOURCE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(tx)]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(tx)]);
         let mut ctrl = make_task_ctrl();
         let mut src = SpyNoopSource::new();
 
@@ -404,7 +404,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_into_pending_extends_pending_in_try_mode() {
         let (tx, _rx) = mpsc::channel::<SourceBatch>(TEST_SOURCE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(tx)]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(tx)]);
         let mut ctrl = make_task_ctrl();
 
         let batches = vec![
@@ -434,7 +434,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_into_pending_records_wait_in_blocking_mode() {
         let (tx, _rx) = mpsc::channel::<SourceBatch>(TEST_SMALL_SOURCE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(tx)]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(tx)]);
         let mut ctrl = make_task_ctrl();
         let mut src = SlowBlockingSource::new(Duration::from_millis(TEST_SLOW_SOURCE_DELAY_MS));
 

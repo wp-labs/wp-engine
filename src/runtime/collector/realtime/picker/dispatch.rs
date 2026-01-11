@@ -1,6 +1,6 @@
 //! ActPicker 的分发与突发读取逻辑：从数据源拉取、处理 pending、按订阅者轮转分发。
 
-use super::actor::ActPicker;
+use super::actor::JMActPicker;
 use crate::runtime::actor::command::TaskController;
 use crate::runtime::collector::realtime::constants::PICKER_BURST_MAX;
 use crate::runtime::collector::realtime::picker::round::{RoundStat, SrcStatus};
@@ -9,7 +9,7 @@ use crate::stat::metric_collect::MetricCollectors;
 use std::time::Duration;
 use wp_connector_api::DataSource;
 
-impl ActPicker {
+impl JMActPicker {
     pub(super) fn burst_max() -> usize {
         PICKER_BURST_MAX
     }
@@ -215,7 +215,7 @@ mod tests {
     #[tokio::test]
     async fn round_pick_processes_pending_and_fetches_new_batches() {
         let (parse_tx, mut parse_rx) = mpsc::channel::<SourceBatch>(TEST_PARSE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(parse_tx)]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(parse_tx)]);
 
         // 预先放入一个 pending 批次，确保本轮需要发送历史 backlog
         picker.extend_pending(vec![make_event("pending")]);
@@ -257,7 +257,7 @@ mod tests {
     #[tokio::test]
     async fn round_pick_drains_pending_on_terminal_status() {
         let (parse_tx, mut parse_rx) = mpsc::channel::<SourceBatch>(TEST_PARSE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(parse_tx)]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(parse_tx)]);
 
         struct TerminalSource;
         #[async_trait]

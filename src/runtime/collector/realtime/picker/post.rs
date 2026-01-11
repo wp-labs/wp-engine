@@ -1,4 +1,4 @@
-use crate::runtime::collector::realtime::ActPicker;
+use crate::runtime::collector::realtime::JMActPicker;
 use crate::runtime::collector::realtime::constants::{
     PICKER_COALESCE_MAX_EVENTS, PICKER_COALESCE_TRIGGER,
 };
@@ -13,7 +13,7 @@ use wp_connector_api::SourceBatch;
 
 // 轻量背压观测：按固定步长抽样打印（宏内部维护静态计数器）
 /// Picker state and constructor.
-impl ActPicker {
+impl JMActPicker {
     /// 选取下一批要发送的 payload：
     /// - 当 pending 堆积较多时，优先将队头多个小批合并为一批（降低“批数”压力）；
     /// - 否则直接取队头；
@@ -141,7 +141,7 @@ mod tests {
     fn handle_pending_batch_sends_up_to_batch_size() {
         let (parse_a, mut recv_a) = mpsc::channel::<SourceBatch>(TEST_PARSE_CHANNEL_CAP);
         let (parse_b, mut recv_b) = mpsc::channel::<SourceBatch>(TEST_PARSE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![
+        let mut picker = JMActPicker::new(vec![
             ParseWorkerSender::new(parse_a),
             ParseWorkerSender::new(parse_b),
         ]);
@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn handle_pending_batch_requeues_on_backpressure() {
         let (parse_tx, mut recv) = mpsc::channel::<SourceBatch>(TEST_SINGLE_CHANNEL_CAP);
-        let mut picker = ActPicker::new(vec![ParseWorkerSender::new(parse_tx.clone())]);
+        let mut picker = JMActPicker::new(vec![ParseWorkerSender::new(parse_tx.clone())]);
 
         let pending = vec![make_event("retry")];
         picker.extend_pending(pending);

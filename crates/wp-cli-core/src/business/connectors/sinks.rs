@@ -47,9 +47,8 @@ impl RouteFileWithPath {
 }
 
 /// Recursively discover sink route files under `usecase/*/(sink/business.d|sink/infra.d)`.
-fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
+fn load_routes(work_root: &Path, env_dict: &EnvDict) -> OrionConfResult<Vec<RouteFileWithPath>> {
     let mut out: Vec<RouteFileWithPath> = Vec::new();
-    let env_dict = EnvDict::new();
     // 1) usecase/*/<case>/sink/{business.d,infra.d}
     let uc = work_root.join("usecase");
     if uc.exists() {
@@ -85,10 +84,9 @@ fn load_routes(work_root: &Path) -> OrionConfResult<Vec<RouteFileWithPath>> {
 }
 
 /// Validate that each discovered route file can be built with local defaults and connectors.
-pub fn validate_routes(work_root: &str) -> OrionConfResult<()> {
+pub fn validate_routes(work_root: &str, env_dict: &EnvDict) -> OrionConfResult<()> {
     let wr = PathBuf::from(work_root);
-    let routes = load_routes(&wr)?;
-    let env_dict = EnvDict::new();
+    let routes = load_routes(&wr, env_dict)?;
     for rf in &routes {
         let sink_root = rf
             .path
@@ -167,14 +165,14 @@ pub fn validate_routes(work_root: &str) -> OrionConfResult<()> {
 #[allow(clippy::type_complexity)]
 pub fn list_connectors_usage(
     work_root: &str,
+    env_dict: &EnvDict,
 ) -> OrionConfResult<(
     BTreeMap<String, ConnectorRec>,
     Vec<(String, String, String)>,
 )> {
     let wr = PathBuf::from(work_root);
-    let env_dict = EnvDict::new();
-    let conn_map = load_sink_connectors(Path::new(work_root), &env_dict)?;
-    let routes = load_routes(&wr)?;
+    let conn_map = load_sink_connectors(Path::new(work_root), env_dict)?;
+    let routes = load_routes(&wr, env_dict)?;
     let mut usage: Vec<(String, String, String)> = Vec::new();
     for rf in &routes {
         let sink_root = rf
@@ -214,6 +212,7 @@ pub fn route_table(
     work_root: &str,
     group_filters: &[String],
     sink_filters: &[String],
+    env_dict: &EnvDict,
 ) -> OrionConfResult<Vec<RouteRow>> {
     fn matched(name: &str, filters: &[String]) -> bool {
         if filters.is_empty() {
@@ -223,8 +222,7 @@ pub fn route_table(
     }
     let wr = PathBuf::from(work_root);
     let mut out = Vec::new();
-    let rows = load_routes(&wr)?;
-    let env_dict = EnvDict::new();
+    let rows = load_routes(&wr, env_dict)?;
     for rf in rows {
         let sink_root = rf
             .path
@@ -321,6 +319,8 @@ fn load_sink_connectors(
 
 #[cfg(test)]
 mod tests {
+    use wp_conf::test_support::ForTest;
+
     use super::*;
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -382,10 +382,17 @@ tags = ["sink:json"]
         let rf = write_demo_route_business(&case_sink_root);
 
         // validate
-        validate_routes(root.to_string_lossy().as_ref()).expect("validate");
+        validate_routes(root.to_string_lossy().as_ref(), &EnvDict::test_default())
+            .expect("validate");
 
         // route table
-        let rows = route_table(root.to_string_lossy().as_ref(), &[], &[]).expect("rt");
+        let rows = route_table(
+            root.to_string_lossy().as_ref(),
+            &[],
+            &[],
+            &EnvDict::test_default(),
+        )
+        .expect("rt");
         assert!(!rows.is_empty());
         let r = rows.iter().find(|r| r.full_name.ends_with("json")).unwrap();
         assert_eq!(r.scope, "biz");
@@ -394,7 +401,9 @@ tags = ["sink:json"]
         assert!(r.detail.contains("demo.json"));
 
         // usage includes our group
-        let (_map, usage) = list_connectors_usage(root.to_string_lossy().as_ref()).expect("usage");
+        let (_map, usage) =
+            list_connectors_usage(root.to_string_lossy().as_ref(), &EnvDict::test_default())
+                .expect("usage");
         let rf_can = std::fs::canonicalize(&rf)
             .unwrap_or(rf.clone())
             .display()
@@ -434,7 +443,7 @@ params = { file = "output.txt" }
         fs::write(&config_file, invalid_config).unwrap();
 
         // 验证应该失败
-        let result = validate_routes(temp.to_string_lossy().as_ref());
+        let result = validate_routes(temp.to_string_lossy().as_ref(), &EnvDict::test_default());
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();
@@ -468,7 +477,7 @@ params = { file = "output.txt" }
         fs::write(&config_file, valid_config).unwrap();
 
         // 验证应该成功
-        let result = validate_routes(temp.to_string_lossy().as_ref());
+        let result = validate_routes(temp.to_string_lossy().as_ref(), &EnvDict::test_default());
         assert!(result.is_ok());
     }
 
@@ -498,7 +507,7 @@ params = { file = "output.txt" }
         fs::write(&config_file, valid_config).unwrap();
 
         // 验证应该成功
-        let result = validate_routes(temp.to_string_lossy().as_ref());
+        let result = validate_routes(temp.to_string_lossy().as_ref(), &EnvDict::test_default());
         assert!(result.is_ok());
     }
 
@@ -530,7 +539,7 @@ params = { file = "output.txt" }
         fs::write(&config_file, invalid_config).unwrap();
 
         // 验证应该失败
-        let result = validate_routes(temp.to_string_lossy().as_ref());
+        let result = validate_routes(temp.to_string_lossy().as_ref(), &EnvDict::test_default());
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();
@@ -564,7 +573,7 @@ params = { file = "output.txt" }
         fs::write(&config_file, invalid_config).unwrap();
 
         // 验证应该失败
-        let result = validate_routes(temp.to_string_lossy().as_ref());
+        let result = validate_routes(temp.to_string_lossy().as_ref(), &EnvDict::test_default());
         assert!(result.is_err());
 
         let error_msg = result.unwrap_err().to_string();

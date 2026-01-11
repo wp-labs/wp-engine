@@ -46,7 +46,7 @@ pub fn stat_sink_files(filters: &SinkStatFilters<'_>, dict: &EnvDict) -> RunResu
     let ctx = build_ctx(&cm.work_root_path(), filters);
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;
-    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx)
+    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx, dict)
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     Ok(SinkStatResult { rows, total })
 }
@@ -68,7 +68,7 @@ pub fn stat_file_combined(
 
     // Collect sink statistics
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
-    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx)
+    let (rows, total) = wp_cli_core::collect_sink_statistics(&sink_root, &ctx, dict)
         .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
 
     Ok(CombinedStatResult {

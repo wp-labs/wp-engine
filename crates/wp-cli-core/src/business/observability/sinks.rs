@@ -194,10 +194,11 @@ pub fn process_group_v2(
 /// # Arguments
 /// * `sink_root` - Path to the sink root directory (should contain business.d/ and/or infra.d/)
 /// * `ctx` - Processing context with filters and options
+/// * `dict` - Environment dictionary for variable substitution
 ///
 /// # Returns
 /// A tuple of (rows, total) where rows contains per-sink statistics and total is the sum of all lines
-pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>, u64)> {
+pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx, dict: &EnvDict) -> Result<(Vec<Row>, u64)> {
     // Validate that sink directories exist
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         anyhow::bail!(
@@ -208,10 +209,9 @@ pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>,
 
     let mut rows = Vec::new();
     let mut total = 0u64;
-    let env_dict = EnvDict::new();
 
     // Process business route configurations
-    for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
+    for conf in load_business_route_confs(sink_root.to_string_lossy().as_ref(), dict)? {
         let g = conf.sink_group;
         if !is_match(g.name().as_str(), &ctx.group_filters) {
             continue;
@@ -228,7 +228,7 @@ pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx) -> Result<(Vec<Row>,
     }
 
     // Process infra route configurations
-    for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)? {
+    for conf in load_infra_route_confs(sink_root.to_string_lossy().as_ref(), dict)? {
         let g = conf.sink_group;
         if !is_match(g.name().as_str(), &ctx.group_filters) {
             continue;

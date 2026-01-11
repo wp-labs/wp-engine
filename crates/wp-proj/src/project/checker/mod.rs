@@ -134,7 +134,7 @@ fn evaluate_target(
         row.connectors = Cell::from_result(
             project
                 .connectors()
-                .check(&wrs)
+                .check(&wrs, dict)
                 .map(|_| ())
                 .map_err(|e| e.reason().to_string()),
         );
@@ -398,7 +398,7 @@ fn collect_connector_counts(work_root: &str, dict: &EnvDict) -> Result<Connector
     let src_refs: usize = src_rows.iter().map(|row| row.refs).sum();
 
     let (sink_map, sink_usage) =
-        sink_connectors::list_connectors_usage(work_root).map_err(|e| e.to_string())?;
+        sink_connectors::list_connectors_usage(work_root, dict).map_err(|e| e.to_string())?;
     let sink_defs = sink_map.len();
     let sink_routes = sink_usage.len();
 

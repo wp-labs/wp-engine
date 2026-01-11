@@ -87,7 +87,7 @@ impl Sources {
         self.validate_wpsrc_config(self.work_root(), &wpsrc_path, dict)?;
 
         // Attempt to build specifications to ensure they are valid
-        self.build_source_specs(&wpsrc_path)?;
+        self.build_source_specs(&wpsrc_path, dict)?;
 
         println!("✓ Sources configuration validation passed");
         Ok(CheckStatus::Suc)
@@ -142,9 +142,8 @@ impl Sources {
     }
 
     /// Builds source specifications for validation
-    fn build_source_specs(&self, wpsrc_path: &Path) -> RunResult<()> {
-        let env_dict = EnvDict::new();
-        let _specs = load_source_instances_from_file(wpsrc_path, &env_dict).map_err(|e| {
+    fn build_source_specs(&self, wpsrc_path: &Path, dict: &EnvDict) -> RunResult<()> {
+        let _specs = load_source_instances_from_file(wpsrc_path, dict).map_err(|e| {
             RunReason::from_conf(format!("Failed to build source specs: {}", e)).to_err()
         })?;
         Ok(())

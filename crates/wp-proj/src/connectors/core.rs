@@ -24,9 +24,8 @@ impl Connectors {
         Self { paths }
     }
 
-    pub fn lint_rows_from_root<P: AsRef<Path>>(&self, work_root: P) -> Vec<LintRow> {
-        let dict = EnvDict::new();
-        lint_rows_from_root(work_root, &dict)
+    pub fn lint_rows_from_root<P: AsRef<Path>>(&self, work_root: P, dict: &EnvDict) -> Vec<LintRow> {
+        lint_rows_from_root(work_root, dict)
     }
 
     pub fn init_definition<P: AsRef<Path>>(&self, work_root: P) -> RunResult<()> {
@@ -47,12 +46,12 @@ impl Connectors {
     ///
     /// # 注意
     ///
-    /// Connectors 需要外部传入 work_root 参数，因为它不持有完整的组件上下文。
+    /// Connectors 需要外部传入 work_root 和 dict 参数，因为它不持有完整的组件上下文。
     /// 这是有意的设计，反映了 Connectors 作为横切关注点的特殊性。
     ///
     /// 虽然此方法签名与 Checkable trait 不同，但返回类型已统一为 RunResult<CheckStatus>。
-    pub fn check<P: AsRef<Path>>(&self, work_root: P) -> RunResult<CheckStatus> {
-        let errors = self.collect_lint_errors(work_root.as_ref());
+    pub fn check<P: AsRef<Path>>(&self, work_root: P, dict: &EnvDict) -> RunResult<CheckStatus> {
+        let errors = self.collect_lint_errors(work_root.as_ref(), dict);
 
         if errors.is_empty() {
             println!("✓ Connectors validation passed");
@@ -68,9 +67,9 @@ impl Connectors {
     }
 
     /// 收集所有 lint 错误
-    fn collect_lint_errors(&self, work_root: &Path) -> Vec<String> {
+    fn collect_lint_errors(&self, work_root: &Path, dict: &EnvDict) -> Vec<String> {
         let mut errors = Vec::new();
-        for row in self.lint_rows_from_root(work_root) {
+        for row in self.lint_rows_from_root(work_root, dict) {
             if matches!(row.sev, LintSeverity::Error) {
                 errors.push(format_lint_error(&row));
             }

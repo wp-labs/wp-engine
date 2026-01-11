@@ -1,4 +1,4 @@
-use super::actor::ActPicker;
+use super::actor::JMActPicker;
 use crate::runtime::actor::command::{CmdSubscriber, TaskController, spawn_ctrl_event_bridge};
 use crate::runtime::actor::constants::ACTOR_IDLE_TICK_MS;
 use crate::runtime::collector::realtime::constants::{
@@ -17,7 +17,7 @@ use wp_connector_api::DataSource;
 
 /// 独立的 Source worker：负责源生命周期与数据调度，内部复用 ActPicker 的 pending/分发逻辑。
 pub struct SourceWorker {
-    picker: ActPicker,
+    picker: JMActPicker,
     // 速率限制（事件/秒）换算为“单元大小”的上限；None 表示不限速
     speed_limit: Option<usize>,
     // 任务级最大处理事件数（达到后退出）；None 表示不限制
@@ -38,7 +38,7 @@ impl SourceWorker {
         } else {
             Some(speed_limit)
         };
-        let picker = ActPicker::new(parse_senders);
+        let picker = JMActPicker::new(parse_senders);
         Self {
             picker,
             speed_limit: limit,
@@ -129,7 +129,7 @@ impl SourceWorker {
     fn throttle_unit_size(&self, round_batch: usize, event_cnt_of_batch: usize) -> usize {
         // 一次“速率单元”在默认情况下等于：每轮最大突发批数 × 每批轮次 × 每批事件数
         // 为什么：将限速触发点与内部调度的粒度对齐，避免过于频繁的 sleep 抖动。
-        let default_unit = ActPicker::burst_max()
+        let default_unit = JMActPicker::burst_max()
             .saturating_mul(round_batch)
             .saturating_mul(event_cnt_of_batch)
             .max(1);
@@ -354,7 +354,7 @@ mod tests {
     #[test]
     fn throttle_unit_size_defaults_when_unlimited() {
         let worker = worker_with_speed_limit(0);
-        let expected = ActPicker::burst_max() * 3 * 7;
+        let expected = JMActPicker::burst_max() * 3 * 7;
         assert_eq!(worker.throttle_unit_size(3, 7), expected);
     }
 

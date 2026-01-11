@@ -23,7 +23,7 @@ pub fn prepare_validate_context(
     let sink_root = Path::new(&cm.work_root_path()).join(main.sink_root());
     ensure_sink_dirs(&sink_root, main.sink_root())?;
     let (_rows, groups, _total) =
-        wp_cli_core::business::observability::build_groups_v2(&sink_root, &ctx)
+        wp_cli_core::business::observability::build_groups_v2(&sink_root, &ctx, dict)
             .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
     let stats = stats_file.and_then(|p| wlib::load_stats_file(Path::new(p)));
     let input_from_sources =

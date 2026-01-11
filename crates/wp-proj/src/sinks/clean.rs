@@ -19,7 +19,7 @@ pub fn clean_outputs(work_root: &str, dict: &EnvDict) -> RunResult<bool> {
     let sink_root = Path::new(&conf_manager.work_root_path()).join(main_conf.sink_root());
 
     // 使用现有的 sinks 清理功能
-    match wp_cli_core::data::clean::clean_outputs(&sink_root) {
+    match wp_cli_core::data::clean::clean_outputs(&sink_root, dict) {
         Ok(_) => {
             println!("✓ Cleaned sink outputs from {}", main_conf.sink_root());
             Ok(true)

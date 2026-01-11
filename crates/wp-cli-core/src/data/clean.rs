@@ -24,14 +24,13 @@ impl DataCleanReport {
 }
 
 /// Clean file-like outputs for all configured sinks under sink_root (business.d/infra.d)
-pub fn clean_outputs(sink_root: &Path) -> Result<DataCleanReport> {
+pub fn clean_outputs(sink_root: &Path, env_dict: &EnvDict) -> Result<DataCleanReport> {
     let mut rep = DataCleanReport::default();
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         return Ok(rep);
     }
-    let env_dict = EnvDict::new();
     for conf in
-        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)
+        wp_conf::sinks::load_infra_route_confs(sink_root.to_string_lossy().as_ref(), env_dict)
             .unwrap_or_default()
     {
         for s in conf.sink_group.sinks.iter() {
@@ -39,7 +38,7 @@ pub fn clean_outputs(sink_root: &Path) -> Result<DataCleanReport> {
         }
     }
     for conf in
-        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), &env_dict)
+        wp_conf::sinks::load_business_route_confs(sink_root.to_string_lossy().as_ref(), env_dict)
             .unwrap_or_default()
     {
         for s in conf.sink_group.sinks.iter() {
