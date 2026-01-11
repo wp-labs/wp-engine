@@ -110,7 +110,7 @@ pub struct WpGenResolved {
 impl LoggingConfig {
     /// 将新格式 logging 映射为运行期使用的 wp_log::conf::LogConf
     pub fn to_log_conf(&self) -> wp_log::conf::LogConf {
-        use wp_log::conf::{FileLogConf, LogConf, Output};
+        use wp_log::conf::{FileLogConf, Output};
         let output = match self.output.as_str() {
             "stdout" | "console" => Output::Console,
             "both" => Output::Both,
@@ -122,13 +122,22 @@ impl LoggingConfig {
                 path: "./logs".to_string(),
             }),
         };
+        wp_log::conf::LogConf {
+            level: self.level.clone(),
+            levels: None,
+            output,
+            file,
+        }
+        /*
         #[allow(clippy::field_reassign_with_default)]
+
         let mut lc = LogConf::default();
         lc.level = self.level.clone();
         lc.levels = None; // 统一用合成后的 level 字符串解析
         lc.output = output;
         lc.file = file;
         lc
+        */
     }
 }
 
