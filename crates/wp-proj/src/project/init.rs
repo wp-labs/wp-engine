@@ -102,7 +102,9 @@ impl WarpProject {
             Self::load_wpgen_config_only(self.work_root_path(), &self.dict)?;
         }
         if mode.enable_connector() {
-            self.connectors().check(self.work_root(), &self.dict).map(|_| ())?;
+            self.connectors()
+                .check(self.work_root(), &self.dict)
+                .map(|_| ())?;
         }
         if mode.enable_topology() {
             self.sinks_c().check(&self.dict)?;

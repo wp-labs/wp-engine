@@ -1,7 +1,10 @@
 use orion_conf::{EnvTomlLoad, ErrorOwe, ErrorWith, TomlIO, error::OrionConfResult};
 use orion_variate::{EnvDict, EnvEvaluable};
 use serde_derive::{Deserialize, Serialize};
-use std::{fs::create_dir_all, path::{Path, PathBuf}};
+use std::{
+    fs::create_dir_all,
+    path::{Path, PathBuf},
+};
 use wp_error::error_handling::RobustnessMode;
 use wp_log::conf::LogConf;
 

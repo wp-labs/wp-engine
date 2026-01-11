@@ -24,7 +24,11 @@ impl Connectors {
         Self { paths }
     }
 
-    pub fn lint_rows_from_root<P: AsRef<Path>>(&self, work_root: P, dict: &EnvDict) -> Vec<LintRow> {
+    pub fn lint_rows_from_root<P: AsRef<Path>>(
+        &self,
+        work_root: P,
+        dict: &EnvDict,
+    ) -> Vec<LintRow> {
         lint_rows_from_root(work_root, dict)
     }
 

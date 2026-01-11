@@ -198,7 +198,11 @@ pub fn process_group_v2(
 ///
 /// # Returns
 /// A tuple of (rows, total) where rows contains per-sink statistics and total is the sum of all lines
-pub fn collect_sink_statistics(sink_root: &Path, ctx: &Ctx, dict: &EnvDict) -> Result<(Vec<Row>, u64)> {
+pub fn collect_sink_statistics(
+    sink_root: &Path,
+    ctx: &Ctx,
+    dict: &EnvDict,
+) -> Result<(Vec<Row>, u64)> {
     // Validate that sink directories exist
     if !(sink_root.join("business.d").exists() || sink_root.join("infra.d").exists()) {
         anyhow::bail!(

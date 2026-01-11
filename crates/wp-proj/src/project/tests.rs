@@ -722,7 +722,10 @@ mod tests {
         let _knowledge = Knowledge::new();
 
         // 独立测试各个组件
-        println!("Connectors check: {:?}", connectors.check(&work, &EnvDict::test_default()));
+        println!(
+            "Connectors check: {:?}",
+            connectors.check(&work, &EnvDict::test_default())
+        );
         println!(
             "Sinks check: {:?}",
             check_to_result(sinks.check(&EnvDict::test_default()))

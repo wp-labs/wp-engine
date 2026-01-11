@@ -50,7 +50,8 @@ impl Sinks {
 
     // 校验路由（严格）
     pub fn check(&self, dict: &orion_variate::EnvDict) -> RunResult<CheckStatus> {
-        sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref(), dict).err_conv()?;
+        sinks_core::validate_routes(self.work_root().to_string_lossy().as_ref(), dict)
+            .err_conv()?;
         Ok(CheckStatus::Suc)
         //.map_err(|e| RunReason::from_conf(e.to_string()).to_err())
     }
