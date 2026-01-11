@@ -55,7 +55,7 @@ pub fn list_sink_kinds() -> Vec<String> {
 pub fn registered_sink_defs() -> Vec<ConnectorDef> {
     sink_reg()
         .read()
-        .map(|reg| reg.values().map(|(f, _)| f.sink_def()).collect())
+        .map(|reg| reg.values().flat_map(|(f, _)| f.sink_defs()).collect())
         .unwrap_or_default()
 }
 
@@ -90,7 +90,7 @@ pub fn list_source_kinds() -> Vec<String> {
 pub fn registered_source_defs() -> Vec<ConnectorDef> {
     src_reg()
         .read()
-        .map(|reg| reg.values().map(|(f, _)| f.source_def()).collect())
+        .map(|reg| reg.values().flat_map(|(f, _)| f.source_defs()).collect())
         .unwrap_or_default()
 }
 
