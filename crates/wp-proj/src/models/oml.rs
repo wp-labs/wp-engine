@@ -148,7 +148,7 @@ mod tests {
     fn initialize_examples_creates_valid_files() {
         let temp = temp_workdir();
         let root = temp.path().to_str().unwrap();
-        let eng = Arc::new(EngineConfig::init(root));
+        let eng = Arc::new(EngineConfig::init(root).conf_absolutize(root));
         let oml = Oml::new(root, eng);
         oml.init_with_examples().expect("init examples");
 

@@ -291,7 +291,7 @@ mod tests {
     #[test]
     fn test_sources_creation() {
         let temp = temp_workdir();
-        let eng = std::sync::Arc::new(EngineConfig::init(temp.path()));
+        let eng = std::sync::Arc::new(EngineConfig::init(temp.path()).conf_absolutize(temp.path()));
         let _sources = Sources::new(temp.path(), eng);
         assert!(true); // Basic test to ensure struct can be created
     }

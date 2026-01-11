@@ -716,7 +716,7 @@ mod tests {
 
         let paths = ProjectPaths::from_root(&work);
         let connectors = Connectors::new(paths.connectors.clone());
-        let eng = Arc::new(EngineConfig::init(&work));
+        let eng = Arc::new(EngineConfig::init(&work).conf_absolutize(&work));
         let sinks = Sinks::new(&work, eng.clone());
         let sources = Sources::new(&work, eng.clone());
         let wpl = Wpl::new(&work, eng.clone());
@@ -750,7 +750,7 @@ mod tests {
     fn test_sources_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let eng = Arc::new(EngineConfig::init(&work));
+        let eng = Arc::new(EngineConfig::init(&work).conf_absolutize(&work));
         let sources = Sources::new(&work, eng.clone());
 
         // 测试空目录
@@ -770,7 +770,7 @@ mod tests {
     fn test_wpl_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let eng = Arc::new(EngineConfig::init(&work));
+        let eng = Arc::new(EngineConfig::init(&work).conf_absolutize(&work));
         let wpl = Wpl::new(&work, eng);
 
         // 测试空目录
@@ -799,7 +799,7 @@ mod tests {
     fn test_oml_check_edge_cases() {
         let work = uniq_tmp_dir();
 
-        let eng = Arc::new(EngineConfig::init(&work));
+        let eng = Arc::new(EngineConfig::init(&work).conf_absolutize(&work));
         let oml = Oml::new(&work, eng);
 
         // 测试空目录

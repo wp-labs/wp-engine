@@ -247,7 +247,7 @@ mod tests {
     fn init_populates_sink_templates() {
         let temp = temp_workdir();
         write_basic_wparse_config(temp.path());
-        let eng = Arc::new(EngineConfig::init(temp.path()));
+        let eng = Arc::new(EngineConfig::init(temp.path()).conf_absolutize(temp.path()));
         let sinks = Sinks::new(temp.path(), eng);
         sinks.init().expect("init sinks");
 

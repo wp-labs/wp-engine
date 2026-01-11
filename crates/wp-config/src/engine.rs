@@ -132,7 +132,7 @@ pub fn default_oml_root() -> String {
 }
 
 pub fn default_sinks_root() -> String {
-    "./models/sinks".to_string()
+    "./topology/sinks".to_string()
 }
 
 pub fn default_rescue_path() -> String {
@@ -179,20 +179,20 @@ impl Default for EngineConfig {
 }
 
 impl EngineConfig {
-    pub fn init<P: AsRef<Path>>(root: P) -> Self {
+    pub fn init<P: AsRef<Path>>(_root: P) -> Self {
         Self {
             version: "1.0".to_string(),
             rescue: RescueConf {
-                path: format!("{}/data/rescue", root.as_ref().display()),
+                path: default_rescue_path(),
             },
             models: ModelsConf {
-                wpl: format!("{}/models/wpl", root.as_ref().display()),
-                oml: format!("{}/models/oml", root.as_ref().display()),
+                wpl: default_wpl_root(),
+                oml: default_oml_root(),
                 // Use pluralized roots for sources/sinks; legacy single forms are no longer default
             },
             topology: TopologyConf {
-                sources: format!("{}/topology/sources", root.as_ref().display()),
-                sinks: format!("{}/topology/sinks", root.as_ref().display()),
+                sources: default_sources_root(),
+                sinks: default_sinks_root(),
             },
             performance: PerformanceConf {
                 rate_limit_rps: 10000,

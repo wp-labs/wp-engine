@@ -111,7 +111,7 @@ mod tests {
             &EnvDict::test_default(),
         )
         .expect("resolve path");
-        assert_eq!(path, temp.path().join("models/sinks"));
+        assert_eq!(path, temp.path().join("topology/sinks"));
     }
 
     #[test]
