@@ -1,8 +1,7 @@
 //! WplWorkshop 实现
 
-use crate::core::parser::ParseOption;
 use crate::core::parser::wpl_engine::parser::MultiParser;
-use crate::core::{WplPipeline, WplRepository};
+use crate::core::parser::{ParseOption, WplPipeline, WplRepository};
 use crate::stat::MonSend;
 use crate::types::AnyResult;
 use getset::Getters;

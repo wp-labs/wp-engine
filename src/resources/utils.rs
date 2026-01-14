@@ -1,5 +1,5 @@
-use crate::core::WplPipeline;
 use crate::core::generator::rules::fetch_oml_data;
+use crate::core::parser::WplPipeline;
 use crate::core::parser::indexing::ResourceIndexer;
 use crate::orchestrator::config::WPARSE_OML_FILE;
 use crate::orchestrator::config::WPARSE_RULE_FILE;

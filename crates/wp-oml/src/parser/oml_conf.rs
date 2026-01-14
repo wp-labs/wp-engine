@@ -1,4 +1,5 @@
 use crate::language::{EvalExp, ObjModel};
+use crate::parser::error::OMLCodeErrorTait;
 use crate::parser::keyword::{kw_head_sep_line, kw_oml_name};
 use crate::parser::oml_aggregate::oml_aggregate;
 //use crate::parser::oml_privacy::oml_privacy;
@@ -6,6 +7,7 @@ use crate::parser::oml_aggregate::oml_aggregate;
 use winnow::ascii::multispace0;
 use winnow::combinator::{opt, repeat, trace};
 use winnow::error::StrContext;
+use wp_error::{OMLCodeError, OMLCodeResult};
 use wp_parser::Parser;
 use wp_parser::WResult;
 use wp_parser::atom::{take_obj_path, take_obj_wild_path};
@@ -14,9 +16,16 @@ use wpl::parser::utils::peek_str;
 
 use super::keyword::kw_oml_rule;
 
-pub fn oml_parse(data: &mut &str) -> WResult<ObjModel> {
-    trace("oml conf", oml_conf_code).parse_next(data)
+pub fn oml_parse_raw(data: &mut &str) -> WResult<ObjModel> {
+    oml_conf_code.parse_next(data)
 }
+pub fn oml_parse(data: &mut &str, tag: &str) -> OMLCodeResult<ObjModel> {
+    match oml_conf_code.parse_next(data) {
+        Ok(o) => Ok(o),
+        Err(e) => Err(OMLCodeError::from_syntax(e, data, tag)),
+    }
+}
+
 pub fn oml_conf_code(data: &mut &str) -> WResult<ObjModel> {
     let name = trace("oml head", oml_conf_head).parse_next(data)?;
     debug_data!("obj model: {} begin ", name);
@@ -33,14 +42,6 @@ pub fn oml_conf_code(data: &mut &str) -> WResult<ObjModel> {
     if !data.is_empty() {
         if peek_str("---", data).is_ok() {
             kw_head_sep_line.parse_next(data)?;
-            /*
-            let privacys: Vec<(String, PrivacyProcessorType)> =
-                repeat(0.., oml_privacy).parse_next(data)?;
-            debug_data!("obj model: oml privacy loaded!");
-            for (k, v) in privacys {
-                a_items.insert_privacy(k, v);
-            }
-            */
         } else {
             //探测错误;
             oml_aggregate.parse_next(data)?;
@@ -68,7 +69,7 @@ pub fn oml_conf_rules(data: &mut &str) -> WResult<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::oml_conf::oml_parse;
+    use crate::parser::oml_conf::oml_parse_raw;
     use crate::parser::utils::for_test::{assert_oml_parse, assert_oml_parse_ext};
     use wp_parser::Parser;
     use wp_parser::WResult as ModalResult;
@@ -89,7 +90,7 @@ src_ip       :auto   = take();
 update_time  :time    = take() { _ :  time(2020-10-01 12:30:30) };
 
         "#;
-        assert_oml_parse(&mut code, oml_parse);
+        assert_oml_parse(&mut code, oml_parse_raw);
         let mut code = r#"
 name : test
 rule :
@@ -100,7 +101,7 @@ pos_sn       :chars   = take() ;
 aler*        : auto   = take() ;
 update_time  :time    = take() { _ :  time(2020-10-01 12:30:30) };
         "#;
-        assert_oml_parse(&mut code, oml_parse);
+        assert_oml_parse(&mut code, oml_parse_raw);
         Ok(())
     }
 
@@ -112,7 +113,7 @@ name : test
 version      : chars   = Now::time() ;
 version      : chars   = Now::time() ;
         "#;
-        assert_oml_parse(&mut code, oml_parse);
+        assert_oml_parse(&mut code, oml_parse_raw);
         Ok(())
     }
 
@@ -124,7 +125,7 @@ name : test
 version      : chars   = pipe take() | base64_encode  ;
 version      : chars   = pipe take(ip) | to_str |  base64_encode ;
         "#;
-        assert_oml_parse(&mut code, oml_parse);
+        assert_oml_parse(&mut code, oml_parse_raw);
         Ok(())
     }
     #[test]
@@ -134,7 +135,7 @@ name : test
 ---
 version      :chars   = fmt("_{}*{}",@ip,@sys)  ;
         "#;
-        oml_parse.parse_next(&mut code)?;
+        oml_parse_raw.parse_next(&mut code)?;
         //assert_oml_parse(&mut code, oml_conf);
         Ok(())
     }
@@ -149,7 +150,7 @@ values : obj = object {
 };
 citys : array = collect take( keys : [ a,b,c* ] ) ;
         "#;
-        let model = oml_parse.parse_next(&mut code)?;
+        let model = oml_parse_raw.parse_next(&mut code)?;
         assert_eq!(model.items.len(), 2);
         println!("{}", model);
         Ok(())
@@ -169,7 +170,7 @@ values : obj = object {
     process,disk_free, disk_used ,disk_used_by_fifty_min, disk_used_by_one_min    : digit  = take() ;
 };
         "#;
-        let model = oml_parse.parse_next(&mut code)?;
+        let model = oml_parse_raw.parse_next(&mut code)?;
         assert_eq!(model.items.len(), 2);
         println!("{}", model);
         Ok(())
@@ -191,7 +192,7 @@ values  = object {
     process,disk_free, disk_used ,disk_used_by_fifty_min, disk_used_by_one_min    : digit  = take() ;
 };
 "#;
-        let model = oml_parse.parse_next(&mut code)?;
+        let model = oml_parse_raw.parse_next(&mut code)?;
         assert_eq!(model.items.len(), 2);
         println!("{}", model);
         Ok(())
@@ -217,7 +218,7 @@ update_time  : auto = take () { _ :  time(2020-10-01 12:30:30) };
 
         let code = CommentParser::ignore_comment(&mut raw_code)?;
         let mut pure_code = code.as_str();
-        assert_oml_parse_ext(&mut pure_code, oml_parse, expect);
+        assert_oml_parse_ext(&mut pure_code, oml_parse_raw, expect);
         Ok(())
     }
 }

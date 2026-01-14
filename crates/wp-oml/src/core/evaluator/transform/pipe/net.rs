@@ -20,7 +20,7 @@ impl ValueProcessor for Ip4ToInt {
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use std::net::{IpAddr, Ipv4Addr};
     use wp_data_model::cache::FieldQueryCache;
@@ -40,7 +40,7 @@ mod tests {
         ---
         X  =  pipe  read(src_ip) | ip4_to_int ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
         let expect = DataField::from_digit("X".to_string(), 2130706433);
         assert_eq!(target.field("X"), Some(&expect));

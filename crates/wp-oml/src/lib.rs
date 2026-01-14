@@ -23,5 +23,5 @@ mod test_utils;
 pub mod types;
 
 pub use core::{DataRecordRef, ExpEvaluator};
-pub use parser::oml_parse;
+pub use parser::oml_parse_raw;
 //pub use privacy::{PrivacyConf, PrivacyProcessorFactory};

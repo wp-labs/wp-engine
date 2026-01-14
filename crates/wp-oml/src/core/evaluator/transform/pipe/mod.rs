@@ -28,7 +28,6 @@ impl ValueProcessor for PipeFun {
             PipeFun::ToJson(o) => o.value_cacu(in_val),
             PipeFun::SkipEmpty(o) => o.value_cacu(in_val),
             PipeFun::Dumb(o) => o.value_cacu(in_val),
-            PipeFun::SxfGet(o) => o.value_cacu(in_val),
             PipeFun::PathGet(o) => o.value_cacu(in_val),
             PipeFun::UrlGet(o) => o.value_cacu(in_val),
             PipeFun::Ip4ToInt(o) => o.value_cacu(in_val),

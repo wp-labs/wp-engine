@@ -1,4 +1,4 @@
-use crate::core::SinkTerminal;
+use crate::facade::test_helpers::SinkTerminal;
 use crate::resources::ResManager;
 use crate::resources::SinkID;
 use crate::runtime::prelude::*;

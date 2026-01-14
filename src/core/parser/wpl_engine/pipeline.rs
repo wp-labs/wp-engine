@@ -1,5 +1,6 @@
 use crate::core::prelude::*;
-use crate::core::{SinkTerminal, SyncCtrl};
+use crate::core::sinks::sync_sink::traits::SyncCtrl;
+use crate::facade::test_helpers::SinkTerminal;
 use crate::sinks::SinkGroupAgent;
 use crate::stat::MonSend;
 use crate::stat::metric_collect::MetricCollectors;

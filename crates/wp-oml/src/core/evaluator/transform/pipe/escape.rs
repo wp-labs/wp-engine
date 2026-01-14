@@ -92,7 +92,7 @@ impl ValueProcessor for ToJson {
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::{DataField, DataRecord};
@@ -108,7 +108,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | html_escape | html_unescape;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 
@@ -127,7 +127,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | str_escape  ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 
@@ -146,7 +146,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | json_escape  | json_unescape ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 

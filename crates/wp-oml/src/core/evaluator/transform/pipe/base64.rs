@@ -207,7 +207,7 @@ impl ValueProcessor for Base64Decode {
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::{DataField, DataRecord};
 
@@ -234,7 +234,7 @@ mod tests {
         Y : chars =  pipe take(B2) | base64_decode(Imap) ;
         Z : chars =  pipe take(C3) | base64_decode(Imap) ;
          "#;
-        let model = oml_parse(&mut conf).unwrap();
+        let model = oml_parse_raw(&mut conf).unwrap();
 
         let target = model.transform(src, cache);
 

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use wp_parser::Parser;
     use wp_parser::WResult as ModalResult;
     use wpl::parser::error::WplCodeError;
@@ -173,7 +173,7 @@ time*     : auto    = Time::now() ;
         Ok(())
     }
     fn report_err(code: &mut &str, pos: &str) {
-        match oml_parse.parse_next(code).map_err(|e| {
+        match oml_parse_raw.parse_next(code).map_err(|e| {
             WplCodeError::from(WplCodeReason::Syntax("".into()))
                 .with_detail(e.to_string())
                 .with_position(code.to_string())

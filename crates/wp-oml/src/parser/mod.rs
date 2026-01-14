@@ -19,4 +19,4 @@ mod syntax;
 mod tdc_prm;
 mod utils;
 
-pub use oml_conf::oml_parse;
+pub use oml_conf::{oml_parse, oml_parse_raw};

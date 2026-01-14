@@ -1,7 +1,5 @@
 use crate::core::prelude::*;
-use crate::language::{
-    Get, Nth, PathGet, PathType, PiPeOperation, SkipEmpty, SxfGet, UrlGet, UrlType,
-};
+use crate::language::{Get, Nth, PathGet, PathType, PiPeOperation, SkipEmpty, UrlGet, UrlType};
 
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
@@ -88,20 +86,6 @@ impl ValueProcessor for Get {
         in_val
     }
 }
-impl ValueProcessor for SxfGet {
-    fn value_cacu(&self, in_val: DataField) -> DataField {
-        match in_val.get_value() {
-            Value::Chars(x) => {
-                let sxf = parse_log(x);
-                match sxf.get(&self.key) {
-                    Some(v) => DataField::from_chars(in_val.get_name().to_string(), v.clone()),
-                    None => DataField::from_chars(in_val.get_name().to_string(), String::default()),
-                }
-            }
-            _ => in_val,
-        }
-    }
-}
 
 impl ValueProcessor for PathGet {
     fn value_cacu(&self, in_val: DataField) -> DataField {
@@ -183,166 +167,13 @@ lazy_static! {
     };
 }
 
-fn parse_log(input: &str) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    let deal_input = input
-        .replace("\\r\\n", "\r\n")
-        .replace("\\n", "\n")
-        .replace("\\t", "\t")
-        .replace("\\\\", "\\");
-    let mut remaining = deal_input.trim();
-
-    // 预定义所有可能的字段标记（按可能出现的顺序）
-    const FIELD_MARKERS: [&str; 35] = [
-        "疑似账号:",
-        "疑似密码:",
-        "疑似账号",
-        "疑似密码",
-        "解密账号:",
-        "解密密码:",
-        "解密账号",
-        "解密密码",
-        "url路径:",
-        "url路径",
-        "状态码:",
-        "用户名:",
-        "用户名",
-        "密码:",
-        "密码",
-        "请求头:",
-        "请求头",
-        "请求体:",
-        "请求体",
-        "响应头:",
-        "响应头",
-        "响应体:",
-        "响应体",
-        "referer路径:",
-        "referer路径",
-        "GRE源IP:",
-        "GRE目的IP:",
-        "描述:",
-        "描述信息:",
-        "文件路径",
-        "文件大小",
-        "病毒名",
-        "文件创建时间",
-        "文件MD5",
-        "检测的引擎",
-    ];
-
-    while !remaining.is_empty() {
-        // 查找下一个最近的字段标记
-        let (marker, pos) = FIELD_MARKERS
-            .iter()
-            .filter_map(|m| remaining.find(m).map(|p| (m, p)))
-            .min_by_key(|(_, p)| *p)
-            .unwrap_or((&"", remaining.len()));
-
-        if pos > 0 {
-            // 处理字段之间的空白
-            remaining = &remaining[pos..];
-        }
-
-        let key = marker.trim_end_matches(':');
-        let value_start = marker.len();
-
-        // 查找下一个字段的起始位置
-        let next_pos = FIELD_MARKERS
-            .iter()
-            .filter_map(|m| remaining[value_start..].find(m))
-            .min()
-            .map(|p| p + value_start)
-            .unwrap_or(remaining.len());
-
-        let raw_value = &remaining[value_start..next_pos].trim();
-        let value = handle_special_cases(key, raw_value);
-
-        map.insert(key.to_string(), value);
-        remaining = &remaining[next_pos..];
-    }
-
-    // 后处理空值
-    for key in FIELD_MARKERS.iter().map(|m| m.trim_end_matches(':')) {
-        map.entry(key.to_string())
-            .and_modify(|v| {
-                if v == "-" {
-                    *v = String::new()
-                }
-            })
-            .or_insert_with(String::new);
-    }
-
-    // 将中文和英文标准化
-    let mut format_map = HashMap::new();
-    for (key, value) in map {
-        if value.is_empty() {
-            continue;
-        }
-        if let Some(en_key) = FIELD_MAPPING.get(key.as_str()) {
-            format_map.insert(en_key.to_string(), value);
-        } else {
-            format_map.insert(key.to_lowercase().to_string(), value);
-        }
-    }
-    format_map
-}
-
-fn handle_special_cases(key: &str, value: &str) -> String {
-    match key {
-        // 处理包含换行的字段
-        "请求头" | "响应头" => value.replace("\\r\\n", "\r\n"),
-        // 保留响应体的原始转义
-        "响应体" => value.replace("\\\"", "\""),
-        _ => value.to_string(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::{DataField, DataRecord};
-
-    #[test]
-    fn test_pipe_sxf_get() {
-        let cache = &mut FieldQueryCache::default();
-        let data = vec![
-            DataField::from_chars(
-                "A1",
-                "url路径: [www.hniu.cn/zcc/info/1042/info/1038/info/1046/info/1047/info/1045/info/1046/xygk/info/1047/jxky/xygk/xygk/jxky/xyyxk/jxky/index.jsp|http://www.hniu.cn/zcc/info/1042/info/1038/info/1046/info/1047/info/1045/info/1046/xygk/info/1047/jxky/xygk/xygk/jxky/xyyxk/jxky/index.jsp] 状态码: 0 请求头: GET /zcc/info/1042/info/1038/info/1046/info/1047/info/1045/info/1046/xygk/info/1047/jxky/xygk/xygk/jxky/xyyxk/jxky/index.jsp HTTP/1.1\r\nHost: [www.hniu.cn|http://www.hniu.cn/]\r\nX-Forwarded-For: 116.132.136.185, 27.185.201.33, 123.60.254.33\r\nAccept-Encoding: br, gzip, identity\r\nsec-ch-ua-mobile: ?0\r\nsec-ch-ua-platform: \"Windows\"\r\nsec-ch-ua: \"Not(A:Brand\";v=\"99\", \"HeadlessChrome\";v=\"133\", \"Chromium\";v=\"133\"\r\naccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7\r\nupgrade-insecure-requests: 1\r\nuser-agent: YisouSpider\r\nVia: CHN-HEshijiazhuang-AREACT1-CACHE32, CHN-TJ-GLOBAL1-CACHE32\r\nCdn-Src-Ip: 116.132.136.185\r\nX-Forwarded-Host: [www.hniu.cn|http://www.hniu.cn/]\r\nX-Forwarded-Server: [www.hniu.cn|http://www.hniu.cn/]\r\nConnection: close\r\n\r\n GRE源IP: - GRE目的IP: - ",
-            ),
-            DataField::from_chars(
-                "B2",
-                "用户名: 1234567@unicom 密码: xxx 疑似账号: - 疑似密码: - 请求头: GET /drcom/login?callback=dr1003&DDDDD=202315360136%40unicom&upass=721708&0MKKey=123456&R1=0&R2=&R3=0&R6=0&para=00&v6ip=&terminal_type=1&lang=zh-cn&jsVersion=4.2&v=8819&lang=zh HTTP/1.1\r\nHost: 10.253.0.1\r\nConnection: keep-alive\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0\r\nAccept: */*\r\nReferer: http://10.253.0.1/\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6\r\n\r\n 请求体: - 响应头: HTTP/1.1 200 OK\r\nServer: DrcomServer1.2\r\nAccess-Control-Allow-Origin: *\r\nContent-Type: application/javascript; charset=gbk\r\nCache-Control: no-cache\r\nContent-Length: 396\r\n\r\n 响应体: dr1003({\"result\":1,\"aolno\":2544,\"m46\":0,\"v46ip\":\"10.30.129.80\",\"myv6ip\":\"\",\"sms\":0,\"NID\":\"\",\"olmac\":\"ac198e10d899\",\"ollm\":0,\"olm1\":\"00000800\",\"olm2\":\"0002\",\"olm3\":0,\"olmm\":2,\"olm5\":0,\"gid\":19,\"ispid\":2,\"opip\":\"0.0.0.0\",\"oltime\":2592000,\"olflow\":4294967295,\"lip\":\"\",\"stime\":\"\",\"etime\":\"\",\"uid\":\"202315360136@unicom\",\"UL\":\"http://edge-http.microsoft.com/captiveportal/generate_204\",\"sv\":0}) 解密账号: - 解密密码: - url路径: 10.253.0.1/drcom/login referer路径: http://10.253.0.1/ =",
-            ),
-            DataField::from_chars(
-                "B3",
-                r#"用户名teacher16密码newland疑似账号-疑似密码-请求头POST /api/users/login HTTP/1.1\r\nHost: 10.26.3.193\r\nConnection: keep-alive\r\nContent-Length: 45\r\nauthorization: Bearer undefined\r\nCache-Control: no-cache\r\nContent-Security-Policy: upgrade-insecure-requests\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36\r\nAccept: text/html,application/octet-stream,application/json,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\r\nContent-Type: application/json; charset=UTF-8\r\nOrigin: [http://10.26.3.193|http://10.26.3.193/]\r\nReferer: [http://10.26.3.193/login]\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: zh-CN,zh;q=0.9\r\n\r\n请求体\{\"username\":\"teacher16\",\"password\":\"newland\"}响应头HTTP/1.1 200 OK\r\nServer: nginx/1.21.5\r\nDate: Thu, 13 Mar 2025 01:47:43 GMT\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 850\r\nConnection: keep-alive\r\nVary: Origin\r\nAccess-Control-Allow-Origin: [http://localhost:3000|http://localhost:3000/]\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Expose-Headers: WWW-Authenticate,Server-Authorization\r\nCache-Control: max-age=18000\r\n\r\n响应体\{\"errCode\":0,\"message\":\"success\",\"data\":{\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzZhNDE1MzA1ZDJlMDAwMTk2MDQ1ZGQiLCJ1c2VybmFtZSI6InRlYWNoZXIxNiIsIm5hbWUiOiJ0ZWFjaGVyMTYiLCJ0eXBlIjoidGVhY2hlciIsImNvZGUiOiIiLCJpYXQiOjE3NDE4MzA0NjN9.5yL3HiuD-pUgqsJwS8aZZhvOtMKZaka3s_clRNVbITw\",\"user\":{\"name\":\"\",\"code\":\"\",\"link\":\"\",\"disable\":0,\"_id\":\"676a415305d2e000196045dd\",\"type\":\"teacher\",\"username\":\"teacher16\",\"createdAt\":\"2024-12-24T05:06:27.770Z\",\"updatedAt\":\"2025-03-12T08:26:42.400Z\",\"loginAt\":\"2025-03-12T06:46:53.453Z\",\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NzZhNDE1MzA1ZDJlMDAwMTk2MDQ1ZGQiLCJ1c2VybmFtZSI6InRlYWNoZXIxNiIsIm5hbWUiOiJ0ZWFjaGVyMTYiLCJ0eXBlIjoidGVhY2hlciIsImNvZGUiOiIiLCJpYXQiOjE3NDE3NjIwMTN9.Nsi871oFvUPU-jXg6C_TcQpfU1NQmWYm90gQP1nt9wY\",\"lastTime\":\"1741768002399\",\"logOutAt\":\"2025-03-12T07:26:00.109Z\"}}}解密账号-解密密码-url路径10.26.3.193/api/users/loginreferer路径[http://10.26.3.193/login]"#,
-            ),
-        ];
-        let src = DataRecord { items: data };
-
-        let mut conf = r#"
-        name : test
-        ---
-        X : chars =  pipe take(A1) | sxf_get(statusCode);
-        Y : chars =  pipe take(B2) | sxf_get(password);
-        Z : chars =  pipe take(B3) | sxf_get(password);
-         "#;
-        let model = oml_parse(&mut conf).unwrap();
-
-        let target = model.transform(src, cache);
-
-        let expect = DataField::from_chars("X".to_string(), "0".to_string());
-        assert_eq!(target.field("X"), Some(&expect));
-        let expect = DataField::from_chars("Y".to_string(), "xxx".to_string());
-        assert_eq!(target.field("Y"), Some(&expect));
-        let expect = DataField::from_chars("Z".to_string(), "newland".to_string());
-        assert_eq!(target.field("Z"), Some(&expect));
-    }
 
     #[test]
     fn test_pipe_path_get() {
@@ -358,7 +189,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | path(name);
          "#;
-        let model = oml_parse(&mut conf).unwrap();
+        let model = oml_parse_raw(&mut conf).unwrap();
 
         let target = model.transform(src, cache);
 
@@ -387,7 +218,7 @@ mod tests {
         D : chars =  pipe read(A1) | url(path);
         E : chars =  pipe read(A1) | url(params);
          "#;
-        let model = oml_parse(&mut conf).unwrap();
+        let model = oml_parse_raw(&mut conf).unwrap();
 
         let target = model.transform(src, cache);
 
@@ -432,7 +263,7 @@ mod tests {
         Y : chars =  pipe take(B2) | base64_decode(Imap) ;
         Z : chars =  pipe take(C3) | base64_decode(Imap) ;
          "#;
-        let model = oml_parse(&mut conf).unwrap();
+        let model = oml_parse_raw(&mut conf).unwrap();
 
         let target = model.transform(src, cache);
 
@@ -457,7 +288,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | html_escape | html_unescape;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 
@@ -476,7 +307,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | str_escape  ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 
@@ -495,7 +326,7 @@ mod tests {
         ---
         X : chars =  pipe take(A1) | json_escape  | json_unescape ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         let target = model.transform(src, cache);
 
@@ -517,7 +348,7 @@ mod tests {
         Z  =  pipe  read(Y) | Time::to_ts_ms ;
         U  =  pipe  read(Y) | Time::to_ts_us ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
         //let expect = TDOEnum::from_digit("X".to_string(), 971136000);
         let expect = DataField::from_digit("X".to_string(), 971107200);
@@ -547,7 +378,7 @@ mod tests {
         Y  =  pipe  read(A1) | skip_empty ;
         Z  =  pipe  read(A2) | skip_empty ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
         let expect = DataField::from_arr("X".to_string(), data);
         assert_eq!(target.field("X"), Some(&expect));
@@ -572,7 +403,7 @@ mod tests {
         ---
         Y  =  pipe read(current_process) | nth(0) | get(current_process/path) ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
         assert_eq!(
             target.field("Y"),

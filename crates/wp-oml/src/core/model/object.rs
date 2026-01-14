@@ -4,7 +4,7 @@ use crate::core::evaluator::traits::ExpEvaluator;
 use crate::core::prelude::*;
 use crate::language::ObjModel;
 use crate::parser::error::OMLCodeErrorTait;
-use crate::parser::oml_parse;
+use crate::parser::oml_parse_raw;
 //use crate::privacy::PrivacyProcessor;
 use orion_error::{ContextRecord, ErrorOwe, ErrorWith, WithContext};
 use wp_data_model::cache::FieldQueryCache;
@@ -53,7 +53,7 @@ impl ConfADMExt for ObjModel {
         let code = CommentParser::ignore_comment(&mut raw_code)
             .map_err(|e| OMLCodeError::from_syntax(e, raw_code, path))?;
         let mut pure_code = code.as_str();
-        match oml_parse(&mut pure_code) {
+        match oml_parse_raw(&mut pure_code) {
             Ok(res) => Ok(res),
             Err(e) => Err(OMLCodeError::from_syntax(e, pure_code, path)).with(&ctx),
         }

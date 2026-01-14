@@ -1,4 +1,4 @@
-use crate::core::SinkTerminal;
+use crate::facade::test_helpers::SinkTerminal;
 use crate::sinks::ProcMeta;
 
 use std::time::Duration;

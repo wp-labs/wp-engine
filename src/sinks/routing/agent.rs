@@ -1,6 +1,7 @@
-use crate::core::SinkTerminal;
 use derive_getters::Getters;
 use wp_conf::structure::{FixedGroup, FlexGroup, SinkGroupConf};
+
+use crate::facade::test_helpers::SinkTerminal;
 
 #[derive(Clone, Getters)]
 pub struct SinkGroupAgent {

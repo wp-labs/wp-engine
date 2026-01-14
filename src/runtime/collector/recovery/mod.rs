@@ -1,4 +1,4 @@
-use crate::core::SinkTerminal;
+use crate::facade::test_helpers::SinkTerminal;
 use crate::runtime::actor::command::{CmdSubscriber, TaskController, TaskEndReason};
 use crate::sinks::{ProcMeta, RescueEntry, RescuePayload, SinkRouteAgent};
 use crate::stat::metric_collect::MetricCollectors;

@@ -1,7 +1,7 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use oml::core::DataTransformer;
 use oml::language::ObjModel;
-use oml::parser::oml_parse;
+use oml::parser::oml_parse_raw;
 use wp_knowledge::facade as kdb;
 use wp_knowledge::mem::memdb::MemDB;
 
@@ -21,7 +21,7 @@ fn ensure_kdb() {
 
 fn build_model(code: &str) -> ObjModel {
     let conf = code.to_string();
-    oml_parse
+    oml_parse_raw
         .parse_next(&mut conf.as_str())
         .expect("parse OML model for bench")
 }

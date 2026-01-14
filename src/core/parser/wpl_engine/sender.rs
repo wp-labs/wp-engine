@@ -2,8 +2,9 @@
 
 use super::types::{ParseFailInfo, ParsedDatSet};
 use crate::core::parser::WplEngine;
+use crate::core::sinks::sync_sink::TrySendStatus;
 use crate::core::sinks::sync_sink::traits::RecSyncSink;
-use crate::core::{SinkTerminal, TrySendStatus};
+use crate::facade::test_helpers::SinkTerminal;
 use crate::runtime::actor::constants::ACTOR_IDLE_TICK_MS;
 use crate::runtime::errors::err4_send_to_sink;
 use crate::sinks::{SinkDataEnum, SinkGroupAgent, SinkInfraAble, SinkPackage, SinkRecUnit};

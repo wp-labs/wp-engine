@@ -97,7 +97,7 @@ impl ValueProcessor for TimeToTsZone {
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::{DataField, DataRecord};
@@ -116,7 +116,7 @@ mod tests {
         Z  =  pipe  read(Y) | Time::to_ts_ms ;
         U  =  pipe  read(Y) | Time::to_ts_us ;
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
         //let expect = TDOEnum::from_digit("X".to_string(), 971136000);
         let expect = DataField::from_digit("X".to_string(), 971107200);

@@ -7,7 +7,7 @@ use crate::sinks::routing::agent::InfraSinkAgent;
 // use crate::stat::{MonRecv, MonSend};
 // use crate::types::AnyResult;
 use oml::language::DataModel;
-use oml::parser::oml_parse;
+use oml::parser::oml_parse_raw;
 use orion_overload::append::Appendable;
 use std::sync::Arc;
 use wp_conf::TCondParser;
@@ -318,7 +318,7 @@ rule :
 ---
 converted : chars = chars(done) ;
 "#;
-    let model = oml_parse(&mut code).expect("parse oml model");
+    let model = oml_parse_raw(&mut code).expect("parse oml model");
     sink_res.push_model(DataModel::Object(model));
 
     let mut group = FlexGroup::default();

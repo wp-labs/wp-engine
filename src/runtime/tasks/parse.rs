@@ -1,5 +1,4 @@
-use crate::core::WplPipeline;
-use crate::core::parser::ParseOption;
+use crate::core::parser::{ParseOption, WplPipeline};
 use crate::orchestrator::config::build_sinks::dat_channel_max;
 use crate::orchestrator::engine::resource::EngineResource;
 use crate::runtime::actor::TaskGroup;

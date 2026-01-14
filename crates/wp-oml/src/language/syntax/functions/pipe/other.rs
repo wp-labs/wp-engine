@@ -35,18 +35,6 @@ impl Display for Get {
     }
 }
 
-pub const PIPE_SXF_GET: &str = "sxf_get";
-#[derive(Default, Debug, Clone)]
-pub struct SxfGet {
-    pub key: String,
-}
-
-impl Display for SxfGet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({})", PIPE_SXF_GET, self.key)
-    }
-}
-
 #[derive(Default, Debug, Clone, Serialize, Deserialize, EnumString, strum_macros::Display)]
 pub enum PathType {
     #[default]

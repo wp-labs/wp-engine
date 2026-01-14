@@ -3,10 +3,10 @@ use std::str::FromStr;
 use crate::language::{
     Base64Decode, EncodeType, Get, HtmlEscape, HtmlUnescape, JsonEscape, JsonUnescape, Nth,
     PIPE_BASE64_DECODE, PIPE_GET, PIPE_HTML_ESCAPE, PIPE_HTML_UNESCAPE, PIPE_JSON_ESCAPE,
-    PIPE_JSON_UNESCAPE, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_SXF_GET,
-    PIPE_TIME_TO_TS, PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON,
-    PIPE_URL, PathGet, PathType, PreciseEvaluator, SkipEmpty, StrEscape, SxfGet, TimeStampUnit,
-    TimeToTs, TimeToTsMs, TimeToTsUs, TimeToTsZone, ToJson, UrlGet, UrlType,
+    PIPE_JSON_UNESCAPE, PIPE_NTH, PIPE_PATH, PIPE_SKIP_EMPTY, PIPE_STR_ESCAPE, PIPE_TIME_TO_TS,
+    PIPE_TIME_TO_TS_MS, PIPE_TIME_TO_TS_US, PIPE_TIME_TO_TS_ZONE, PIPE_TO_JSON, PIPE_URL, PathGet,
+    PathType, PreciseEvaluator, SkipEmpty, StrEscape, TimeStampUnit, TimeToTs, TimeToTsMs,
+    TimeToTsUs, TimeToTsZone, ToJson, UrlGet, UrlType,
 };
 use crate::language::{Base64Encode, PIPE_BASE64_ENCODE, PIPE_TO_STR, ToStr};
 use crate::language::{Ip4ToInt, PIPE_IP4_TO_INT, PiPeOperation, PipeFun};
@@ -15,7 +15,7 @@ use crate::parser::oml_aggregate::oml_var_get;
 use crate::winnow::error::ParserError;
 use winnow::ascii::{alphanumeric0, digit1, multispace0};
 use winnow::combinator::{alt, fail, opt, repeat};
-use winnow::error::{ContextError, ErrMode};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::stream::Stream; // for checkpoint/reset on &str
 use wp_parser::Parser;
 use wp_parser::WResult;
@@ -113,24 +113,6 @@ impl Fun1Builder for Base64Decode {
         Base64Decode { encode: args }
     }
 }
-impl Fun1Builder for SxfGet {
-    type ARG1 = String;
-    fn args1(data: &mut &str) -> WResult<Self::ARG1> {
-        multispace0.parse_next(data)?;
-        let val: &str = alphanumeric0::<&str, ErrMode<ContextError>>
-            .parse_next(data)
-            .unwrap();
-        Ok(val.to_string())
-    }
-
-    fn fun_name() -> &'static str {
-        PIPE_SXF_GET
-    }
-
-    fn build(args: Self::ARG1) -> Self {
-        SxfGet { key: args }
-    }
-}
 impl Fun1Builder for PathGet {
     type ARG1 = PathType;
     fn args1(data: &mut &str) -> WResult<Self::ARG1> {
@@ -211,7 +193,6 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
         parser::call_fun_args1::<Nth>.map(PipeFun::Nth),
         parser::call_fun_args1::<Get>.map(PipeFun::Get),
         parser::call_fun_args1::<Base64Decode>.map(PipeFun::Base64Decode),
-        parser::call_fun_args1::<SxfGet>.map(PipeFun::SxfGet),
         parser::call_fun_args1::<PathGet>.map(PipeFun::PathGet),
         parser::call_fun_args1::<UrlGet>.map(PipeFun::UrlGet),
         PIPE_HTML_ESCAPE.map(|_| PipeFun::HtmlEscape(HtmlEscape::default())),
@@ -228,6 +209,10 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
         PIPE_SKIP_EMPTY.map(|_| PipeFun::SkipEmpty(SkipEmpty::default())),
         PIPE_IP4_TO_INT.map(|_| PipeFun::Ip4ToInt(Ip4ToInt::default())),
     ))
+    .context(StrContext::Label("pipe fun"))
+    .context(StrContext::Expected(StrContextValue::Description(
+        "fun not found!",
+    )))
     .parse_next(data)?;
     Ok(fun)
 }
@@ -235,7 +220,7 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
 #[cfg(test)]
 mod tests {
     use crate::parser::pipe_prm::oml_aga_pipe;
-    use crate::parser::utils::for_test::assert_oml_parse;
+    use crate::parser::utils::for_test::{assert_oml_parse, call_oml_parse};
     use wp_parser::WResult;
 
     #[test]
@@ -258,14 +243,18 @@ mod tests {
         let mut code = r#" pipe take(ip) | skip_empty"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
-        let mut code = r#" pipe take(ip) | sxf_get(xx)"#;
-        assert_oml_parse(&mut code, oml_aga_pipe);
-
         let mut code = r#" pipe take(ip) | path(name)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
 
         let mut code = r#" pipe take(ip) | url(host)"#;
         assert_oml_parse(&mut code, oml_aga_pipe);
         Ok(())
+    }
+    #[test]
+    fn test_oml_err() {
+        let mut code = r#" pipe take(ip) | xyz_get()"#;
+        if let Err(e) = call_oml_parse(&mut code, oml_aga_pipe) {
+            println!("err:{}, \nwhere:{}", e, code);
+        }
     }
 }

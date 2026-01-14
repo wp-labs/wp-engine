@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use wp_model_core::model::DataRecord;
 
-use crate::core::SyncCtrl;
+use crate::core::sinks::sync_sink::traits::SyncCtrl;
 use crate::types::Abstract;
 
 use wp_connector_api::SinkResult;

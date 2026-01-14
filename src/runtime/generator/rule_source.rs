@@ -1,4 +1,4 @@
-use crate::core::GenRuleUnit;
+use crate::facade::generator::GenRuleUnit;
 use crate::types::AnyResult;
 use anyhow::anyhow;
 use wpl::generator::FmtFieldVec;

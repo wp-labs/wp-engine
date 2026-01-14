@@ -1,5 +1,5 @@
 use crate::{
-    core::{RecSyncSink, SyncCtrl, TrySendStatus},
+    core::sinks::sync_sink::{RecSyncSink, TrySendStatus, traits::SyncCtrl},
     sinks::prelude::*,
 };
 use async_trait::async_trait;

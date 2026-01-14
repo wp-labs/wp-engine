@@ -1,6 +1,6 @@
-use crate::core::{RecSyncSink, SyncCtrl, TrySendStatus};
-use crate::sinks::pdm_outer::TDMDataAble;
+use crate::core::sinks::sync_sink::{RecSyncSink, TrySendStatus};
 use crate::sinks::prelude::*;
+use crate::{core::sinks::sync_sink::traits::SyncCtrl, sinks::pdm_outer::TDMDataAble};
 
 use async_trait::async_trait;
 use orion_error::ErrorOwe;

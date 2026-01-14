@@ -68,7 +68,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssertWithMsg;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::DataField;
@@ -90,7 +90,7 @@ mod tests {
         name  = chars(dayu) ;
         X : chars =  fmt ( "{name}:{A1}-{B2}_{C3}" ,@name,@A1 , read(B2), read(C3) ) ;
          "#;
-        let model = oml_parse(&mut conf).assert("oml_conf");
+        let model = oml_parse_raw(&mut conf).assert("oml_conf");
 
         let target = model.transform(src, &mut cache);
 

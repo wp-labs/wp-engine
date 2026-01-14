@@ -7,7 +7,7 @@ use crate::sinks::prelude::PkgID;
 use crate::sinks::routing::agent::InfraSinkAgent;
 use crate::sinks::{ProcMeta, SinkBackendType, SinkRecUnit, SinkRuntime};
 use oml::language::DataModel;
-use oml::parser::oml_parse;
+use oml::parser::oml_parse_raw;
 use once_cell::sync::Lazy;
 use orion_exp::{Expression, RustSymbol};
 use orion_overload::append::Appendable;
@@ -171,7 +171,7 @@ match_chars = match read(option:[wp_src_ip]) {
 };
 * : auto = read();
 "#;
-    let model = oml_parse(&mut code).expect("parse nginx perf oml");
+    let model = oml_parse_raw(&mut code).expect("parse nginx perf oml");
     DataModel::Object(model)
 }
 

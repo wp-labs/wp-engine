@@ -1,5 +1,5 @@
-use crate::core::sinks::sync_sink::RecSyncSink;
-use crate::core::{SyncCtrl, TrySendStatus};
+use crate::core::sinks::sync_sink::traits::SyncCtrl;
+use crate::core::sinks::sync_sink::{RecSyncSink, TrySendStatus};
 use crate::sinks::prelude::*;
 use crate::sinks::utils::buffer_monitor::BufferMonitor;
 use crate::sinks::utils::formatter::FormatAdapter;

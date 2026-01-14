@@ -2,6 +2,9 @@
 pub mod for_test {
     use std::fmt::Display;
     use winnow::{ModalResult, Parser};
+    use wp_error::{OMLCodeError, OmlCodeResult};
+
+    use crate::parser::error::OMLCodeErrorTait;
     pub type OmlExp<T> = fn(&mut &str) -> ModalResult<T>;
 
     pub fn assert_oml_parse<T: Display>(code: &mut &str, mut exp: OmlExp<T>) {
@@ -18,6 +21,19 @@ pub mod for_test {
             }
         }
     }
+    pub fn call_oml_parse<T: Display>(code: &mut &str, mut exp: OmlExp<T>) -> OmlCodeResult<()> {
+        let expect = code.to_string();
+        match exp.parse_next(code) {
+            Ok(o) => {
+                let real = format!("{}", o);
+                fmt_assert_eq(real.as_str(), expect.as_str());
+                println!("{}", o);
+                Ok(())
+            }
+            Err(e) => Err(OMLCodeError::from_syntax(e, code, "")),
+        }
+    }
+
     pub fn assert_oml_parse_ext<T: Display>(code: &mut &str, mut exp: OmlExp<T>, expect: &str) {
         match exp.parse_next(code) {
             Ok(o) => {

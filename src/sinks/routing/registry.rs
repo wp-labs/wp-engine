@@ -1,5 +1,4 @@
-use crate::core::SinkTerminal;
-
+use crate::facade::test_helpers::SinkTerminal;
 use crate::sinks::{SinkEndpoint, SinkRouteAble};
 use orion_overload::append::Appendable2;
 use wp_conf::structure::{FixedGroup, SinkGroupConf};

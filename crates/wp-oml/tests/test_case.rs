@@ -1,6 +1,6 @@
 extern crate wp_knowledge as wp_know;
 use oml::core::DataTransformer;
-use oml::parser::oml_parse;
+use oml::parser::oml_parse_raw;
 use oml::types::AnyResult;
 use orion_error::TestAssert;
 use std::net::{IpAddr, Ipv4Addr};
@@ -33,7 +33,7 @@ fn test_crate_get() {
         ---
         A10  = take() { _ : chars(hello1) };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let _expect = src.clone();
     let target = model.transform(src.clone(), cache);
@@ -48,7 +48,7 @@ fn test_crate_get() {
         ---
         A1 : chars = take(B2);
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
     let target = model.transform(src.clone(), cache);
     let expect = DataField::from_chars("A1", "hello2");
     assert_eq!(target.field("A1"), Some(&expect));
@@ -58,7 +58,7 @@ fn test_crate_get() {
         ---
         A3 : chars = take(option : [B3,C3]);
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
     let target = model.transform(src.clone(), cache);
     let expect = DataField::from_chars("A3", "hello3");
     assert_eq!(target.field("A3"), Some(&expect));
@@ -82,7 +82,7 @@ fn test_take_fun() {
         A30  = read() { _ : Now::hour() };
         A40  = read() { _ : Now::hour() };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let target = model.transform(src.clone(), cache);
 
@@ -110,7 +110,7 @@ fn test_take_conv() {
         C3 : float = read();
         D4 : chars = ip(192.168.1.1);
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
     let target = model.transform(src.clone(), cache);
 
     println!("{}", target);
@@ -142,7 +142,7 @@ fn test_wild_get() {
         ---
         * = take();
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let expect = src.clone();
     let target = model.transform(src.clone(), cache);
@@ -156,7 +156,7 @@ fn test_wild_get() {
         ---
         */path = take();
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let expect = src.clone();
     let target = model.transform(src.clone(), cache);
@@ -170,7 +170,7 @@ fn test_wild_get() {
         ---
         A*/path = take();
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let expect = src.clone();
     let target = model.transform(src.clone(), cache);
@@ -183,7 +183,7 @@ fn test_wild_get() {
         ---
         */name= take();
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let expect = src.clone();
     let target = model.transform(src.clone(), cache);
@@ -208,7 +208,7 @@ fn test_crate_move() {
         A1 : chars = take(A1);
         A2 : chars = take(A1);
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let expect = src.clone();
     let target = model.transform(src, cache);
@@ -232,7 +232,7 @@ fn test_value_get() {
         ---
         A4 : chars = chars(hello4);
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let target = model.transform(src, cache);
 
@@ -260,7 +260,7 @@ fn test_map_get() {
             C3 : chars = chars(hello3);
         };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let target = model.transform(src, cache);
 
@@ -287,7 +287,7 @@ fn test_match_get() {
                 _  => chars(bj) ;
         };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let data = vec![
         DataField::from_ip("ip", IpAddr::V4(Ipv4Addr::new(10, 0, 0, 3))),
@@ -338,7 +338,7 @@ fn test_match2_get() -> ModalResult<()> {
                 _  => chars(bj) ;
         };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let data = vec![
         DataField::from_ip("ip", IpAddr::V4(Ipv4Addr::new(10, 0, 0, 3))),
@@ -405,7 +405,7 @@ fn test_match3_get() -> ModalResult<()> {
                 _  => digit(3) ;
         };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let data = vec![DataField::from_bool("key1", true)];
     let src = DataRecord { items: data };
@@ -442,7 +442,7 @@ X: chars = match  read(month) {
     _ => chars(Q5);
 };
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let data = vec![DataField::from_digit("month", 3)];
     let src = DataRecord { items: data };
@@ -487,7 +487,7 @@ fn test_value_arr() {
         X1 : array = collect take(keys : [A1, B2,C*]);
         X2  =  pipe read(X1) | to_json ;
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let target = model.transform(src, cache);
 
@@ -521,7 +521,7 @@ fn test_sql_1() -> AnyResult<()> {
         A2,B2  = select name,pinying from example where pinying = read(py) ;
         _,_  = select name,pinying from example where pinying = "xiaolongnu" ;
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
     let target = model.transform(src, cache);
     let result = Json::stdfmt_record(&target).to_string();
     let expect = r#"{"A2":"小龙女","B2":"xiaolongnu","name":"小龙女","pinying":"xiaolongnu"}"#;
@@ -545,7 +545,7 @@ fn test_sql_debug() -> AnyResult<()> {
         ---
         _,_  = select name,pinying from example where pinying = 'xiaolongnu' ;
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
     let target = model.transform(src, cache);
     let result = Json::stdfmt_record(&target).to_string();
     let expect = r#"{"name":"小龙女","pinying":"xiaolongnu"}"#;
@@ -574,7 +574,7 @@ fn test_value_arr1() {
         X2  = pipe read(X1) | nth(0) ;
         X3  = pipe read(X1) | nth(2) ;
         "#;
-    let model = oml_parse(&mut conf).assert();
+    let model = oml_parse_raw(&mut conf).assert();
 
     let target = model.transform(src, cache);
 

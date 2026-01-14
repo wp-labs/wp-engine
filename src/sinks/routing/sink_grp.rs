@@ -2,9 +2,8 @@ use derive_getters::Getters;
 use wp_conf::structure::SinkGroupConf;
 
 use super::registry::RouteConfAble;
-use crate::core::SinkTerminal;
 
-use crate::sinks::SinkEndpoint;
+use crate::{facade::test_helpers::SinkTerminal, sinks::SinkEndpoint};
 #[derive(Clone, Getters)]
 pub struct SyncSinkGroup {
     conf: SinkGroupConf,

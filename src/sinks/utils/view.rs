@@ -1,4 +1,5 @@
-use crate::core::{RecSyncSink, SyncCtrl, TrySendStatus};
+use crate::core::sinks::sync_sink::traits::SyncCtrl;
+use crate::core::sinks::sync_sink::{RecSyncSink, TrySendStatus};
 use crate::sinks::backends::file::FileSink;
 use crate::sinks::decorators::sync_pipeline::SyncFrame;
 use std::sync::Arc;

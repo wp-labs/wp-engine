@@ -28,7 +28,7 @@ pub fn oml_collect(data: &mut &str) -> WResult<ArrOperation> {
 mod tests {
     use crate::core::DataTransformer;
     use crate::parser::collect_prm::oml_aga_collect;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use wp_data_model::cache::FieldQueryCache;
     use wp_model_core::model::{DataField, DataRecord};
@@ -59,7 +59,7 @@ mod tests {
         dport:digit = read(dport);
         port_list = collect read(keys:[sport,dport]);
          "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
         let target = model.transform(src, cache);
 
         let expect = DataField::from_arr(

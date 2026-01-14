@@ -3,8 +3,7 @@ use orion_variate::EnvDict;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::core::WplPipeline;
-use crate::core::parser::{SpaceIndex, WplRepository};
+use crate::core::parser::{SpaceIndex, WplPipeline, WplRepository};
 use crate::orchestrator::config::build_sinks::SinkRouteTable;
 use crate::resources::{ModelName, SinkID};
 use crate::resources::{SinkModelIndex, SinkRuleRegistry};

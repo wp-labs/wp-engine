@@ -1,5 +1,4 @@
-use crate::core::SinkTerminal;
-use crate::sinks::SinkGroupAgent;
+use crate::{facade::test_helpers::SinkTerminal, sinks::SinkGroupAgent};
 
 #[derive(Clone)]
 pub struct DfxSink {

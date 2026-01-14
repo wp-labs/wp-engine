@@ -1,4 +1,5 @@
-use crate::core::{RecSyncSink, SyncCtrl, TrySendStatus};
+use crate::core::sinks::sync_sink::traits::SyncCtrl;
+use crate::core::sinks::sync_sink::{RecSyncSink, TrySendStatus};
 use crate::sinks::decorators::stub::StubOuter;
 use crate::sinks::prelude::*;
 use crate::types::{Build1, SafeH};

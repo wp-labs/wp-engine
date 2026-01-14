@@ -1,3 +1,4 @@
+use crate::core::sinks::sync_sink::RecSyncSink;
 use crate::orchestrator::engine::definition::WplCodePKG;
 use crate::{
     core::prelude::*,

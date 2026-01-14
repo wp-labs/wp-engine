@@ -1,5 +1,4 @@
-use crate::core::SinkTerminal;
-
+use crate::facade::test_helpers::SinkTerminal;
 use crate::orchestrator::InfraSinkConf;
 use crate::orchestrator::config::build_sinks::infra_sink_group;
 use crate::runtime::actor::diagnostic::DfxSink;

@@ -1,5 +1,7 @@
-use crate::core::{RecSyncSink, SyncCtrl, TrySendStatus};
-use crate::sinks::{SinkDataEnum, SinkRecUnit};
+use crate::{
+    core::sinks::sync_sink::{RecSyncSink, TrySendStatus, traits::SyncCtrl},
+    sinks::{SinkDataEnum, SinkRecUnit},
+};
 use wp_connector_api::SinkResult;
 
 #[derive(Clone)]

@@ -8,7 +8,7 @@ pub mod types;
 
 // 重新导出主要类型
 pub use crate::sinks::BlackHoleSink;
-pub use traits::{RecSyncSink, SyncCtrl, TrySendStatus};
+pub use traits::{RecSyncSink, TrySendStatus};
 pub use types::SinkTerminal;
 
 // 为外部兼容性，重新导出需要的类型

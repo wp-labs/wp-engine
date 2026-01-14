@@ -305,7 +305,7 @@ mod tests {
     }
 
     use crate::core::DataTransformer;
-    use crate::parser::oml_parse;
+    use crate::parser::oml_parse_raw;
     use orion_error::TestAssert;
     use wp_know::mem::memdb::MemDB;
     use wp_knowledge::facade as kdb;
@@ -332,7 +332,7 @@ name : test
 ---
 zone : chars = select zone from zone where ip_start_int <= ip4_int(read(src_ip)) and ip_end_int >= ip4_int(read(src_ip)) ;
         "#;
-        let model = oml_parse(&mut conf).assert();
+        let model = oml_parse_raw(&mut conf).assert();
 
         // 3) transform with src_ip within range
         let src = DataRecord {
