@@ -1,7 +1,7 @@
 use super::source::{FileEncoding, FileSource};
 use async_trait::async_trait;
-use orion_conf::UvsConfFrom;
-use orion_error::ToStructError;
+use orion_conf::{ErrorWith, UvsConfFrom};
+use orion_error::{ToStructError, UvsDataFrom};
 use serde_json::json;
 use std::path::Path;
 use wp_conf::connectors::{ConnectorDef, ConnectorScope, ParamMap};
@@ -92,7 +92,15 @@ impl SourceFactory for FileSourceFactory {
             let spec = FileSourceSpec::from_resolved(resolved)?;
             let tagset = Tags::from_parse(&resolved.tags);
             let ranges = compute_file_ranges(Path::new(&spec.path), spec.instances)
-                .map_err(|e| anyhow::anyhow!("Failed to compute file ranges: {}", e))?;
+                .map_err(|e| {
+                    SourceReason::from_data(
+                        format!("Failed to compute file ranges: {}", e),
+                        Some(0),
+                    )
+                    .to_err()
+                })
+                .with(spec.path.as_str())
+                .want("open source file")?;
             let mut handles = Vec::with_capacity(ranges.len());
             let multi = ranges.len() > 1;
             for (idx, (start, end)) in ranges.into_iter().enumerate() {

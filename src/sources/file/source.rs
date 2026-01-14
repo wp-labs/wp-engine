@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use base64::Engine;
 use base64::engine::general_purpose;
 use bytes::Bytes;
-use orion_conf::UvsConfFrom;
+use orion_conf::{ErrorWith, UvsConfFrom};
 use orion_error::ToStructError;
 use std::sync::Arc;
 use wp_connector_api::{
@@ -52,12 +52,16 @@ impl FileSource {
         }
         let mut file = tokio::fs::File::open(file_path)
             .await
-            .map_err(|e| SourceError::from(SourceReason::Disconnect(e.to_string())))?;
+            .map_err(|e| SourceError::from(SourceReason::Disconnect(e.to_string())))
+            .with(file_path)
+            .want("open source file")?;
         use std::io::SeekFrom;
         use tokio::io::AsyncSeekExt;
         file.seek(SeekFrom::Start(range_start))
             .await
-            .map_err(|e| SourceError::from(SourceReason::Disconnect(e.to_string())))?;
+            .map_err(|e| SourceError::from(SourceReason::Disconnect(e.to_string())))
+            .with(file_path)
+            .want("seek to posion")?;
         tags.set("access_source", path.to_string());
         let batch_lines = DEFAULT_BATCH_LINES;
         let batch_bytes_budget = DEFAULT_BATCH_BYTES;
