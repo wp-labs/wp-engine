@@ -15,13 +15,13 @@ use crate::parser::oml_aggregate::oml_var_get;
 use crate::winnow::error::ParserError;
 use winnow::ascii::{alphanumeric0, digit1, multispace0};
 use winnow::combinator::{alt, fail, opt, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::error::{ContextError, ErrMode, StrContext};
 use winnow::stream::Stream; // for checkpoint/reset on &str
 use wp_parser::Parser;
 use wp_parser::WResult;
 use wp_parser::fun::fun_trait::{Fun1Builder, Fun2Builder};
 use wp_parser::fun::parser;
-use wp_parser::symbol::symbol_pipe;
+use wp_parser::symbol::{ctx_desc, symbol_pipe};
 use wpl::parser::utils::take_key;
 
 impl Fun1Builder for Nth {
@@ -210,9 +210,7 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
         PIPE_IP4_TO_INT.map(|_| PipeFun::Ip4ToInt(Ip4ToInt::default())),
     ))
     .context(StrContext::Label("pipe fun"))
-    .context(StrContext::Expected(StrContextValue::Description(
-        "fun not found!",
-    )))
+    .context(ctx_desc("fun not found!"))
     .parse_next(data)?;
     Ok(fun)
 }
@@ -220,7 +218,7 @@ pub fn oml_pipe(data: &mut &str) -> WResult<PipeFun> {
 #[cfg(test)]
 mod tests {
     use crate::parser::pipe_prm::oml_aga_pipe;
-    use crate::parser::utils::for_test::{assert_oml_parse, call_oml_parse};
+    use crate::parser::utils::for_test::{assert_oml_parse, err_of_oml};
     use wp_parser::WResult;
 
     #[test]
@@ -251,10 +249,15 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn test_oml_err() {
+    fn test_pipe_oml_err() {
         let mut code = r#" pipe take(ip) | xyz_get()"#;
-        if let Err(e) = call_oml_parse(&mut code, oml_aga_pipe) {
-            println!("err:{}, \nwhere:{}", e, code);
-        }
+        let e = err_of_oml(&mut code, oml_aga_pipe);
+        println!("err:{}, \nwhere:{}", e, code);
+        assert!(e.to_string().contains("fun not found"));
+
+        let mut code = r#" ipe take(ip) | xyz_get()"#;
+        let e = err_of_oml(&mut code, oml_aga_pipe);
+        println!("err:{}, \nwhere:{}", e, code);
+        assert!(e.to_string().contains("need 'pipe' keyword"));
     }
 }

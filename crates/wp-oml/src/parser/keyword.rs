@@ -5,6 +5,7 @@ use winnow::error::{StrContext, StrContextValue};
 use winnow::token::literal;
 use wp_parser::Parser;
 use wp_parser::WResult;
+use wp_parser::symbol::ctx_desc;
 
 pub fn kw_gw_match(data: &mut &str) -> WResult<()> {
     let _ = multispace0.parse_next(data)?;
@@ -161,9 +162,7 @@ pub fn kw_gw_pipe(data: &mut &str) -> WResult<()> {
     let _ = multispace0.parse_next(data)?;
     literal("pipe")
         .context(StrContext::Label("oml keyword"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "need 'pipe' keyword",
-        )))
+        .context(ctx_desc("need 'pipe' keyword"))
         .parse_next(data)?;
     Ok(())
 }

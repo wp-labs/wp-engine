@@ -34,6 +34,8 @@ use wp_parser::Parser;
 use wp_parser::WResult;
 use wp_parser::atom::{take_var_name, take_wild_key};
 use wp_parser::symbol::ctx_desc;
+use wp_parser::symbol::ctx_label;
+use wp_parser::symbol::ctx_literal;
 use wp_parser::symbol::{
     symbol_assign, symbol_brace_beg, symbol_brace_end, symbol_colon, symbol_comma, symbol_semicolon,
 };
@@ -108,16 +110,16 @@ pub fn oml_aggregate(data: &mut &str) -> WResult<EvalExp> {
     let first_target = target_vec.first().expect("no target define");
     let unit = if first_target.safe_name().contains('*') {
         let gw = match key {
-            "take" => oml_batch_gw_get.parse_next(data)?,
-            "read" => oml_batch_gw_get.parse_next(data)?,
+            "take" => oml_batch_gw_get
+                .context(ctx_label("take"))
+                .parse_next(data)?,
+            "read" => oml_batch_gw_get
+                .context(ctx_label("read"))
+                .parse_next(data)?,
             _ => fail
-                .context(StrContext::Label("method"))
-                .context(StrContext::Expected(StrContextValue::StringLiteral(
-                    "take ()",
-                )))
-                .context(StrContext::Expected(StrContextValue::StringLiteral(
-                    "only support take",
-                )))
+                .context(ctx_label("method"))
+                .context(ctx_literal("take ()"))
+                .context(ctx_literal("only support take"))
                 .parse_next(data)?,
         };
         let mut builder = BatchEvalExpBuilder::default();
