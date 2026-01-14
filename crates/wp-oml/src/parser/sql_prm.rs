@@ -1,23 +1,25 @@
-use crate::language::ArgsTakeAble;
-use crate::language::PreciseEvaluator;
-use crate::language::SqlQuery;
-use crate::parser::keyword::{kw_sql_select, kw_sql_where};
-#[cfg(test)]
-use std::cell::Cell;
+use std::collections::HashMap;
 use std::env;
 use std::sync::atomic::{AtomicI8, Ordering};
+
 #[cfg(test)]
-thread_local! { static STRICT_TL: Cell<i8> = const { Cell::new(0) }; }
+use std::cell::Cell;
+
 use winnow::combinator::fail;
 use winnow::error::StrContext;
-use winnow::error::StrContextValue;
 use winnow::token::take_until;
+
 use wp_parser::Parser;
 use wp_parser::WResult;
 use wp_parser::symbol::ctx_desc;
-use wp_parser::symbol::ctx_literal;
+
+use crate::language::{ArgsTakeAble, CondAccessor, PreciseEvaluator, SqlQuery};
+use crate::parser::keyword::{kw_sql_select, kw_sql_where};
 
 use super::cond::SCondParser;
+
+#[cfg(test)]
+thread_local! { static STRICT_TL: Cell<i8> = const { Cell::new(0) }; }
 
 // 0: no override; 1: force strict on; -1: force strict off
 static STRICT_OVERRIDE: AtomicI8 = AtomicI8::new(0);
@@ -59,6 +61,146 @@ pub fn set_sql_strict_for_test(val: Option<bool>) {
     STRICT_TL.with(|c| c.set(v));
 }
 
+// ============================================================================
+// Helper functions for SQL parsing (extracted from oml_sql for readability)
+// ============================================================================
+
+/// Check if a string is a valid SQL identifier (alphanumeric, underscore, dot).
+fn is_sql_ident(s: &str) -> bool {
+    !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')
+}
+
+/// Sanitize SQL body to ensure safe identifiers.
+/// Only allows `<cols> from <table>` where cols are [A-Za-z0-9_.] or '*'.
+fn sanitize_sql_body(body: &str) -> Option<String> {
+    let body_trim = body.trim();
+    let lower = body_trim.to_lowercase();
+    let from_pos = lower.rfind(" from ")?;
+    let (cols_part, table_part) = body_trim.split_at(from_pos);
+    let table_name = table_part[" from ".len()..].trim();
+    if table_name.is_empty() || !is_sql_ident(table_name) {
+        return None;
+    }
+    let cols: Vec<&str> = cols_part.split(',').map(|s| s.trim()).collect();
+    if cols.is_empty() {
+        return None;
+    }
+    for c in &cols {
+        if *c != "*" && !is_sql_ident(c) {
+            return None;
+        }
+    }
+    Some(format!("{} from {}", cols.join(","), table_name))
+}
+
+/// Rewrite `fn(...) = <literal>` to `<literal> = fn(...)` for compatibility.
+/// This allows WHERE clauses like `ip4_between(x, a, b) = 1` to be rewritten
+/// as `1 = ip4_between(x, a, b)`.
+fn rewrite_lhs_fn_eq_literal(s: &str) -> Option<String> {
+    let t = s.trim();
+    let bytes = t.as_bytes();
+    // quick check: starts with ident and '('
+    let mut i = 0usize;
+    while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b'\t') {
+        i += 1;
+    }
+    if i >= bytes.len() || !bytes[i].is_ascii_alphabetic() {
+        return None;
+    }
+    while i < bytes.len()
+        && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'.')
+    {
+        i += 1;
+    }
+    while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b'\t') {
+        i += 1;
+    }
+    if i >= bytes.len() || bytes[i] != b'(' {
+        return None;
+    }
+    // find matching ')'
+    let mut depth = 0i32;
+    let mut j = i;
+    while j < bytes.len() {
+        let c = bytes[j];
+        if c == b'(' {
+            depth += 1;
+        } else if c == b')' {
+            depth -= 1;
+            if depth == 0 {
+                break;
+            }
+        }
+        j += 1;
+    }
+    if j >= bytes.len() || depth != 0 {
+        return None;
+    }
+    // remaining: ") ..."
+    let mut k = j + 1;
+    while k < bytes.len() && (bytes[k] == b' ' || bytes[k] == b'\t') {
+        k += 1;
+    }
+    if k >= bytes.len() || bytes[k] != b'=' {
+        return None;
+    }
+    k += 1; // skip '='
+    while k < bytes.len() && (bytes[k] == b' ' || bytes[k] == b'\t') {
+        k += 1;
+    }
+    let rhs = t[k..].trim();
+    if rhs.is_empty() {
+        return None;
+    }
+    let lhs = t[..=j].trim();
+    Some(format!("{} = {}", rhs, lhs))
+}
+
+/// Convert a SQL piece, mapping `read(arg)` to `:arg` and collecting params.
+fn to_sql_piece(s: &str, params: &mut HashMap<String, CondAccessor>) -> String {
+    let st = s.trim();
+    if let Some(rest) = st.strip_prefix("read(")
+        && let Some(rest2) = rest.strip_suffix(")")
+    {
+        let var = rest2.trim();
+        params.insert(var.to_string(), CondAccessor::from_read(var.to_string()));
+        return format!(":{}", var);
+    }
+    st.to_string()
+}
+
+/// Fast path for `1 = ip4_between(read(x), a, b)` pattern.
+/// Converts to range comparison without going through the generic cond parser.
+fn fast_path_ip4_between_eq_one(s: &str) -> Option<(String, HashMap<String, CondAccessor>)> {
+    let t = s.trim();
+    let t = if let Some(rest) = t.strip_prefix("1=") {
+        rest
+    } else if let Some(rest) = t.strip_prefix("1 =") {
+        rest
+    } else {
+        return None;
+    };
+    let t = t.trim_start();
+    if !t.starts_with("ip4_between(") {
+        return None;
+    }
+    let inside = t.strip_prefix("ip4_between(")?;
+    let inside = inside.strip_suffix(")")?;
+    let parts: Vec<&str> = inside.split(',').map(|x| x.trim()).collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let mut params: HashMap<String, CondAccessor> = HashMap::new();
+    let p1 = to_sql_piece(parts[0], &mut params);
+    let p2 = to_sql_piece(parts[1], &mut params);
+    let p3 = to_sql_piece(parts[2], &mut params);
+    // Prefer using range compare to avoid dependency on ip4_between UDF semantics
+    let where_sql = format!("{} <= ip4_int({}) and {} >= ip4_int({})", p2, p1, p3, p1);
+    Some((where_sql, params))
+}
+
 pub fn oml_sql(data: &mut &str) -> WResult<SqlQuery> {
     // Parse `select <body> where <cond>;`
     // We sanitize `<body>` to avoid unsafe identifiers: only [A-Za-z0-9_.] and '*' are allowed
@@ -70,171 +212,39 @@ pub fn oml_sql(data: &mut &str) -> WResult<SqlQuery> {
         .parse_next(data)?;
     kw_sql_where.parse_next(data)?;
     let sql_cond_raw = take_until(0.., ";").parse_next(data)?;
-    // debug: sql where raw
-    // 兼容写法：允许在 WHERE 中写 `fn(...) = <literal>`，按对称性改写为 `<literal> = fn(...)`
-    fn rewrite_lhs_fn_eq_literal(s: &str) -> Option<String> {
-        let t = s.trim();
-        let bytes = t.as_bytes();
-        // quick check: starts with ident and '('
-        let mut i = 0usize;
-        while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b'\t') {
-            i += 1;
-        }
-        if i >= bytes.len() || !bytes[i].is_ascii_alphabetic() {
-            return None;
-        }
-        while i < bytes.len()
-            && (bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' || bytes[i] == b'.')
-        {
-            i += 1;
-        }
-        while i < bytes.len() && (bytes[i] == b' ' || bytes[i] == b'\t') {
-            i += 1;
-        }
-        if i >= bytes.len() || bytes[i] != b'(' {
-            return None;
-        }
-        // find matching ')'
-        let mut depth = 0i32;
-        let mut j = i;
-        while j < bytes.len() {
-            let c = bytes[j];
-            if c == b'(' {
-                depth += 1;
-            } else if c == b')' {
-                depth -= 1;
-                if depth == 0 {
-                    break;
-                }
-            }
-            j += 1;
-        }
-        if j >= bytes.len() || depth != 0 {
-            return None;
-        }
-        // remaining: ") ..."
-        let mut k = j + 1;
-        while k < bytes.len() && (bytes[k] == b' ' || bytes[k] == b'\t') {
-            k += 1;
-        }
-        if k >= bytes.len() || bytes[k] != b'=' {
-            return None;
-        }
-        k += 1; // skip '='
-        while k < bytes.len() && (bytes[k] == b' ' || bytes[k] == b'\t') {
-            k += 1;
-        }
-        let rhs = t[k..].trim();
-        if rhs.is_empty() {
-            return None;
-        }
-        let lhs = t[..=j].trim();
-        Some(format!("{} = {}", rhs, lhs))
-    }
+
+    // Rewrite `fn(...) = <literal>` to `<literal> = fn(...)` for compatibility
     let sql_cond_buf: String =
         rewrite_lhs_fn_eq_literal(sql_cond_raw).unwrap_or_else(|| sql_cond_raw.to_string());
-    // debug: sql where rewritten
-    // Fast path: support `1 = ip4_between(read(x), a, b)` without going through the generic cond parser
-    use crate::language::CondAccessor;
-    use std::collections::HashMap;
-    fn fast_path_ip4_between_eq_one(s: &str) -> Option<(String, HashMap<String, CondAccessor>)> {
-        let t = s.trim();
-        let t = if let Some(rest) = t.strip_prefix("1=") {
-            rest
-        } else if let Some(rest) = t.strip_prefix("1 =") {
-            rest
-        } else {
-            return None;
-        };
-        let t = t.trim_start();
-        if !t.starts_with("ip4_between(") {
-            return None;
-        }
-        let inside = t.strip_prefix("ip4_between(")?;
-        let inside = inside.strip_suffix(")")?;
-        let parts: Vec<&str> = inside.split(',').map(|x| x.trim()).collect();
-        if parts.len() != 3 {
-            return None;
-        }
-        let mut params: HashMap<String, CondAccessor> = HashMap::new();
-        // Helper to map read(arg) -> ":arg" and collect params
-        fn to_sql_piece(s: &str, params: &mut HashMap<String, CondAccessor>) -> String {
-            let st = s.trim();
-            if let Some(rest) = st.strip_prefix("read(")
-                && let Some(rest2) = rest.strip_suffix(")")
-            {
-                let var = rest2.trim();
-                params.insert(var.to_string(), CondAccessor::from_read(var.to_string()));
-                return format!(":{}", var);
-            }
-            st.to_string()
-        }
-        let p1 = to_sql_piece(parts[0], &mut params);
-        let p2 = to_sql_piece(parts[1], &mut params);
-        let p3 = to_sql_piece(parts[2], &mut params);
-        // Prefer using range compare to avoid dependency on ip4_between UDF semantics
-        let where_sql = format!("{} <= ip4_int({}) and {} >= ip4_int({})", p2, p1, p3, p1);
-        Some((where_sql, params))
-    }
+
+    // Fast path: support `1 = ip4_between(read(x), a, b)` without generic cond parser
     if let Some((w_sql, vars)) = fast_path_ip4_between_eq_one(&sql_cond_buf) {
         let sql = format!("select {} where {}", sql_body, w_sql);
         return Ok(SqlQuery::new(sql, vars));
     }
+
     // Generic path
     let mut sql_cond = sql_cond_buf.as_str();
     let cond = SCondParser::end_exp(&mut sql_cond, ";")?;
-    //{
-    //println!("{}", cond);
     let (w_sql, vars) = cond.args_take();
-    // 基础校验：仅允许形如 "col_a, col_b from table_name" 的主体（列/表标识符限定在 [A-Za-z0-9_\.] 与 '*'）
-    fn is_ident(s: &str) -> bool {
-        !s.is_empty()
-            && s.chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.')
-    }
-    fn sanitize_sql_body(body: &str) -> Option<String> {
-        let body_trim = body.trim();
-        let lower = body_trim.to_lowercase();
-        let from_pos = lower.rfind(" from ")?;
-        let (cols_part, table_part) = body_trim.split_at(from_pos);
-        let table_name = table_part[" from ".len()..].trim();
-        if table_name.is_empty() || !is_ident(table_name) {
-            return None;
-        }
-        let cols: Vec<&str> = cols_part.split(',').map(|s| s.trim()).collect();
-        if cols.is_empty() {
-            return None;
-        }
-        for c in &cols {
-            if *c != "*" && !is_ident(c) {
-                return None;
-            }
-        }
-        Some(format!("{} from {}", cols.join(","), table_name))
-    }
-    // 严格模式：非法主体直接报错；兼容模式：回退原文
+
+    // Strict mode: reject invalid body; compat mode: fallback to original
     let strict = is_sql_strict();
     let safe_body = match sanitize_sql_body(sql_body) {
         Some(b) => b,
         None if strict => {
             return fail
                 .context(StrContext::Label("sql body"))
-                .context(StrContext::Expected(StrContextValue::Description(
-                    "expected `<cols from table>`",
-                )))
-                .context(StrContext::Expected(StrContextValue::Description(
-                    "cols in [A-Za-z0-9_.] or '*'",
-                )))
-                .context(StrContext::Expected(StrContextValue::Description(
-                    "table in [A-Za-z0-9_.]",
-                )))
+                .context(ctx_desc("expected `<cols from table>`"))
+                .context(ctx_desc("cols in [A-Za-z0-9_.] or '*'"))
+                .context(ctx_desc("table in [A-Za-z0-9_.]"))
                 .parse_next(data);
         }
         None => sql_body.to_string(),
     };
+
     let sql = format!("select {} where {}", safe_body, w_sql);
     Ok(SqlQuery::new(sql, vars))
-    // 旧版在解析失败时构造 SQLPrimitive；已废弃，现统一走知识库门面 Provider
 }
 
 pub fn oml_aga_sql(data: &mut &str) -> WResult<PreciseEvaluator> {
