@@ -14,6 +14,8 @@ use winnow::error::StrContextValue;
 use winnow::token::take_until;
 use wp_parser::Parser;
 use wp_parser::WResult;
+use wp_parser::symbol::ctx_desc;
+use wp_parser::symbol::ctx_literal;
 
 use super::cond::SCondParser;
 
@@ -63,7 +65,9 @@ pub fn oml_sql(data: &mut &str) -> WResult<SqlQuery> {
     // and we split `cols from table`. If sanitize fails, we fall back to original body to keep
     // backward compatibility (recommended to provide whitelisted identifiers at source).
     kw_sql_select.parse_next(data)?;
-    let sql_body = take_until(0.., "where").parse_next(data)?;
+    let sql_body = take_until(0.., "where")
+        .context(ctx_desc("end to 'where'"))
+        .parse_next(data)?;
     kw_sql_where.parse_next(data)?;
     let sql_cond_raw = take_until(0.., ";").parse_next(data)?;
     // debug: sql where raw
@@ -241,8 +245,8 @@ mod tests {
     use wp_data_model::cache::FieldQueryCache;
     use wp_parser::WResult as ModalResult;
 
-    use crate::parser::sql_prm::oml_sql;
     use crate::parser::utils::for_test::assert_oml_parse;
+    use crate::parser::{sql_prm::oml_sql, utils::for_test::err_of_oml};
     use winnow::Parser;
 
     #[test]
@@ -347,5 +351,21 @@ zone : chars = select zone from zone where ip_start_int <= ip4_int(read(src_ip))
         });
         assert_eq!(zone, Some("A"));
         Ok(())
+    }
+    #[test]
+    fn test_sql_oml_err() {
+        let mut code = r#" selec a, b from table_1 where x = read (src);"#;
+        let e = err_of_oml(&mut code, oml_sql);
+        println!("err:{}, \nwhere:{}", e, code);
+        assert!(e.to_string().contains("need 'select' keyword"));
+
+        let mut code = r#" select a, b from table_1 whare x = read (src);"#;
+        let e = err_of_oml(&mut code, oml_sql);
+        println!("err:{}, \nwhere:{}", e, code);
+        assert!(e.to_string().contains("end to 'where'"));
+
+        let mut code = r#" select a, b from table_1 where x = src;"#;
+        let e = err_of_oml(&mut code, oml_sql);
+        println!("err:{}, \nwhere:{}", e, code);
     }
 }

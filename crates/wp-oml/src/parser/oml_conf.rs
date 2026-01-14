@@ -5,7 +5,7 @@ use crate::parser::oml_aggregate::oml_aggregate;
 //use crate::parser::oml_privacy::oml_privacy;
 //use crate::privacy::PrivacyProcessorType;
 use winnow::ascii::multispace0;
-use winnow::combinator::{opt, repeat, trace};
+use winnow::combinator::{opt, repeat};
 use winnow::error::StrContext;
 use wp_error::{OMLCodeError, OMLCodeResult};
 use wp_parser::Parser;
@@ -27,7 +27,7 @@ pub fn oml_parse(data: &mut &str, tag: &str) -> OMLCodeResult<ObjModel> {
 }
 
 pub fn oml_conf_code(data: &mut &str) -> WResult<ObjModel> {
-    let name = trace("oml head", oml_conf_head).parse_next(data)?;
+    let name = oml_conf_head.parse_next(data)?;
     debug_data!("obj model: {} begin ", name);
     let mut a_items = ObjModel::new(name);
     let rules = opt(oml_conf_rules).parse_next(data)?;
