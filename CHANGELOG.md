@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-01-14
+
+### Changed
+- **Breaking**: Renamed `oml_parse` to `oml_parse_raw` for clarity (crates/wp-oml/src/parser/mod.rs)
+- Removed deprecated pipe functions from OML language module
+
+### Refactored
+- **wp-oml**: Extracted nested functions from `oml_sql` to module level for improved readability (crates/wp-oml/src/parser/sql_prm.rs)
+  - `is_sql_ident`, `sanitize_sql_body`, `rewrite_lhs_fn_eq_literal`, `to_sql_piece`, `fast_path_ip4_between_eq_one`
+- **wp-oml**: Unified OML parser error contexts using shared helpers (`ctx_desc`, `ctx_literal`)
+  - Affected files: keyword.rs, oml_aggregate.rs, oml_conf.rs, pipe_prm.rs, sql_prm.rs, utils.rs
+
+### Fixed
+- `wp_log::conf::LogConf` construction in wpgen configuration (crates/wp-config/src/generator/wpgen.rs)
+
 ## [1.8.1] - 2024-01-11
 
 ### Added
@@ -82,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Comparison Links
 
-[Unreleased]: https://github.com/wp-labs/wp-engine/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/wp-labs/wp-engine/compare/v1.8.2...HEAD
+[1.8.2]: https://github.com/wp-labs/wp-engine/compare/v1.8.1-alpha...v1.8.2-alpha
 [1.8.1]: https://github.com/wp-labs/wp-engine/compare/v1.8.0-alpha...v1.8.1-alpha
 [1.8.0]: https://github.com/wp-labs/wp-engine/compare/v1.7.0-alpha...v1.8.0-alpha
