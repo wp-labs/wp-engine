@@ -46,8 +46,11 @@ pub use builtin_factories::register_builtin_factories;
 pub use builtin_factories::register_builtin_factories as register_builtin_sinks;
 // Expose a simple null sink for benches and external tests
 pub use backends::blackhole::BlackHoleSink;
+pub use backends::blackhole_factory::BlackHoleFactory;
+pub use backends::file_factory::FileFactory;
 pub use backends::syslog::SyslogFactory;
 pub use backends::syslog::register_factory_syslog;
+pub use backends::test_rescue::TestRescueFactory;
 pub use builtin_factories::make_blackhole_sink;
 // Controlled network backoff (adaptive toggle) and build-time rate-limit hint APIs
 pub use net::transport::{

@@ -15,7 +15,7 @@ pub enum SinkTerminal {
 
 impl SinkTerminal {
     pub fn null() -> Self {
-        Self::BlackHole(super::BlackHoleSink {})
+        Self::BlackHole(super::BlackHoleSink::default())
     }
 }
 

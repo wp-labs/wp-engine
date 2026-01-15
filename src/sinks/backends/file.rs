@@ -7,19 +7,17 @@ use crate::sinks::{SinkEndpoint, SinkRecUnit};
 use crate::types::{AnyResult, Build1, SafeH};
 use anyhow::Context;
 use async_trait::async_trait;
-use std::path::Path;
-use std::sync::Arc;
-use wp_data_fmt::{DataFormat, FormatType};
-// use orion_conf::ToStructError; // unused here
 use orion_error::ErrorOwe;
 use std::fs;
 use std::fs::File;
 use std::io::{Cursor, Write};
+use std::path::Path;
+use std::sync::Arc;
 use tokio::fs::OpenOptions;
 use tokio::io::{AsyncWriteExt, BufWriter};
-// no mpsc/interval after fast_file pivot
 use tokio_async_drop::tokio_async_drop;
 use wp_connector_api::{SinkBuildCtx, SinkReason, SinkResult, SinkSpec as ResolvedSinkSpec};
+use wp_data_fmt::{DataFormat, FormatType};
 use wp_model_core::model::fmt_def::TextFmt;
 
 pub fn create_watch_out(fmt: TextFmt) -> (SafeH<Cursor<Vec<u8>>>, SinkEndpoint) {
@@ -138,11 +136,7 @@ impl SyncCtrl for FileSink {
 #[async_trait]
 impl RecSyncSink for FileSink {
     fn send_to_sink(&self, data: SinkRecUnit) -> SinkResult<()> {
-        // FileSink 处理记录数据，将其格式化为字符串后写入
-        // 这里应该根据配置的格式进行转换
-        // 暂时实现为简单的格式输出
         if let Ok(mut out_io) = self.out_io.write() {
-            // 使用默认的格式化输出
             let formatted = FormatType::from(&wp_model_core::model::fmt_def::TextFmt::Raw)
                 .format_record(data.data());
             out_io
@@ -187,7 +181,6 @@ impl Drop for AsyncFileSink {
 
 impl AsyncFileSink {
     pub async fn new(out_path: &str) -> AnyResult<Self> {
-        //crate dir if  path  parent  not exist
         if let Some(parent) = std::path::Path::new(out_path).parent()
             && !parent.exists()
         {
@@ -214,7 +207,6 @@ impl AsyncCtrl for AsyncFileSink {
             .flush()
             .await
             .owe(SinkReason::sink("file out fail"))?;
-        // Rename .lock -> .dat on explicit stop to make unlock robust on graceful shutdown
         if let Some(new_path) = self.path.strip_suffix(".lock")
             && let Err(e) = fs::rename(&self.path, new_path)
         {
@@ -265,17 +257,14 @@ impl AsyncRawdatSink for AsyncFileSink {
             return Ok(());
         }
 
-        // 计算总长度，预分配缓冲区
         let mut total_len = 0;
         for str_data in &data {
             total_len += str_data.len();
-            // 如果字符串没有换行符，需要添加一个
             if str_data.as_bytes().last().is_none_or(|&b| b != b'\n') {
                 total_len += 1;
             }
         }
 
-        // 合并所有数据到单个缓冲区
         let mut buffer = Vec::with_capacity(total_len);
         for str_data in &data {
             buffer.extend_from_slice(str_data.as_bytes());
@@ -284,13 +273,11 @@ impl AsyncRawdatSink for AsyncFileSink {
             }
         }
 
-        // 一次性写入所有数据
         self.out_io
             .write_all(&buffer)
             .await
             .owe(SinkReason::sink("file out fail"))?;
 
-        // 更新计数器并检查是否需要刷新
         self.proc_cnt += data.len();
         if self.proc_cnt.is_multiple_of(100) {
             self.out_io
@@ -307,17 +294,14 @@ impl AsyncRawdatSink for AsyncFileSink {
             return Ok(());
         }
 
-        // 计算总长度，预分配缓冲区
         let mut total_len = 0;
         for bytes_data in &data {
             total_len += bytes_data.len();
-            // 如果数据没有换行符，需要添加一个
             if bytes_data.last().is_none_or(|&b| b != b'\n') {
                 total_len += 1;
             }
         }
 
-        // 合并所有数据到单个缓冲区
         let mut buffer = Vec::with_capacity(total_len);
         for bytes_data in &data {
             buffer.extend_from_slice(bytes_data);
@@ -326,13 +310,11 @@ impl AsyncRawdatSink for AsyncFileSink {
             }
         }
 
-        // 一次性写入所有数据
         self.out_io
             .write_all(&buffer)
             .await
             .owe(SinkReason::sink("file out fail"))?;
 
-        // 更新计数器并检查是否需要刷新
         self.proc_cnt += data.len();
         if self.proc_cnt.is_multiple_of(100) {
             self.out_io
@@ -344,9 +326,6 @@ impl AsyncRawdatSink for AsyncFileSink {
         Ok(())
     }
 }
-
-// fast_file 类型已移除
-// fast_file 类型已移除
 
 #[cfg(test)]
 mod tests {
@@ -371,10 +350,8 @@ mod tests {
         Ok(())
     }
 
-    // 仅释放“自身创建”的 .lock：显式 stop 应将自身的 .lock -> .dat，且不会影响其它 .lock 文件
     #[tokio::test(flavor = "multi_thread")]
     async fn stop_unlocks_only_own_lock() -> AnyResult<()> {
-        // 准备唯一临时目录
         let ts = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -389,21 +366,16 @@ mod tests {
             fs::create_dir_all(p)?;
         }
 
-        // 创建另一个 .lock（非本 sink 持有），模拟外部/他处残留
         fs::File::create(&other_lock)?.write_all(b"test")?;
 
-        // 构建本 sink，写入并显式停止
         let mut sink = AsyncFileSink::new(own_lock.to_string_lossy().as_ref()).await?;
-        // 写入一行，确保有 IO 发生
         wp_connector_api::AsyncRawDataSink::sink_str(&mut sink, "line1").await?;
         wp_connector_api::AsyncCtrl::stop(&mut sink).await?;
 
-        // 断言：自身 .lock 已重命名为 .dat，且其它 .lock 不受影响
         assert!(!Path::new(own_lock.to_string_lossy().as_ref()).exists());
         assert!(Path::new(base.join("group1/sinkA-001.dat").to_string_lossy().as_ref()).exists());
         assert!(Path::new(other_lock.to_string_lossy().as_ref()).exists());
 
-        // 清理
         let _ = fs::remove_dir_all(&base);
         Ok(())
     }
