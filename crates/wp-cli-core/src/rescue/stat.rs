@@ -90,10 +90,7 @@ impl RescueStatSummary {
         if detail && !self.files.is_empty() {
             println!();
             println!("文件详情:");
-            println!(
-                "{:<50} {:>12} {:>15}",
-                "Path", "Lines", "Size"
-            );
+            println!("{:<50} {:>12} {:>15}", "Path", "Lines", "Size");
             println!("{}", "-".repeat(80));
             for f in &self.files {
                 let display_path = if f.path.len() > 48 {
@@ -124,7 +121,10 @@ impl RescueStatSummary {
         if detail {
             println!("path,sink_name,line_count,size_bytes");
             for f in &self.files {
-                println!("{},{},{},{}", f.path, f.sink_name, f.line_count, f.size_bytes);
+                println!(
+                    "{},{},{},{}",
+                    f.path, f.sink_name, f.line_count, f.size_bytes
+                );
             }
         } else {
             println!("sink_name,file_count,line_count,size_bytes");
@@ -156,14 +156,23 @@ fn format_bytes(bytes: u64) -> String {
 }
 
 /// 从文件名解析 sink 名称
-fn parse_sink_name(path: &Path) -> String {
-    path.file_name()
+fn parse_sink_name(path: &Path, rescue_root: &Path) -> String {
+    let rel_path = path.strip_prefix(rescue_root).unwrap_or(path);
+    let sink_id = rel_path
+        .file_name()
         .and_then(|n| n.to_str())
-        .map(|name| {
-            // 格式: sink_name-YYYY-MM-DD_HH:MM:SS.dat
-            name.split('-').next().unwrap_or("unknown").to_string()
-        })
-        .unwrap_or_else(|| "unknown".to_string())
+        .map(|name| name.split('-').next().unwrap_or("unknown"))
+        .unwrap_or("unknown");
+
+    if let Some(parent) = rel_path.parent()
+        && let Some(group_os) = parent.file_name()
+        && let Some(group) = group_os.to_str()
+        && !group.is_empty()
+    {
+        return format!("{}/{}", group, sink_id);
+    }
+
+    sink_id.to_string()
 }
 
 /// 统计单个文件的行数
@@ -186,10 +195,7 @@ pub fn scan_rescue_stat(rescue_path: &str, include_detail: bool) -> RescueStatSu
         return summary;
     }
 
-    for entry in WalkDir::new(rescue_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    for entry in WalkDir::new(rescue_dir).into_iter().filter_map(|e| e.ok()) {
         let path = entry.path();
 
         // 只处理 .dat 文件（排除 .lock 等）
@@ -208,15 +214,12 @@ pub fn scan_rescue_stat(rescue_path: &str, include_detail: bool) -> RescueStatSu
 
         let size = metadata.len();
         let line_count = count_lines(path);
-        let sink_name = parse_sink_name(path);
-        let modified_time = metadata
-            .modified()
-            .ok()
-            .map(|t| {
-                chrono::DateTime::<chrono::Local>::from(t)
-                    .format("%Y-%m-%d %H:%M:%S")
-                    .to_string()
-            });
+        let sink_name = parse_sink_name(path, rescue_dir);
+        let modified_time = metadata.modified().ok().map(|t| {
+            chrono::DateTime::<chrono::Local>::from(t)
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        });
 
         // 更新汇总
         summary.total_files += 1;
@@ -224,12 +227,14 @@ pub fn scan_rescue_stat(rescue_path: &str, include_detail: bool) -> RescueStatSu
         summary.total_bytes += size;
 
         // 按 sink 分组
-        let sink_stat = summary.by_sink.entry(sink_name.clone()).or_insert_with(|| {
-            SinkRescueStat {
-                sink_name: sink_name.clone(),
-                ..Default::default()
-            }
-        });
+        let sink_stat =
+            summary
+                .by_sink
+                .entry(sink_name.clone())
+                .or_insert_with(|| SinkRescueStat {
+                    sink_name: sink_name.clone(),
+                    ..Default::default()
+                });
         sink_stat.file_count += 1;
         sink_stat.line_count += line_count;
         sink_stat.size_bytes += size;
@@ -280,11 +285,12 @@ mod tests {
 
     #[test]
     fn test_parse_sink_name() {
+        let root = Path::new("./rescue");
         let path = Path::new("./rescue/http_sink-2024-01-15_10:30:00.dat");
-        assert_eq!(parse_sink_name(path), "http_sink");
+        assert_eq!(parse_sink_name(path, root), "http_sink");
 
         let path2 = Path::new("./rescue/group/kafka_sink-2024-01-15_10:30:00.dat");
-        assert_eq!(parse_sink_name(path2), "kafka_sink");
+        assert_eq!(parse_sink_name(path2, root), "group/kafka_sink");
     }
 
     #[test]

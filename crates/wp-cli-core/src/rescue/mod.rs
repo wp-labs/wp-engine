@@ -2,6 +2,4 @@
 
 mod stat;
 
-pub use stat::{
-    scan_rescue_stat, RescueFileStat, RescueStatSummary, SinkRescueStat,
-};
+pub use stat::{RescueFileStat, RescueStatSummary, SinkRescueStat, scan_rescue_stat};
