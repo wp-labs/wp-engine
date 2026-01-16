@@ -1,5 +1,6 @@
 use super::blackhole::BlackHoleSink;
 use async_trait::async_trait;
+use serde_json::json;
 use wp_conf::connectors::{ConnectorDef, ConnectorScope, SinkDefProvider};
 use wp_connector_api::{ParamMap, SinkFactory, SinkResult};
 
@@ -38,12 +39,14 @@ impl SinkFactory for BlackHoleFactory {
 
 impl SinkDefProvider for BlackHoleFactory {
     fn sink_def(&self) -> ConnectorDef {
+        let mut params = ParamMap::new();
+        params.insert("sleep_ms".into(), json!(0));
         ConnectorDef {
             id: "blackhole_sink".into(),
             kind: self.kind().into(),
             scope: ConnectorScope::Sink,
             allow_override: Vec::new(),
-            default_params: ParamMap::new(),
+            default_params: params,
             origin: Some("builtin:blackhole".into()),
         }
     }

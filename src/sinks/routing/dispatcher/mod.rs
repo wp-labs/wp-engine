@@ -74,6 +74,9 @@ impl SinkDispatcher {
     pub fn get_dat_r_mut(&mut self) -> &mut SinkDatYReceiver {
         &mut self.dat_r
     }
+    pub fn close_channel(&mut self) {
+        self.dat_r.close();
+    }
     pub fn get_name(&self) -> &str {
         self.conf.name().as_str()
     }
