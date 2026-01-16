@@ -1,6 +1,7 @@
 pub mod business;
 pub mod data;
 pub mod knowdb;
+pub mod rescue;
 pub mod utils;
 
 // Re-export business functions for convenience

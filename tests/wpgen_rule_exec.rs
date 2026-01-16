@@ -105,6 +105,7 @@ output = "stdout"
             stat_sec: 1,
             stat_print: false,
             rescue: work.join("data/rescue").display().to_string(),
+            speed_profile: None,
         },
     };
 
