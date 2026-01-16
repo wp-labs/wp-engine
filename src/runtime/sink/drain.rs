@@ -48,3 +48,41 @@ impl DrainState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn closing_without_draining_returns_all_closed() {
+        let mut state = DrainState::new(1);
+        let evt = state.channel_closed_is_drained();
+        assert!(matches!(evt, DrainEvent::AllClosed));
+    }
+
+    #[test]
+    fn drain_state_reports_drained_after_close() {
+        let mut state = DrainState::new(1);
+        state.start_draining();
+        let evt = state.channel_closed_is_drained();
+        assert!(matches!(evt, DrainEvent::Drained));
+    }
+
+    #[tokio::test]
+    async fn receiver_close_unblocks_drain_state() {
+        let mut state = DrainState::new(1);
+        state.start_draining();
+
+        let (tx, mut rx) = tokio::sync::mpsc::channel(4);
+        for _ in 0..4 {
+            tx.send(()).await.unwrap();
+        }
+        let _other_tx = tx.clone();
+        rx.close();
+
+        while rx.recv().await.is_some() {}
+
+        let evt = state.channel_closed_is_drained();
+        assert!(matches!(evt, DrainEvent::Drained));
+    }
+}
