@@ -51,7 +51,7 @@ impl GenGRA {
     pub fn get_speed_profile(&self) -> SpeedProfile {
         self.speed_profile
             .clone()
-            .unwrap_or_else(|| SpeedProfile::Constant(self.gen_speed))
+            .unwrap_or(SpeedProfile::Constant(self.gen_speed))
     }
 
     /// 获取基准速率（用于并行度计算等）

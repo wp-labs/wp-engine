@@ -122,10 +122,10 @@ pub fn route_table(
             enabled: src.enable.unwrap_or(true),
             detail,
         };
-        if let Some(substr) = path_like {
-            if !row.detail.contains(substr) {
-                continue;
-            }
+        if let Some(substr) = path_like
+            && !row.detail.contains(substr)
+        {
+            continue;
         }
         rows.push(row);
     }

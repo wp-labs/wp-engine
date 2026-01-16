@@ -72,7 +72,7 @@ impl GeneratorConfig {
     pub fn get_speed_profile(&self) -> SpeedProfileConfig {
         self.speed_profile
             .clone()
-            .unwrap_or_else(|| SpeedProfileConfig::Constant { rate: self.speed })
+            .unwrap_or(SpeedProfileConfig::Constant { rate: self.speed })
     }
 
     /// 是否使用恒定速率

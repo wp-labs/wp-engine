@@ -1,5 +1,5 @@
-use super::super::stats::stats::StatsFile;
 use super::helpers::{basis_cn, bg_fail, bg_pass, bg_warn, color_err, color_warn, fmt_f};
+use crate::utils::stats::StatsFile;
 use crate::utils::types::{GroupAccum, ValidateReport};
 use comfy_table::{
     Cell, CellAlignment, ContentArrangement, Row as CRow, Table, presets::ASCII_MARKDOWN,

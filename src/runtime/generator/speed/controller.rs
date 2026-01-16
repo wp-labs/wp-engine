@@ -292,7 +292,7 @@ mod tests {
 
         // 初始时刻接近 base
         let speed = ctrl.current_speed();
-        assert!(speed >= 3000 && speed <= 7000);
+        assert!((3000..=7000).contains(&speed));
     }
 
     #[test]
@@ -316,12 +316,12 @@ mod tests {
 
         // 初始时刻接近 start
         let speed = ctrl.current_speed();
-        assert!(speed >= 100 && speed <= 200);
+        assert!((100..=200).contains(&speed));
 
         // 等待后速率应增加
         sleep(Duration::from_millis(500));
         let speed = ctrl.current_speed();
-        assert!(speed >= 400 && speed <= 700);
+        assert!((400..=700).contains(&speed));
     }
 
     #[test]
@@ -345,11 +345,11 @@ mod tests {
         });
 
         let speed = ctrl.current_speed();
-        assert!(speed >= 900 && speed <= 1000);
+        assert!((900..=1000).contains(&speed));
 
         sleep(Duration::from_millis(500));
         let speed = ctrl.current_speed();
-        assert!(speed >= 400 && speed <= 600);
+        assert!((400..=600).contains(&speed));
     }
 
     #[test]
@@ -407,7 +407,7 @@ mod tests {
         // 多次采样应在范围内
         for _ in 0..10 {
             let speed = ctrl.current_speed();
-            assert!(speed >= 3500 && speed <= 6500);
+            assert!((3500..=6500).contains(&speed));
         }
     }
 
@@ -526,7 +526,7 @@ mod tests {
         // 重置后应回到初始状态
         ctrl.reset();
         let speed_after = ctrl.current_speed();
-        assert!(speed_after >= 100 && speed_after <= 200);
+        assert!((100..=200).contains(&speed_after));
     }
 
     #[test]

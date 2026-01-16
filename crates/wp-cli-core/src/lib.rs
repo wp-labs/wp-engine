@@ -18,7 +18,5 @@ pub use utils::{
         print_rows, print_src_files_table, print_validate_evidence, print_validate_headline,
         print_validate_report, print_validate_tables, print_validate_tables_verbose,
     },
-    stats::{StatsFile, group_input, load_stats_file},
     types::*,
-    validate::*,
 };

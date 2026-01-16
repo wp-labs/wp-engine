@@ -258,7 +258,7 @@ mod tests {
         );
 
         let initial_rate = limiter.current_rate();
-        assert!(initial_rate >= 100 && initial_rate <= 200);
+        assert!((100..=200).contains(&initial_rate));
 
         // 等待并更新
         std::thread::sleep(Duration::from_millis(150));
@@ -337,7 +337,7 @@ mod tests {
         limiter.reset();
 
         let rate_after = limiter.current_rate();
-        assert!(rate_after >= 100 && rate_after <= 200);
+        assert!((100..=200).contains(&rate_after));
         assert_eq!(limiter.total_consumed(), 0);
     }
 
@@ -410,8 +410,7 @@ mod tests {
 
         for profile in profiles {
             let mut limiter = DynamicRateLimiter::new(profile, "test");
-            let rate = limiter.current_rate();
-            assert!(rate > 0 || rate == 0); // 任何值都是有效的
+            let _rate = limiter.current_rate(); // 验证能正常获取速率
             let _ = limiter.consume(10);
         }
     }
@@ -453,7 +452,7 @@ mod tests {
         );
 
         let rate = limiter.current_rate();
-        assert!(rate >= 500 && rate <= 1500);
+        assert!((500..=1500).contains(&rate));
 
         let _ = limiter.consume(10);
         assert_eq!(limiter.total_consumed(), 10);

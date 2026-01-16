@@ -75,7 +75,7 @@ impl RescueStatSummary {
                 "Sink", "Files", "Lines", "Size"
             );
             println!("{}", "-".repeat(70));
-            for (_, stat) in &self.by_sink {
+            for stat in self.by_sink.values() {
                 println!(
                     "{:<30} {:>10} {:>12} {:>15}",
                     stat.sink_name,
@@ -128,7 +128,7 @@ impl RescueStatSummary {
             }
         } else {
             println!("sink_name,file_count,line_count,size_bytes");
-            for (_, stat) in &self.by_sink {
+            for stat in self.by_sink.values() {
                 println!(
                     "{},{},{},{}",
                     stat.sink_name, stat.file_count, stat.line_count, stat.size_bytes
