@@ -11,10 +11,7 @@ struct BlackHoleSpec {
 
 impl BlackHoleSpec {
     fn from_params(params: &ParamMap) -> Self {
-        let sleep_ms = params
-            .get("sleep_ms")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0);
+        let sleep_ms = params.get("sleep_ms").and_then(|v| v.as_u64()).unwrap_or(0);
         Self { sleep_ms }
     }
 }

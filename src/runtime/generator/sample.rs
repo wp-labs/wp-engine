@@ -1,7 +1,7 @@
-use super::common::{DEFAULT_UNIT_SIZE, build_sink_instance, per_pipeline_speed};
+use super::common::{DEFAULT_UNIT_SIZE, build_sink_instance};
+use super::speed::{DynamicRateLimiter, SpeedProfile};
 use crate::orchestrator::config::models::stat_reqs_from;
 use crate::runtime::actor::TaskGroup;
-use crate::runtime::actor::limit::RateLimiter;
 use crate::runtime::actor::signal::ShutdownCmd;
 use crate::runtime::generator::types::GenGRA;
 use crate::runtime::supervisor::monitor::ActorMonitor;
@@ -47,7 +47,7 @@ fn load_samples(rule_root: &str, find_name: &str) -> RunResult<Vec<String>> {
     Ok(out)
 }
 
-/// 批量发送一个“单元”的样本（逐条发送，但把本单元作为一个批次）。
+/// 批量发送一个"单元"的样本（逐条发送，但把本单元作为一个批次）。
 async fn send_unit_samples(
     sink: &mut SinkBackendType,
     samples: &Arc<Vec<String>>,
@@ -150,29 +150,30 @@ async fn run_pipeline(
     mut sink: SinkBackendType,
     samples: Arc<Vec<String>>,
     quota: WorkQuota,
-    per_pipe_speed: Option<usize>,
+    speed_profile: SpeedProfile,
+    pipe_idx: usize,
     mon_s: crate::stat::MonSend,
     sink_reqs: Vec<wp_stat::StatReq>,
 ) -> RunResult<usize> {
     // 统计/速率器
     let unit_size_cfg = DEFAULT_UNIT_SIZE;
     let mut collectors = MetricCollectors::new("gen_direct".to_string(), sink_reqs);
-    let unit_size = match per_pipe_speed {
-        Some(per) => (per / 10).clamp(1, 1000),
-        None => unit_size_cfg.max(1),
+    let base_rate = speed_profile.base_rate();
+    let unit_size = if base_rate > 0 {
+        (base_rate / 10).clamp(1, 1000)
+    } else {
+        unit_size_cfg.max(1)
     };
-    let mut limiter = per_pipe_speed
-        .map(|per| RateLimiter::new(per, unit_size, "gen_direct"))
-        .unwrap_or_default();
+    let mut limiter =
+        DynamicRateLimiter::new(speed_profile, &format!("gen_sample_pipe_{}", pipe_idx));
 
     // 迭代状态
     let mut cur_idx = 0usize;
     let mut produced = 0usize; // 全局累计
     // 不做微批缓冲：逐条发送
 
-    // 批量发送一个“单元”，然后统一进行限速；统计：按条进行。
+    // 批量发送一个"单元"，然后统一进行限速；统计：按条进行。
     loop {
-        limiter.rec_beg();
         let reserved = quota.take(unit_size);
         if reserved == 0 {
             break;
@@ -195,12 +196,77 @@ async fn run_pipeline(
         produced += sent;
         // 单元完成后发一次快照
         let _ = collectors.send_stat(&mon_s).await;
-        let left = limiter.limit_speed_time();
-        if left.as_nanos() > 0 {
-            tokio::time::sleep(left).await;
+        // 使用动态速率限制器
+        let wait = limiter.consume(sent);
+        if !wait.is_zero() {
+            tokio::time::sleep(wait).await;
         }
     }
     Ok(produced)
+}
+
+/// 根据 pipeline 数量调整速度模型
+fn adjust_profile_for_pipeline(profile: &SpeedProfile, pipe_cnt: usize) -> SpeedProfile {
+    if pipe_cnt <= 1 {
+        return profile.clone();
+    }
+
+    match profile {
+        SpeedProfile::Constant(rate) => SpeedProfile::Constant(rate / pipe_cnt),
+        SpeedProfile::Sinusoidal {
+            base,
+            amplitude,
+            period_secs,
+        } => SpeedProfile::Sinusoidal {
+            base: base / pipe_cnt,
+            amplitude: amplitude / pipe_cnt,
+            period_secs: *period_secs,
+        },
+        SpeedProfile::Stepped {
+            steps,
+            loop_forever,
+        } => SpeedProfile::Stepped {
+            steps: steps
+                .iter()
+                .map(|(dur, rate)| (*dur, rate / pipe_cnt))
+                .collect(),
+            loop_forever: *loop_forever,
+        },
+        SpeedProfile::Burst {
+            base,
+            burst_rate,
+            burst_duration_ms,
+            burst_probability,
+        } => SpeedProfile::Burst {
+            base: base / pipe_cnt,
+            burst_rate: burst_rate / pipe_cnt,
+            burst_duration_ms: *burst_duration_ms,
+            burst_probability: *burst_probability,
+        },
+        SpeedProfile::Ramp {
+            start,
+            end,
+            duration_secs,
+        } => SpeedProfile::Ramp {
+            start: start / pipe_cnt,
+            end: end / pipe_cnt,
+            duration_secs: *duration_secs,
+        },
+        SpeedProfile::RandomWalk { base, variance } => SpeedProfile::RandomWalk {
+            base: base / pipe_cnt,
+            variance: *variance,
+        },
+        SpeedProfile::Composite {
+            profiles,
+            combine_mode,
+        } => SpeedProfile::Composite {
+            profiles: profiles
+                .iter()
+                .map(|p| adjust_profile_for_pipeline(p, pipe_cnt))
+                .collect(),
+            combine_mode: combine_mode.clone(),
+        },
+    }
 }
 
 pub async fn run_sample_direct(
@@ -210,9 +276,8 @@ pub async fn run_sample_direct(
     out_conf: &SinkInstanceConf,
     rate_limit_rps: usize,
 ) -> RunResult<()> {
-    // 全局限速目标（构建期提示）：生成器直连路径在构建 sink 前设置；0 表示无限速。
-    crate::sinks::set_global_rate_limit_rps(gar.gen_speed);
-    // 全局 backoff gate 移除；由发送单元在构建期与实时水位自决。
+    // 全局限速目标（构建期提示）
+    crate::sinks::set_global_rate_limit_rps(gar.base_speed());
     info_ctrl!(
         "run_sample_direct: rule_root='{}', find_name='{}', parallel={}, total_line={:?}",
         rule_root,
@@ -226,6 +291,15 @@ pub async fn run_sample_direct(
     let samples = Arc::new(samples);
     let parallel = std::cmp::max(1, gar.parallel);
     let quota = WorkQuota::from_total(gar.total_line);
+
+    // 速率配置
+    let speed_profile = gar.get_speed_profile();
+    info_ctrl!(
+        "run_sample_direct: speed_profile={:?}, base_speed={}",
+        speed_profile,
+        gar.base_speed()
+    );
+
     // 监控：启动监控任务
     let moni_group = TaskGroup::new("moni", ShutdownCmd::Timeout(200));
     let mut actor_mon =
@@ -250,10 +324,11 @@ pub async fn run_sample_direct(
         );
         let mon = mon_s.clone();
         let reqs = sink_reqs.clone();
-        let per_speed = per_pipeline_speed(gar.gen_speed, parallel);
+        let profile = adjust_profile_for_pipeline(&speed_profile, parallel);
         let quota = quota.clone();
+        let pipe_idx = i;
         tasks.push(tokio::spawn(async move {
-            run_pipeline(sink, s, quota, per_speed, mon, reqs).await
+            run_pipeline(sink, s, quota, profile, pipe_idx, mon, reqs).await
         }));
     }
     let mut total_produced: usize = 0;

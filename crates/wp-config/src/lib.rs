@@ -59,3 +59,6 @@ pub use types::SafeDefault;
 
 // 重新导出 WildArray 类型以供外部使用
 pub use wp_specs::WildArray;
+
+// 生成器速度模型配置
+pub use generator::{CombineModeConfig, SpeedProfileConfig};

@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `BlackHoleSink` now supports `sink_sleep_ms` parameter to control sleep delay per sink operation (0 = no sleep)
 - `BlackHoleFactory` reads `sleep_ms` from `SinkSpec.params` to configure sleep behavior
+- **Dynamic Speed Control Module** (`src/runtime/generator/speed/`): New module for variable data generation speed
+  - `SpeedProfile` enum with multiple speed models:
+    - `Constant` - Fixed rate generation
+    - `Sinusoidal` - Sine wave oscillation (day/night cycles)
+    - `Stepped` - Step-wise rate changes (business peak/off-peak)
+    - `Burst` - Random burst spikes (traffic surges)
+    - `Ramp` - Linear ramp up/down (load testing)
+    - `RandomWalk` - Random fluctuations (natural jitter)
+    - `Composite` - Combine multiple profiles (Average/Max/Min/Sum)
+  - `DynamicSpeedController` - Calculates target rate based on elapsed time and profile
+  - `DynamicRateLimiter` - Token bucket rate limiter with dynamic rate updates
+- `GenGRA.speed_profile` field for configuring dynamic speed models in generators
+- **wpgen.toml Configuration Support** (`crates/wp-config/src/generator/`):
+  - `SpeedProfileConfig` - TOML-parseable configuration for speed profiles
+  - `GeneratorConfig.speed_profile` - New optional field to configure dynamic speed in wpgen.toml
+  - Helper methods: `base_speed()`, `get_speed_profile()`, `is_constant_speed()`
+  - Backward compatible: Falls back to `speed` field when `speed_profile` is not set
 
 
 ## [1.8.2] - 2026-01-14
