@@ -59,6 +59,12 @@ impl SinkWork {
         let mut cache = FieldQueryCache::with_capacity(1000);
         let sink_name = sink.get_name().to_string();
         ctx.record("name", name);
+        
+        // 添加定时器，定期强制上报统计，确保与 monitor 输出周期同步
+        let stat_interval = std::time::Duration::from_millis(crate::stat::STAT_INTERVAL_MS as u64);
+        let mut stat_ticker = tokio::time::interval(stat_interval);
+        stat_ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        
         loop {
             tokio::select! {
                 Some(pkg) = sink.get_dat_r_mut().recv() => {
@@ -77,6 +83,10 @@ impl SinkWork {
                 }
                 Some(h) = fix_sink_r.recv() => {
                     Self::proc_fix_ex(h,&mut sink,  &mon_send).await?;
+                }
+                _ = stat_ticker.tick() => {
+                    // 定时强制上报所有 sink 的统计数据
+                    let _ = sink.force_report_stats(&mon_send).await;
                 }
             }
         }

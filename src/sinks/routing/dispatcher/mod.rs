@@ -99,6 +99,14 @@ impl SinkDispatcher {
         }
     }
 
+    /// 强制上报所有 sink 的统计数据
+    pub async fn force_report_stats(&mut self, mon: &MonSend) -> SinkResult<()> {
+        for sink_rt in self.sinks.iter_mut() {
+            sink_rt.send_stat(mon).await?;
+        }
+        Ok(())
+    }
+
     /// 批量处理数据包（支持批量优化）
     pub(crate) async fn group_sink_package(
         &mut self,
