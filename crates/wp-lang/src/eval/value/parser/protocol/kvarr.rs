@@ -363,4 +363,19 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn test_kvarr_ignore_meta() -> AnyResult<()> {
+        let conf = WplField::try_parse("kvarr(_@note, digit@count)").assert();
+        let mut data = "note=something count=7";
+        let parser = ParserTUnit::new(KvArrP::default(), conf);
+        let fields = parser.verify_parse_suc(&mut data).assert();
+        let record = DataRecord::from(fields);
+        assert_eq!(record.field("note"), Some(&DataField::from_ignore("note")));
+        assert_eq!(
+            record.field("count"),
+            Some(&DataField::from_digit("count", 7))
+        );
+        Ok(())
+    }
 }

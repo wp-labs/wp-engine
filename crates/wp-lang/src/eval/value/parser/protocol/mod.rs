@@ -28,11 +28,10 @@ pub fn take_sub_tdo(
     match str_val_r {
         Ok(mut str_val) => {
             if let Some(sub_fpu) = fpu.get_sub_fpu(key) {
+                let mut prefer_sep = fpu.conf().resolve_sep(upper_sep);
+                prefer_sep.apply_default(WplSep::inherited_sep("\\0"));
                 let run_key = sub_fpu.conf().run_key(key);
-                //in quot str , sep need set to line end;
-                //let mut cur_fpu = sub_fpu.clone();
-                //cur_fpu.conf_mut().fmt_conf.sep_to_end();
-                Ok(sub_fpu.parse(upper_sep, &mut str_val, run_key, out)?)
+                Ok(sub_fpu.parse(&prefer_sep, &mut str_val, run_key, out)?)
             } else {
                 out.push(DataField::from_chars(key, str_val));
                 Ok(())
@@ -40,8 +39,10 @@ pub fn take_sub_tdo(
         }
         Err(_) => {
             if let Some(sub_fpu) = fpu.get_sub_fpu(key) {
+                let mut prefer_sep = fpu.conf().resolve_sep(upper_sep);
+                prefer_sep.apply_default(WplSep::inherited_sep("\\0"));
                 let run_key = sub_fpu.conf().run_key(key);
-                Ok(sub_fpu.parse(upper_sep, data, run_key, out)?)
+                Ok(sub_fpu.parse(&prefer_sep, data, run_key, out)?)
             } else {
                 let sep = fpu.conf().resolve_sep(upper_sep);
                 let val = sep.read_until_sep(data)?;
