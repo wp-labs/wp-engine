@@ -44,7 +44,8 @@ pub struct ParserTUnit {
 impl ParserTUnit {
     pub fn new<T: FieldParser + Send + Sync + 'static>(parser: T, conf: WplField) -> Self {
         let env = ParserTestEnv::new();
-        let fpu = FieldEvalUnit::for_test(parser, conf);
+        let mut fpu = FieldEvalUnit::for_test(parser, conf);
+        Self::attach_sub_fpu(&mut fpu);
         let ups_sep = WplSep::default();
         //let fpu = LangPipe::assemble_fpu(&conf).expect("assemble fpu fail");
         Self { fpu, env, ups_sep }
@@ -56,6 +57,36 @@ impl ParserTUnit {
         let fpu = WplEvaluator::assemble_fpu(0, &conf, WplGroupType::Seq(GroupSeq))
             .expect("assemble fpu fail");
         Self { fpu, env, ups_sep }
+    }
+}
+
+impl ParserTUnit {
+    fn attach_sub_fpu(fpu: &mut FieldEvalUnit) {
+        let Some(subs) = fpu.conf().sub_fields().as_ref().cloned() else {
+            return;
+        };
+        let exact_entries: Vec<(String, WplField)> = subs
+            .conf_items()
+            .exact_iter()
+            .map(|(k, conf)| (k.clone(), conf.clone()))
+            .collect();
+        for (key, conf) in exact_entries {
+            let mut sub_fpu =
+                FieldEvalUnit::create(0, conf, fpu.group_enum.clone()).expect("build sub fpu");
+            Self::attach_sub_fpu(&mut sub_fpu);
+            fpu.add_sub_fpu(key, sub_fpu);
+        }
+        let wild_entries: Vec<(String, WplField)> = subs
+            .conf_items()
+            .wild_iter()
+            .map(|(k, _, conf)| (k.clone(), conf.clone()))
+            .collect();
+        for (key, conf) in wild_entries {
+            let mut sub_fpu =
+                FieldEvalUnit::create(0, conf, fpu.group_enum.clone()).expect("build sub fpu");
+            Self::attach_sub_fpu(&mut sub_fpu);
+            fpu.add_sub_fpu(key, sub_fpu);
+        }
     }
 }
 

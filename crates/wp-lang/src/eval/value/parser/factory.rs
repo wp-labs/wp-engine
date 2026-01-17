@@ -15,6 +15,7 @@ use crate::eval::value::parser::protocol::base64::Base64P;
 use crate::eval::value::parser::protocol::json::JsonP;
 use crate::eval::value::parser::protocol::json_exact::ExactJsonP;
 use crate::eval::value::parser::protocol::keyval::KeyValP;
+use crate::eval::value::parser::protocol::kvarr::KvArrP;
 use crate::eval::value::parser::protocol::proto_text::ProtoTextP;
 use crate::parser::error::{WplCodeError, WplCodeReason, WplCodeResult};
 use wp_model_core::model::DataType;
@@ -59,6 +60,7 @@ impl ParserFactory {
             DataType::Hex => Some(Hold::new(HexDigitP::default())),
             DataType::Base64 => Some(Hold::new(Base64P::default())),
             DataType::KV => Some(Hold::new(KeyValP::default())),
+            DataType::KvArr => Some(Hold::new(KvArrP::default())),
             DataType::Json => Some(Hold::new(JsonP::default())),
             DataType::ExactJson => Some(Hold::new(ExactJsonP::default())),
             DataType::HttpRequest => Some(Hold::new(http::RequestP::default())),

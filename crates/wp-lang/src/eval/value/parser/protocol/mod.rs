@@ -13,6 +13,7 @@ pub mod json;
 pub mod json_exact;
 mod json_impl;
 pub mod keyval;
+pub mod kvarr;
 pub mod proto_text;
 
 pub fn take_sub_tdo(
