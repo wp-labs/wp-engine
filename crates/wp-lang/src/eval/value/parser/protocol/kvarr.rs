@@ -231,15 +231,14 @@ impl KvArrP {
         }
     }
 
-    fn rename_duplicates(out: &mut Vec<DataField>, emitted: Vec<(String, usize, usize)>) {
+    fn rename_duplicates(out: &mut [DataField], emitted: Vec<(String, usize, usize)>) {
         let mut dup: HashMap<String, Vec<usize>> = HashMap::new();
         for (key, start, end) in emitted {
-            if end == start + 1 {
-                if let Some(field) = out.get(start) {
-                    if field.get_name() == key {
-                        dup.entry(key).or_default().push(start);
-                    }
-                }
+            if end == start + 1
+                && let Some(field) = out.get(start)
+                && field.get_name() == key
+            {
+                dup.entry(key).or_default().push(start);
             }
         }
         for (key, positions) in dup {

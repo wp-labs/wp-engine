@@ -218,7 +218,6 @@ mod test {
         let path = std::path::Path::new(base).join("src").join("structure");
         let files = super::find_conf_files(path.to_str().unwrap(), "*.rs")?;
         // 验证关键文件是否存在，避免对文件数量的脆弱依赖（sink 模块已拆分为目录）
-        // 隐私模块已移除，不再要求 privacy.rs 存在
         let must_have = ["mod.rs", "group.rs", "io.rs", "framework.rs"];
         for name in must_have {
             assert!(

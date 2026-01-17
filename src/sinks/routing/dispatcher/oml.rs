@@ -179,10 +179,6 @@ impl SinkDispatcher {
             "oml_transform_nochange" => {
                 "OML 输出与输入一致；可能规则未生效或字段映射缺失，请核对字段与类型转换"
             }
-            "oml_privacy_nochange" => {
-                "需要脱敏但未发生变化；请检查隐私字段配置与输入字段名是否一致"
-            }
-            "oml_privacy_error" => "脱敏处理出错；请检查隐私配置与输入值是否合法",
             _ => "OML 转换失败",
         };
         rec.append(DataField::from_chars("__hint", hint));

@@ -3,13 +3,16 @@ use std::path::Path;
 use super::stat::{SinkStatFilters, build_ctx, ensure_sink_dirs};
 use orion_conf::{ToStructError, UvsConfFrom};
 use orion_variate::EnvDict;
-use wp_cli_core as wlib;
+use wp_cli_core::{
+    self as wlib,
+    utils::stats::{StatsFile, load_stats_file},
+};
 use wp_engine::facade::config;
 use wp_error::run_error::{RunReason, RunResult};
 
 pub struct ValidateContext {
     pub groups: Vec<wlib::GroupAccum>,
-    pub stats: Option<wlib::StatsFile>,
+    pub stats: Option<StatsFile>,
     pub input_from_sources: Option<u64>,
 }
 
@@ -25,7 +28,7 @@ pub fn prepare_validate_context(
     let (_rows, groups, _total) =
         wp_cli_core::business::observability::build_groups_v2(&sink_root, &ctx, dict)
             .map_err(|e| RunReason::from_conf(e.to_string()).to_err())?;
-    let stats = stats_file.and_then(|p| wlib::load_stats_file(Path::new(p)));
+    let stats = stats_file.and_then(|p| load_stats_file(Path::new(p)));
     let input_from_sources =
         wp_cli_core::total_input_from_wpsrc(Path::new(&cm.work_root_path()), &main, &ctx, dict)
             .filter(|n| *n > 0);

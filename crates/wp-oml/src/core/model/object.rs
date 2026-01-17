@@ -5,7 +5,6 @@ use crate::core::prelude::*;
 use crate::language::ObjModel;
 use crate::parser::error::OMLCodeErrorTait;
 use crate::parser::oml_parse_raw;
-//use crate::privacy::PrivacyProcessor;
 use orion_error::{ContextRecord, ErrorOwe, ErrorWith, WithContext};
 use wp_data_model::cache::FieldQueryCache;
 use wp_error::parse_error::{OMLCodeError, OMLCodeReason, OMLCodeResult};
@@ -59,5 +58,3 @@ impl ConfADMExt for ObjModel {
         }
     }
 }
-
-// privacy-related tests removed in this edition

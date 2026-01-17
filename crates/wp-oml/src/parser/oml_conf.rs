@@ -2,8 +2,6 @@ use crate::language::{EvalExp, ObjModel};
 use crate::parser::error::OMLCodeErrorTait;
 use crate::parser::keyword::{kw_head_sep_line, kw_oml_name};
 use crate::parser::oml_aggregate::oml_aggregate;
-//use crate::parser::oml_privacy::oml_privacy;
-//use crate::privacy::PrivacyProcessorType;
 use winnow::ascii::multispace0;
 use winnow::combinator::{opt, repeat};
 use winnow::error::StrContext;

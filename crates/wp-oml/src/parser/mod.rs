@@ -11,7 +11,6 @@ mod oml_acq;
 mod oml_aggregate;
 mod oml_conf;
 mod oml_err;
-//mod oml_privacy;
 mod pipe_prm;
 //mod shm_prm;
 mod sql_prm;

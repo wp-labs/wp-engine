@@ -17,11 +17,9 @@ extern crate wp_knowledge as wp_know;
 pub mod core;
 pub mod language;
 pub mod parser;
-//pub mod privacy;
 #[cfg(test)]
 mod test_utils;
 pub mod types;
 
 pub use core::{DataRecordRef, ExpEvaluator};
 pub use parser::oml_parse_raw;
-//pub use privacy::{PrivacyConf, PrivacyProcessorFactory};
