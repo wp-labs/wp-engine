@@ -5,11 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.0 Unreleased]
 
 ### Added
 - `BlackHoleSink` now supports `sink_sleep_ms` parameter to control sleep delay per sink operation (0 = no sleep)
 - `BlackHoleFactory` reads `sleep_ms` from `SinkSpec.params` to configure sleep behavior
+- **Dynamic Speed Control Module** (`src/runtime/generator/speed/`): New module for variable data generation speed
+  - `SpeedProfile` enum with multiple speed models:
+    - `Constant` - Fixed rate generation
+    - `Sinusoidal` - Sine wave oscillation (day/night cycles)
+    - `Stepped` - Step-wise rate changes (business peak/off-peak)
+    - `Burst` - Random burst spikes (traffic surges)
+    - `Ramp` - Linear ramp up/down (load testing)
+    - `RandomWalk` - Random fluctuations (natural jitter)
+    - `Composite` - Combine multiple profiles (Average/Max/Min/Sum)
+  - `DynamicSpeedController` - Calculates target rate based on elapsed time and profile
+  - `DynamicRateLimiter` - Token bucket rate limiter with dynamic rate updates
+- `GenGRA.speed_profile` field for configuring dynamic speed models in generators
+- **wpgen.toml Configuration Support** (`crates/wp-config/src/generator/`):
+  - `SpeedProfileConfig` - TOML-parseable configuration for speed profiles
+  - `GeneratorConfig.speed_profile` - New optional field to configure dynamic speed in wpgen.toml
+  - Helper methods: `base_speed()`, `get_speed_profile()`, `is_constant_speed()`
+  - Backward compatible: Falls back to `speed` field when `speed_profile` is not set
+- **Rescue Statistics Module** (`crates/wp-cli-core/src/rescue/`): New module for rescue data statistics
+  - `RescueFileStat` - Single rescue file statistics (path, sink_name, size, line_count, modified_time)
+  - `RescueStatSummary` - Aggregated statistics with per-sink breakdown
+  - `SinkRescueStat` - Per-sink statistics (file_count, line_count, size_bytes)
+  - `scan_rescue_stat()` - Scan rescue directory and generate statistics report
+  - Multiple output formats: table, JSON, CSV
+  - Supports nested directory scanning and `.dat` file filtering
+
+### Changed
+- **Rescue stat functionality migrated to wp-cli-core**: Rescue statistics is now a standalone CLI utility in `wp-cli-core::rescue` module, decoupled from wp-engine runtime
+
+### Removed
+- `WpRescueCLI` enum removed from wp-engine (rescue CLI should be defined in application layer)
+- `RescueStatArgs` struct removed from wp-engine facade
+- `run_rescue_stat()` function removed from wp-engine facade
 
 
 ## [1.8.2] - 2026-01-14

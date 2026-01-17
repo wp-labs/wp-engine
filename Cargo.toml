@@ -58,7 +58,7 @@ members = [
 ]
 
 [workspace.package]
-version = "1.8.4"
+version = "1.9.0"
 edition = "2024"
 license = "SLv2"
 
@@ -173,6 +173,9 @@ oml = { package = "wp-oml", path = "crates/wp-oml", features = ["oml-diag"] }
 # --- Internal: Data & Stats ---
 #wp-model-core = { package = "wp-data-utils", path = "crates/wp-data-utils" }
 wp_stat = { package = "wp-stats", path = "crates/wp-stats" }
+
+# --- Internal: CLI Core ---
+wp_cli_core = { package = "wp-cli-core", path = "crates/wp-cli-core" }
 
 # --- External: API Layer ---
 wp-connector-api = { workspace = true }

@@ -9,6 +9,8 @@ use orion_conf::error::OrionConfResult;
 use orion_variate::EnvDict;
 use serde_derive::{Deserialize, Serialize};
 use toml;
+
+use super::speed_profile::SpeedProfileConfig;
 // no external IO traits for resolved wpgen; handled in loader
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
@@ -28,7 +30,11 @@ pub struct GeneratorConfig {
     pub mode: GenMode,
     pub count: Option<usize>,
     pub duration_secs: Option<u64>,
+    /// 恒定速率（向后兼容）
+    /// 当 speed_profile 为 None 时使用此字段
     pub speed: usize,
+    /// 动态速度模型（优先级高于 speed）
+    pub speed_profile: Option<SpeedProfileConfig>,
     pub parallel: usize,
     pub rule_root: Option<String>,
     pub sample_pattern: Option<String>,
@@ -41,10 +47,40 @@ impl Default for GeneratorConfig {
             count: Some(1000),
             duration_secs: None,
             speed: 1000,
+            speed_profile: None,
             parallel: 1,
             rule_root: None,
             sample_pattern: None,
         }
+    }
+}
+
+impl GeneratorConfig {
+    /// 获取基准速率
+    ///
+    /// 如果设置了 speed_profile 则从中获取基准速率，否则使用 speed 字段
+    pub fn base_speed(&self) -> usize {
+        self.speed_profile
+            .as_ref()
+            .map(|p| p.base_rate())
+            .unwrap_or(self.speed)
+    }
+
+    /// 获取速度配置
+    ///
+    /// 如果设置了 speed_profile 则返回它，否则从 speed 创建恒定速率配置
+    pub fn get_speed_profile(&self) -> SpeedProfileConfig {
+        self.speed_profile
+            .clone()
+            .unwrap_or(SpeedProfileConfig::Constant { rate: self.speed })
+    }
+
+    /// 是否使用恒定速率
+    pub fn is_constant_speed(&self) -> bool {
+        self.speed_profile
+            .as_ref()
+            .map(|p| p.is_constant())
+            .unwrap_or(true)
     }
 }
 
@@ -361,5 +397,215 @@ file_path = "${LOG_DIR}/app.log"
             config.logging.file_path,
             Some("/var/log/app.log".to_string())
         );
+    }
+
+    #[test]
+    fn wpgen_config_with_speed_profile_constant() {
+        let base = tmp_dir("wpgen_speed_const");
+        let conf_path = base.join("wpgen.toml");
+
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+
+[generator.speed_profile]
+type = "constant"
+rate = 5000
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "info"
+output = "file"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert!(config.generator.speed_profile.is_some());
+        assert_eq!(config.generator.base_speed(), 5000);
+        let profile = config.generator.speed_profile.unwrap();
+        assert!(matches!(
+            profile,
+            SpeedProfileConfig::Constant { rate: 5000 }
+        ));
+    }
+
+    #[test]
+    fn wpgen_config_with_speed_profile_sinusoidal() {
+        let base = tmp_dir("wpgen_speed_sin");
+        let conf_path = base.join("wpgen.toml");
+
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+
+[generator.speed_profile]
+type = "sinusoidal"
+base = 5000
+amplitude = 2000
+period_secs = 60.0
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "info"
+output = "file"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert!(config.generator.speed_profile.is_some());
+        let profile = config.generator.speed_profile.unwrap();
+        if let SpeedProfileConfig::Sinusoidal {
+            base,
+            amplitude,
+            period_secs,
+        } = profile
+        {
+            assert_eq!(base, 5000);
+            assert_eq!(amplitude, 2000);
+            assert!((period_secs - 60.0).abs() < 0.001);
+        } else {
+            panic!("Expected Sinusoidal profile");
+        }
+    }
+
+    #[test]
+    fn wpgen_config_with_speed_profile_ramp() {
+        let base = tmp_dir("wpgen_speed_ramp");
+        let conf_path = base.join("wpgen.toml");
+
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+
+[generator.speed_profile]
+type = "ramp"
+start = 100
+end = 10000
+duration_secs = 300.0
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "info"
+output = "file"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert!(config.generator.speed_profile.is_some());
+        let profile = config.generator.speed_profile.unwrap();
+        if let SpeedProfileConfig::Ramp {
+            start,
+            end,
+            duration_secs,
+        } = profile
+        {
+            assert_eq!(start, 100);
+            assert_eq!(end, 10000);
+            assert!((duration_secs - 300.0).abs() < 0.001);
+        } else {
+            panic!("Expected Ramp profile");
+        }
+    }
+
+    #[test]
+    fn wpgen_config_with_speed_profile_stepped() {
+        let base = tmp_dir("wpgen_speed_step");
+        let conf_path = base.join("wpgen.toml");
+
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+
+[generator.speed_profile]
+type = "stepped"
+steps = [[30.0, 1000], [30.0, 5000], [30.0, 2000]]
+loop_forever = true
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "info"
+output = "file"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert!(config.generator.speed_profile.is_some());
+        let profile = config.generator.speed_profile.unwrap();
+        if let SpeedProfileConfig::Stepped {
+            steps,
+            loop_forever,
+        } = profile
+        {
+            assert_eq!(steps.len(), 3);
+            assert!(loop_forever);
+        } else {
+            panic!("Expected Stepped profile");
+        }
+    }
+
+    #[test]
+    fn wpgen_config_without_speed_profile_uses_speed() {
+        let base = tmp_dir("wpgen_speed_default");
+        let conf_path = base.join("wpgen.toml");
+
+        let wpgen_toml = r#"
+version = "1.0"
+
+[generator]
+mode = "rule"
+count = 100
+speed = 3000
+
+[output]
+connect = "file_sink"
+
+[logging]
+level = "info"
+output = "file"
+"#;
+        fs::write(&conf_path, wpgen_toml).unwrap();
+
+        let dict = EnvDict::new();
+        let config = WpGenConfig::load_from_path(&conf_path, &dict).expect("load wpgen config");
+
+        assert!(config.generator.speed_profile.is_none());
+        assert_eq!(config.generator.speed, 3000);
+        assert_eq!(config.generator.base_speed(), 3000);
+        assert!(config.generator.is_constant_speed());
+
+        // get_speed_profile should create constant from speed
+        let profile = config.generator.get_speed_profile();
+        assert!(matches!(
+            profile,
+            SpeedProfileConfig::Constant { rate: 3000 }
+        ));
     }
 }

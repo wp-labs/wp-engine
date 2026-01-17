@@ -65,40 +65,39 @@ pub fn total_input_from_wpsrc(
                 if !enabled {
                     continue;
                 }
-                if let Some(conn) = conn_map.get(conn_id) {
-                    if conn.kind.eq_ignore_ascii_case("file") {
-                        // 支持 params_override 与 params 两种写法
-                        let ov = item
-                            .get("params_override")
-                            .or_else(|| item.get("params"))
-                            .and_then(|v| v.as_table())
-                            .cloned()
-                            .unwrap_or_default();
-                        let ov_map = toml_table_to_param_map(&ov);
-                        let merged =
-                            merge_params(&conn.default_params, &ov_map, &conn.allow_override)
-                                .unwrap_or_else(|_| conn.default_params.clone());
+                if let Some(conn) = conn_map.get(conn_id)
+                    && conn.kind.eq_ignore_ascii_case("file")
+                {
+                    // 支持 params_override 与 params 两种写法
+                    let ov = item
+                        .get("params_override")
+                        .or_else(|| item.get("params"))
+                        .and_then(|v| v.as_table())
+                        .cloned()
+                        .unwrap_or_default();
+                    let ov_map = toml_table_to_param_map(&ov);
+                    let merged = merge_params(&conn.default_params, &ov_map, &conn.allow_override)
+                        .unwrap_or_else(|_| conn.default_params.clone());
 
-                        // 支持 path 或 base+file 两种写法
-                        let maybe_path = merged
-                            .get("path")
-                            .and_then(|v| v.as_str())
-                            .map(|s| s.to_string())
-                            .or_else(|| {
-                                let b = merged.get("base").and_then(|v| v.as_str());
-                                let f = merged.get("file").and_then(|v| v.as_str());
-                                match (b, f) {
-                                    (Some(b), Some(f)) => {
-                                        Some(std::path::Path::new(b).join(f).display().to_string())
-                                    }
-                                    _ => None,
+                    // 支持 path 或 base+file 两种写法
+                    let maybe_path = merged
+                        .get("path")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string())
+                        .or_else(|| {
+                            let b = merged.get("base").and_then(|v| v.as_str());
+                            let f = merged.get("file").and_then(|v| v.as_str());
+                            match (b, f) {
+                                (Some(b), Some(f)) => {
+                                    Some(std::path::Path::new(b).join(f).display().to_string())
                                 }
-                            });
-                        if let Some(path) = maybe_path {
-                            let pathbuf = resolve_path(&path, &ctx.work_root);
-                            if let Ok(n) = count_lines_file(&pathbuf) {
-                                sum += n;
+                                _ => None,
                             }
+                        });
+                    if let Some(path) = maybe_path {
+                        let pathbuf = resolve_path(&path, &ctx.work_root);
+                        if let Ok(n) = count_lines_file(&pathbuf) {
+                            sum += n;
                         }
                     }
                 }

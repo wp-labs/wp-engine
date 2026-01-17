@@ -32,8 +32,10 @@ pub async fn recover_main(
         args.stat_sec,
     );
     let mon_send = actor_mon.send_agent();
+    // 传递所有统计需求给监控器，以便正确处理和显示统计信息
+    let monitor_reqs = stat_reqs.get_all().clone();
     mon_group.append(tokio::spawn(async move {
-        let _ = actor_mon.stat_proc(Vec::new()).await;
+        let _ = actor_mon.stat_proc(monitor_reqs).await;
     }));
 
     let mut picker_group = TaskGroup::new("pick", ShutdownCmd::Immediate);
@@ -64,10 +66,10 @@ pub async fn recover_main(
     mt_group.append(tokio::spawn(async move {
         sink_amt.proc().await;
     }));
+
+    let pick_reqs = stat_reqs.get_requ_items(StatStage::Pick);
     picker_group.append(tokio::spawn(async move {
-        let _ = actor_picker
-            .pick_data(agent, stat_reqs.get_requ_items(StatStage::Pick))
-            .await;
+        let _ = actor_picker.pick_data(agent, pick_reqs).await;
     }));
     let mut rt_admin = TaskManager::default();
     rt_admin.append_group(mon_group);

@@ -48,10 +48,10 @@ pub fn process_group(
                 .unwrap_or("./data/out_dat/out.dat")
                 .to_string()
         };
-        if let Some(substr) = &ctx.path_like {
-            if !raw_path.contains(substr) {
-                continue;
-            }
+        if let Some(substr) = &ctx.path_like
+            && !raw_path.contains(substr)
+        {
+            continue;
         }
         let prefer = resolve_path(&raw_path, &ctx.work_root);
         match count_lines_file(&prefer) {
@@ -141,10 +141,10 @@ pub fn process_group_v2(
                     .unwrap_or("./data/out_dat/out.dat")
                     .to_string()
             };
-            if let Some(substr) = &ctx.path_like {
-                if !path.contains(substr) {
-                    continue;
-                }
+            if let Some(substr) = &ctx.path_like
+                && !path.contains(substr)
+            {
+                continue;
             }
             let prefer = resolve_path(&path, &ctx.work_root);
             match count_lines_file(&prefer) {
