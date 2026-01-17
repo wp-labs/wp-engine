@@ -5,7 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.9.0 Unreleased]
+## [1.10.0 Unreleased]
+
+### Added
+- **KvArr Parser** (`crates/wp-lang/src/eval/value/parser/protocol/kvarr.rs`): New parser for key=value array format
+  - Supports both `=` and `:` as key-value separators (e.g., `key=value` or `key:value`)
+  - Flexible delimiter support: comma-separated, space-separated, or mixed
+  - Automatic type inference for values (bool, integer, float, string)
+  - Quoted and unquoted string values (e.g., `"value"` or `value`)
+  - Duplicate key handling with automatic array indexing (e.g., `tag=alpha tag=beta` → `tag[0]`, `tag[1]`)
+  - Subfield configuration support with type mapping and meta field ignoring (`_@name`)
+  - Nested parser invocation through sub-parser context
+  - WPL syntax: `kvarr(type@field1, type@field2, ...)`
+- **WPL Documentation Updates**:
+  - Added `kvarr` to builtin types in grammar specification (`wp-docs/docs/10-user/03-wpl/04-wpl_grammar.md`)
+  - New "KvArr 类型（键值对数组）" section in basics guide with syntax and examples (`wp-docs/docs/10-user/03-wpl/01-wpl_basics.md`)
+  - New "2.1 KvArr 键值对数组解析" section in examples guide with 5 practical use cases (`wp-docs/docs/10-user/03-wpl/02-wpl_example.md`)
+
+### Fixed
+- **KvArr Parser**: Fixed meta fields being ignored in sub-parser context (`crates/wp-lang/src/eval/value/parser/protocol/kvarr.rs`)
+- **Module Export**: Fixed missing `validate_groups` function export in `wp-cli-core::utils::validate` module (`crates/wp-cli-core/src/utils/validate/mod.rs`)
+
+
+## [1.9.0] - 2026-01-16
 
 ### Added
 - `BlackHoleSink` now supports `sink_sleep_ms` parameter to control sleep delay per sink operation (0 = no sleep)
